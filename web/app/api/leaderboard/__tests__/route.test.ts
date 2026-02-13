@@ -1,17 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { NextRequest } from 'next/server'
 import { GET } from '../route'
 
-// Mock supabase
-const mockFrom = vi.fn()
+// Mock the server client
+const mockCreateClient = vi.fn()
 
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => Promise.resolve({
-    auth: {
-      getUser: vi.fn(() => Promise.resolve({ data: { user: null } })),
-    },
-    from: mockFrom,
-  })),
+  createClient: () => mockCreateClient(),
 }))
 
 describe('GET /api/leaderboard', () => {
@@ -19,125 +13,148 @@ describe('GET /api/leaderboard', () => {
     vi.clearAllMocks()
   })
 
-  it('returns leaderboard entries', async () => {
-    const mockEntries = [
+  it('returns leaderboard entries with calculated scores', async () => {
+    const mockImpactData = [
       {
-        id: '1',
         user_id: 'user-1',
-        display_name: 'User 1',
-        avatar_url: null,
-        total_score: 1000,
-        achievements_count: 10,
-        lessons_completed: 20,
-        quizzes_perfect: 5,
-        updated_at: '2024-01-01',
+        estimated_dollars_kept_local: 5000,
+        businesses_supported: 25,
+        reviews_left: 15,
+        missions_completed: 8,
+        total_check_ins: 50,
+        profiles: [{ full_name: 'Alice Johnson', avatar_url: null }],
       },
       {
-        id: '2',
         user_id: 'user-2',
-        display_name: 'User 2',
-        avatar_url: 'https://example.com/avatar.png',
-        total_score: 800,
-        achievements_count: 8,
-        lessons_completed: 15,
-        quizzes_perfect: 3,
-        updated_at: '2024-01-02',
+        estimated_dollars_kept_local: 3500,
+        businesses_supported: 20,
+        reviews_left: 10,
+        missions_completed: 5,
+        total_check_ins: 35,
+        profiles: [{ full_name: 'Bob Smith', avatar_url: 'https://example.com/avatar.png' }],
       },
     ]
 
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: mockEntries, error: null }),
+    const mockFrom = vi.fn(() => ({
+      select: vi.fn(() => ({
+        gt: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn().mockResolvedValue({ data: mockImpactData, error: null }),
+          })),
+        })),
+      })),
+    }))
+
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      },
+      rpc: vi.fn().mockResolvedValue({ data: null, error: new Error('Function not found') }),
+      from: mockFrom,
     })
 
-    const request = new NextRequest('http://localhost/api/leaderboard')
+    const request = new Request('http://localhost/api/leaderboard')
     const response = await GET(request)
 
     expect(response.status).toBe(200)
     const json = await response.json()
-    expect(json.entries).toEqual(mockEntries)
+    expect(json.entries).toHaveLength(2)
+    expect(json.entries[0].rank).toBe(1)
+    expect(json.entries[0].display_name).toBe('Alice Johnson')
+    expect(json.entries[0].impact_score).toBeGreaterThan(0)
   })
 
-  it('sorts by total_score by default', async () => {
-    const mockOrder = vi.fn().mockReturnThis()
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: mockOrder,
-      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+  it('includes current user rank when authenticated', async () => {
+    const mockUser = { id: 'user-1', email: 'test@example.com' }
+
+    const mockImpactData = [
+      {
+        user_id: 'user-1',
+        estimated_dollars_kept_local: 5000,
+        businesses_supported: 25,
+        reviews_left: 15,
+        missions_completed: 8,
+        total_check_ins: 50,
+        profiles: [{ full_name: 'Test User', avatar_url: null }],
+      },
+    ]
+
+    const mockFrom = vi.fn(() => ({
+      select: vi.fn(() => ({
+        gt: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn().mockResolvedValue({ data: mockImpactData, error: null }),
+          })),
+        })),
+      })),
+    }))
+
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: mockUser }, error: null }),
+      },
+      rpc: vi.fn().mockResolvedValue({ data: null, error: new Error('Function not found') }),
+      from: mockFrom,
     })
 
-    const request = new NextRequest('http://localhost/api/leaderboard')
-    await GET(request)
+    const request = new Request('http://localhost/api/leaderboard')
+    const response = await GET(request)
 
-    expect(mockOrder).toHaveBeenCalledWith('total_score', { ascending: false })
+    expect(response.status).toBe(200)
+    const json = await response.json()
+    expect(json.userRank).toBe(1)
   })
 
-  it('sorts by achievements_count when requested', async () => {
-    const mockOrder = vi.fn().mockReturnThis()
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: mockOrder,
-      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+  it('returns empty array when no entries', async () => {
+    const mockFrom = vi.fn(() => ({
+      select: vi.fn(() => ({
+        gt: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        })),
+      })),
+    }))
+
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      },
+      rpc: vi.fn().mockResolvedValue({ data: null, error: new Error('Function not found') }),
+      from: mockFrom,
     })
 
-    const request = new NextRequest('http://localhost/api/leaderboard?sortBy=achievements_count')
-    await GET(request)
+    const request = new Request('http://localhost/api/leaderboard')
+    const response = await GET(request)
 
-    expect(mockOrder).toHaveBeenCalledWith('achievements_count', { ascending: false })
-  })
-
-  it('sorts by lessons_completed when requested', async () => {
-    const mockOrder = vi.fn().mockReturnThis()
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: mockOrder,
-      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-    })
-
-    const request = new NextRequest('http://localhost/api/leaderboard?sortBy=lessons_completed')
-    await GET(request)
-
-    expect(mockOrder).toHaveBeenCalledWith('lessons_completed', { ascending: false })
-  })
-
-  it('uses total_score for invalid sortBy values', async () => {
-    const mockOrder = vi.fn().mockReturnThis()
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: mockOrder,
-      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-    })
-
-    const request = new NextRequest('http://localhost/api/leaderboard?sortBy=invalid_field')
-    await GET(request)
-
-    expect(mockOrder).toHaveBeenCalledWith('total_score', { ascending: false })
-  })
-
-  it('limits results to 100', async () => {
-    const mockLimit = vi.fn().mockResolvedValue({ data: [], error: null })
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: mockLimit,
-    })
-
-    const request = new NextRequest('http://localhost/api/leaderboard')
-    await GET(request)
-
-    expect(mockLimit).toHaveBeenCalledWith(100)
+    expect(response.status).toBe(200)
+    const json = await response.json()
+    expect(json.entries).toEqual([])
+    expect(json.totalCount).toBe(0)
   })
 
   it('returns 500 on database error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+
+    const mockFrom = vi.fn(() => ({
+      select: vi.fn(() => ({
+        gt: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') }),
+          })),
+        })),
+      })),
+    }))
+
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      },
+      rpc: vi.fn().mockResolvedValue({ data: null, error: new Error('Function not found') }),
+      from: mockFrom,
     })
 
-    const request = new NextRequest('http://localhost/api/leaderboard')
+    const request = new Request('http://localhost/api/leaderboard')
     const response = await GET(request)
 
     expect(response.status).toBe(500)
@@ -147,32 +164,60 @@ describe('GET /api/leaderboard', () => {
     consoleSpy.mockRestore()
   })
 
-  it('returns empty array when no entries', async () => {
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: null, error: null }),
+  it('includes public cache control headers', async () => {
+    const mockFrom = vi.fn(() => ({
+      select: vi.fn(() => ({
+        gt: vi.fn(() => ({
+          order: vi.fn(() => ({
+            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+          })),
+        })),
+      })),
+    }))
+
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      },
+      rpc: vi.fn().mockResolvedValue({ data: null, error: new Error('Function not found') }),
+      from: mockFrom,
     })
 
-    const request = new NextRequest('http://localhost/api/leaderboard')
+    const request = new Request('http://localhost/api/leaderboard')
+    const response = await GET(request)
+
+    expect(response.headers.get('Cache-Control')).toBe('public, s-maxage=300, stale-while-revalidate=600')
+  })
+
+  it('uses database function when available', async () => {
+    const mockLeaderboardData = [
+      {
+        rank: 1,
+        user_id: 'user-1',
+        display_name: 'Alice Johnson',
+        impact_score: 2500,
+      },
+      {
+        rank: 2,
+        user_id: 'user-2',
+        display_name: 'Bob Smith',
+        impact_score: 1800,
+      },
+    ]
+
+    mockCreateClient.mockResolvedValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+      },
+      rpc: vi.fn().mockResolvedValue({ data: mockLeaderboardData, error: null }),
+      from: vi.fn(),
+    })
+
+    const request = new Request('http://localhost/api/leaderboard')
     const response = await GET(request)
 
     expect(response.status).toBe(200)
     const json = await response.json()
-    expect(json.entries).toEqual([])
-  })
-
-  it('includes public cache control headers', async () => {
-    mockFrom.mockReturnValueOnce({
-      select: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-    })
-
-    const request = new NextRequest('http://localhost/api/leaderboard')
-    const response = await GET(request)
-
-    // Leaderboard is public, so should have public cache
-    expect(response.headers.get('Cache-Control')).toBe('public, s-maxage=300, stale-while-revalidate=600')
+    expect(json.entries).toEqual(mockLeaderboardData)
   })
 })

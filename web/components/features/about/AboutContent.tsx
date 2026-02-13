@@ -1,9 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import { Rocket, Heart, Sparkles } from 'lucide-react'
 import { FounderCard } from './FounderCard'
-import { EditableFounderCard } from './EditableFounderCard'
 import type { Founder } from './FounderCard'
 import { AnimatedSection } from '@/components/features/home/AnimatedSection'
 import { FloatingElement } from '@/components/features/home/FloatingElement'
@@ -15,7 +13,7 @@ interface AboutContentProps {
   isAdmin: boolean
 }
 
-export function AboutContent({ founders, isAdmin }: AboutContentProps) {
+export function AboutContent({ founders }: AboutContentProps) {
   return (
     <div className="relative mx-auto max-w-5xl px-6 pt-16 pb-16">
       {/* Background stars */}
@@ -53,20 +51,16 @@ export function AboutContent({ founders, isAdmin }: AboutContentProps) {
 
         <AnimatedSection animation="fade-in-up" delay={0.15}>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-            Three students on a mission to make rocket science accessible to everyone.
+            Two students on a mission to make rocket science accessible to everyone.
           </p>
         </AnimatedSection>
       </div>
 
-      {/* Founders Grid with 3D effects */}
-      <div className="grid gap-10 sm:grid-cols-3">
-        {founders.map((founder, i) =>
-          isAdmin ? (
-            <EditableFounderCard key={founder.id} founder={founder} index={i} />
-          ) : (
-            <FounderCard3D key={founder.id} founder={founder} index={i} />
-          )
-        )}
+      {/* Founders Grid - Simple */}
+      <div className="grid gap-10 sm:grid-cols-2 max-w-2xl mx-auto">
+        {founders.map((founder, i) => (
+          <FounderCard key={founder.id} founder={founder} index={i} />
+        ))}
       </div>
 
       {/* Why We Started - Enhanced */}
@@ -153,84 +147,5 @@ export function AboutContent({ founders, isAdmin }: AboutContentProps) {
         </AnimatedSection>
       </div>
     </div>
-  )
-}
-
-// Enhanced FounderCard with 3D tilt and hover reveal
-interface FounderCard3DProps {
-  founder: Founder
-  index: number
-}
-
-function FounderCard3D({ founder, index }: FounderCard3DProps) {
-  const imageSrc = founder.image_url || `/founders/${founder.id}.png`
-  const zoom = founder.image_zoom || 1
-
-  return (
-    <AnimatedSection animation="fade-up" delay={0.1 + index * 0.15}>
-      <div className="group relative flex flex-col items-center text-center">
-        {/* 3D Photo container */}
-        <div className="relative mb-6 perspective-1000">
-          {/* Orbital ring decoration */}
-          <div className="absolute -inset-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-            <div className="w-full h-full rounded-full border border-dashed border-primary/20 animate-orbit-rotate" />
-          </div>
-
-          {/* Glow ring behind image */}
-          <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-primary/20 via-chart-3/20 to-chart-2/20 opacity-0 blur-md transition-all duration-500 group-hover:opacity-100 group-hover:scale-110" />
-
-          {/* Photo with 3D tilt effect */}
-          <div
-            className="relative h-44 w-44 overflow-hidden rounded-full border-2 border-border/50 bg-muted transition-all duration-500 group-hover:border-primary/30 group-hover:shadow-xl group-hover:shadow-primary/10"
-            style={{
-              transform: 'translateZ(0)',
-              transition: 'transform 0.3s ease-out',
-            }}
-          >
-            {/* Image with zoom/offset support */}
-            <div
-              className="w-full h-full transition-transform duration-500 group-hover:scale-105"
-              style={{
-                transform: `scale(${zoom})`,
-                transformOrigin: `${founder.image_offset_x}% ${founder.image_offset_y}%`,
-              }}
-            >
-              <Image
-                src={imageSrc}
-                alt={`Photo of ${founder.name}`}
-                width={200}
-                height={200}
-                className="h-full w-full object-cover"
-              />
-            </div>
-
-            {/* Overlay on hover */}
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </div>
-
-          {/* Floating badge */}
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-            <div className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-lg">
-              {founder.role}
-            </div>
-          </div>
-        </div>
-
-        {/* Name and bio with staggered reveal */}
-        <h2 className="text-xl font-bold text-foreground transition-colors group-hover:text-primary">
-          {founder.name}
-        </h2>
-
-        {/* Bio with slide animation */}
-        <div className="mt-3 overflow-hidden">
-          <p className="text-sm leading-relaxed text-muted-foreground transition-transform duration-300 group-hover:translate-y-0">
-            {founder.bio}
-          </p>
-        </div>
-
-        {/* Decorative line */}
-        <div className="mt-4 h-0.5 w-12 bg-gradient-to-r from-primary to-chart-2 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
-      </div>
-    </AnimatedSection>
   )
 }
