@@ -90,6 +90,10 @@ CREATE TABLE IF NOT EXISTS businesses (
   average_rating DECIMAL(2, 1) DEFAULT 0,
   review_count INTEGER DEFAULT 0,
   bookmark_count INTEGER DEFAULT 0,
+  place_id TEXT UNIQUE, -- Google Places ID for syncing
+  data_source TEXT DEFAULT 'user_added' CHECK (data_source IN ('google', 'osm', 'user_added')),
+  last_synced_at TIMESTAMP WITH TIME ZONE,
+  sync_status TEXT DEFAULT 'active' CHECK (sync_status IN ('active', 'stale', 'error')),
   claimed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -118,6 +122,8 @@ CREATE INDEX IF NOT EXISTS idx_businesses_rating ON businesses(average_rating DE
 CREATE INDEX IF NOT EXISTS idx_businesses_location ON businesses(latitude, longitude);
 CREATE INDEX IF NOT EXISTS idx_businesses_featured ON businesses(is_featured) WHERE is_featured = true;
 CREATE INDEX IF NOT EXISTS idx_businesses_search ON businesses USING gin(to_tsvector('english', name || ' ' || COALESCE(description, '')));
+CREATE INDEX IF NOT EXISTS idx_businesses_place_id ON businesses(place_id) WHERE place_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_businesses_sync_status ON businesses(sync_status, last_synced_at);
 
 -- Trigger for updated_at
 CREATE TRIGGER update_businesses_updated_at
@@ -787,6 +793,29 @@ CREATE POLICY "Authenticated users can upload review photos" ON storage.objects
     bucket_id = 'review-photos' AND
     auth.role() = 'authenticated'
   );
+
+-- ============================================================================
+-- CACHED PLACES TABLE
+-- Cache Google Places API responses to reduce costs
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS cached_places (
+  place_id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  address TEXT NOT NULL,
+  latitude DECIMAL(10, 8) NOT NULL,
+  longitude DECIMAL(11, 8) NOT NULL,
+  data JSONB NOT NULL, -- Full Google Places API response
+  cached_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cached_places_expires ON cached_places(expires_at);
+CREATE INDEX IF NOT EXISTS idx_cached_places_location ON cached_places(latitude, longitude);
+
+ALTER TABLE cached_places ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view cached places" ON cached_places
+  FOR SELECT USING (true);
 
 -- ============================================================================
 -- SEED SAMPLE DATA
