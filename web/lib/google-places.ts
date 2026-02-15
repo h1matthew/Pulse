@@ -21,7 +21,7 @@ import type {
 // Configuration
 // ============================================================================
 
-const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
+const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || ''
 const CACHE_DURATION_DAYS = 30
 const API_BASE_URL = 'https://places.googleapis.com/v1'
 

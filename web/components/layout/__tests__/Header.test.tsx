@@ -45,31 +45,33 @@ describe('Header', () => {
   it('renders logo', () => {
     render(<Header />)
 
-    const logo = screen.getByAltText('Max Apogee')
+    const logo = screen.getByAltText('Pulse')
     expect(logo).toBeInTheDocument()
   })
 
   it('renders brand name', () => {
     render(<Header />)
 
-    expect(screen.getByText('Max Apogee')).toBeInTheDocument()
+    expect(screen.getByText('Pulse')).toBeInTheDocument()
   })
 
   it('shows public nav items when logged out', () => {
     mockIsLoggedIn.mockReturnValue(false)
     render(<Header />)
 
+    expect(screen.getByText('Discover')).toBeInTheDocument()
+    expect(screen.getByText('Categories')).toBeInTheDocument()
+    expect(screen.getByText('Deals')).toBeInTheDocument()
     expect(screen.getByText('About')).toBeInTheDocument()
-    expect(screen.getByText('Our Mission')).toBeInTheDocument()
-    expect(screen.getByText('Get Involved')).toBeInTheDocument()
   })
 
   it('shows Dashboard nav item when logged in', () => {
     mockIsLoggedIn.mockReturnValue(true)
     render(<Header />)
 
+    expect(screen.getByText('Discover')).toBeInTheDocument()
     expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('About')).toBeInTheDocument()
+    expect(screen.getByText('Deals')).toBeInTheDocument()
   })
 
   it('shows Sign in button when logged out', () => {

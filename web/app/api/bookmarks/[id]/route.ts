@@ -40,31 +40,56 @@ export async function DELETE(
       )
     }
 
-    // Verify ownership
-    const { data: bookmark } = await supabase
-      .from('business_bookmarks')
-      .select('id, user_id')
-      .eq('id', id)
-      .single()
+    // Check if the ID is a UUID (bookmark ID) or business ID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
 
-    if (!bookmark) {
-      return NextResponse.json(
-        { error: 'Bookmark not found' },
-        { status: 404 }
-      )
-    }
+    let bookmarkId: string
 
-    if (bookmark.user_id !== user.id) {
+    if (isUUID) {
+      // Could be either bookmark ID or business ID - try bookmark ID first
+      const { data: bookmarkById } = await supabase
+        .from('business_bookmarks')
+        .select('id, user_id')
+        .eq('id', id)
+        .maybeSingle()
+
+      if (bookmarkById) {
+        bookmarkId = bookmarkById.id
+        if (bookmarkById.user_id !== user.id) {
+          return NextResponse.json(
+            { error: 'Forbidden' },
+            { status: 403 }
+          )
+        }
+      } else {
+        // Try as business ID
+        const { data: bookmarkByBusiness } = await supabase
+          .from('business_bookmarks')
+          .select('id, user_id')
+          .eq('business_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!bookmarkByBusiness) {
+          return NextResponse.json(
+            { error: 'Bookmark not found' },
+            { status: 404 }
+          )
+        }
+        bookmarkId = bookmarkByBusiness.id
+      }
+    } else {
+      // Not a UUID, assume it's a slug or other identifier - shouldn't happen
       return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
+        { error: 'Invalid bookmark ID' },
+        { status: 400 }
       )
     }
 
     const { error } = await supabase
       .from('business_bookmarks')
       .delete()
-      .eq('id', id)
+      .eq('id', bookmarkId)
 
     if (error) {
       console.error('Database error:', error)

@@ -68,7 +68,7 @@ export interface BusinessWithCategory extends Business {
 }
 
 export interface BusinessWithDetails extends BusinessWithCategory {
-  reviews: Review[]
+  reviews: ReviewWithUser[]
   deals: Deal[]
   is_bookmarked?: boolean
   user_check_in_count?: number
@@ -120,7 +120,7 @@ export interface BusinessBookmark {
 }
 
 export interface BookmarkWithBusiness extends BusinessBookmark {
-  business: Business
+  business: BusinessWithCategory
 }
 
 // ============================================================================

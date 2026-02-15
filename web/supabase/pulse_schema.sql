@@ -11,9 +11,21 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 -- PROFILES TABLE (Extended)
 -- Extends existing profiles with Pulse-specific fields
 -- ============================================================================
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS impact_score INTEGER DEFAULT 0;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS join_date DATE DEFAULT CURRENT_DATE;
+
+-- First ensure the profiles table exists (created by Supabase Auth trigger)
+-- If profiles table doesn't exist, we need to wait for it to be created
+-- The columns will be added by the migration script or manually applied
+DO $$
+BEGIN
+  -- Check if profiles table exists
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
+    -- Add Pulse-specific columns
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS impact_score INTEGER DEFAULT 0;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS join_date DATE DEFAULT CURRENT_DATE;
+  END IF;
+END
+$$;
 
 -- ============================================================================
 -- CATEGORIES TABLE
@@ -761,6 +773,60 @@ BEGIN
     updated_at = NOW();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================================
+-- BUSINESS QUESTIONS TABLE
+-- Q&A system for business pages
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS business_questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id UUID REFERENCES businesses(id) ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  question TEXT NOT NULL,
+  answer TEXT,
+  answered_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  answered_at TIMESTAMP WITH TIME ZONE,
+  is_frequent BOOLEAN DEFAULT FALSE,
+  helpful_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE business_questions ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can view questions/answers
+CREATE POLICY "Anyone can view business questions" ON business_questions
+  FOR SELECT USING (true);
+
+-- Authenticated users can ask questions
+CREATE POLICY "Authenticated users can ask questions" ON business_questions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own questions (if not answered yet)
+CREATE POLICY "Users can update own unanswered questions" ON business_questions
+  FOR UPDATE USING (
+    auth.uid() = user_id
+    AND answer IS NULL
+  );
+
+-- Business owners and admins can answer questions
+CREATE POLICY "Business owners can answer questions" ON business_questions
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM businesses
+      WHERE businesses.id = business_questions.business_id
+      AND businesses.owner_id = auth.uid()
+    )
+    OR EXISTS (
+      SELECT 1 FROM profiles
+      WHERE profiles.id = auth.uid()
+      AND profiles.is_admin = true
+    )
+  );
+
+CREATE INDEX IF NOT EXISTS idx_business_questions_business ON business_questions(business_id);
+CREATE INDEX IF NOT EXISTS idx_business_questions_user ON business_questions(user_id);
+CREATE INDEX IF NOT EXISTS idx_business_questions_frequent ON business_questions(is_frequent) WHERE is_frequent = true;
 
 -- ============================================================================
 -- STORAGE BUCKETS

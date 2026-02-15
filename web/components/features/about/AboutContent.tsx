@@ -1,12 +1,10 @@
 'use client'
 
-import { Rocket, Heart, Sparkles } from 'lucide-react'
+import { Heart, Sparkles, Store } from 'lucide-react'
 import { FounderCard } from './FounderCard'
 import type { Founder } from './FounderCard'
 import { AnimatedSection } from '@/components/features/home/AnimatedSection'
 import { FloatingElement } from '@/components/features/home/FloatingElement'
-import { OrbitSystem } from '@/components/features/home/OrbitRing'
-import { StaticStarField } from '@/components/features/home/StarField'
 
 interface AboutContentProps {
   founders: Founder[]
@@ -16,27 +14,12 @@ interface AboutContentProps {
 export function AboutContent({ founders }: AboutContentProps) {
   return (
     <div className="relative mx-auto max-w-5xl px-6 pt-16 pb-16">
-      {/* Background stars */}
-      <div className="fixed inset-0 pointer-events-none -z-10">
-        <StaticStarField density="low" />
-      </div>
-
-      {/* Decorative orbit */}
-      <div className="absolute -right-40 top-40 opacity-30 hidden xl:block">
-        <OrbitSystem
-          rings={[
-            { radius: 60, duration: 20, particleCount: 2, color: 'oklch(0.65 0.2 250 / 0.4)', direction: 'clockwise' as const },
-            { radius: 100, duration: 30, particleCount: 3, color: 'oklch(0.7 0.15 195 / 0.3)', direction: 'counterclockwise' as const },
-          ]}
-        />
-      </div>
-
       {/* Hero */}
       <div className="mb-20 text-center">
         <AnimatedSection animation="fade-in-down">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm backdrop-blur-sm">
-            <Rocket className="h-3.5 w-3.5 text-primary" />
-            <span className="text-muted-foreground">The team behind Max Apogee</span>
+            <Store className="h-3.5 w-3.5 text-primary" />
+            <span className="text-muted-foreground">The team behind Pulse</span>
           </div>
         </AnimatedSection>
 
@@ -44,20 +27,20 @@ export function AboutContent({ founders }: AboutContentProps) {
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
             Meet the{' '}
             <span className="bg-gradient-to-r from-primary via-chart-3 to-chart-2 bg-clip-text text-transparent">
-              Founders
+              Team
             </span>
           </h1>
         </AnimatedSection>
 
         <AnimatedSection animation="fade-in-up" delay={0.15}>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-            Two students on a mission to make rocket science accessible to everyone.
+            A passionate team on a mission to strengthen local communities through business discovery.
           </p>
         </AnimatedSection>
       </div>
 
       {/* Founders Grid - Simple */}
-      <div className="grid gap-10 sm:grid-cols-2 max-w-2xl mx-auto">
+      <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl mx-auto">
         {founders.map((founder, i) => (
           <FounderCard key={founder.id} founder={founder} index={i} />
         ))}
@@ -92,7 +75,7 @@ export function AboutContent({ founders }: AboutContentProps) {
                 <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                   Why We Started{' '}
                   <span className="bg-gradient-to-r from-primary to-chart-2 bg-clip-text text-transparent">
-                    Max Apogee
+                    Pulse
                   </span>
                 </h2>
               </AnimatedSection>
@@ -108,27 +91,29 @@ export function AboutContent({ founders }: AboutContentProps) {
                   </div>
 
                   <p className="text-lg leading-relaxed text-muted-foreground">
-                    We started Max Apogee because we believe every student deserves the chance to
-                    look up at the sky and understand the science that takes us there. Rocket science
-                    often feels out of reach. It is usually buried in heavy textbooks or locked behind
-                    expensive programs. We wanted to change that.
+                    We started Pulse because we believe local businesses are the heartbeat of
+                    our communities. Every neighborhood has unique shops, restaurants, and services
+                    that give it character — but too often, these gems go undiscovered while
+                    big chains dominate the conversation.
                   </p>
                 </div>
               </AnimatedSection>
 
               <AnimatedSection animation="fade-up" delay={0.7}>
                 <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-                  Our nonprofit has a clear goal. We want to inspire the next generation of rocket
-                  scientists through free online lessons and hands-on projects. We help students
-                  build and launch real model rockets. There are no paywalls and no barriers. We
-                  just ask for your curiosity.
+                    Pulse has a clear goal: make it easy to discover and support local businesses.
+                    We want to show you the impact your choices make — how every dollar spent
+                    locally circulates through your community, supporting jobs and creating
+                    vibrant neighborhoods. No barriers, no gatekeeping — just a simple way to
+                    keep your community thriving.
                 </p>
               </AnimatedSection>
 
               <AnimatedSection animation="fade-up" delay={0.8}>
                 <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-                  Whether you dream of working at NASA or SpaceX, or you just want to understand
-                  how a rocket flies, Max Apogee is here to help you reach your highest point.
+                  Whether you are a local business owner looking to connect with customers,
+                  or a community member who wants to make a difference with your spending,
+                  Pulse is here to help you power the heart of local business.
                 </p>
               </AnimatedSection>
 
@@ -137,7 +122,7 @@ export function AboutContent({ founders }: AboutContentProps) {
                 <div className="mt-10 flex justify-center">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span className="h-px w-8 bg-primary/30" />
-                    <span>Reach for the stars</span>
+                    <span>Power the heart of your community</span>
                     <span className="h-px w-8 bg-primary/30" />
                   </div>
                 </div>

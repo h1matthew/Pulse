@@ -17,8 +17,8 @@ function isEmailConfigured(): boolean {
 }
 
 // Sender email (must be verified in SES)
-const FROM_EMAIL = process.env.SES_FROM_EMAIL || 'noreply@maxapogee.com'
-const FROM_NAME = process.env.SES_FROM_NAME || 'Max Apogee'
+const FROM_EMAIL = process.env.SES_FROM_EMAIL || 'noreply@pulse.local'
+const FROM_NAME = process.env.SES_FROM_NAME || 'Pulse'
 
 // Contact email destination
 const CONTACT_EMAIL = process.env.CONTACT_EMAIL || FROM_EMAIL
@@ -113,11 +113,11 @@ export async function sendContactFormEmail(data: {
   const { name, email, subject, message } = data
 
   const emailSubject = subject
-    ? `[Max Apogee Contact] ${subject}`
-    : `[Max Apogee Contact] New message from ${name}`
+    ? `[Pulse Contact] ${subject}`
+    : `[Pulse Contact] New message from ${name}`
 
   const text = `
-New contact form submission from Max Apogee:
+New contact form submission from Pulse:
 
 Name: ${name}
 Email: ${email}
@@ -127,7 +127,7 @@ Message:
 ${message}
 
 ---
-This email was sent from the Max Apogee contact form.
+This email was sent from the Pulse contact form.
   `.trim()
 
   const html = `
@@ -168,7 +168,7 @@ This email was sent from the Max Apogee contact form.
       </div>
     </div>
     <div class="footer">
-      This email was sent from the Max Apogee contact form.
+      This email was sent from the Pulse contact form.
     </div>
   </div>
 </body>
@@ -197,18 +197,19 @@ export async function sendWelcomeEmail(data: {
   const text = `
 ${greeting},
 
-Welcome to Max Apogee! We're excited to have you join our rocket science education community.
+Welcome to Pulse! We're excited to have you join our local business discovery community.
 
 Here's what you can do:
-- Explore our interactive lessons on rocket science and aerospace
-- Use AI-powered explanations to understand complex concepts
-- Track your progress as you learn
-- Take quizzes to test your knowledge
+- Discover amazing local businesses in your community
+- Track your economic impact as you support local
+- Bookmark your favorite spots and get notified of deals
+- Complete Boost Missions to unlock perks
+- Leave reviews to help others discover great local spots
 
-Get started: https://maxapogee.com/learn
+Get started: https://pulse.local/discover
 
-Happy learning!
-The Max Apogee Team
+Power the heart of your community!
+The Pulse Team
   `.trim()
 
   const html = `
@@ -232,29 +233,30 @@ The Max Apogee Team
 <body>
   <div class="container">
     <div class="header">
-      <h1>Welcome to Max Apogee!</h1>
+      <h1>Welcome to Pulse!</h1>
     </div>
     <div class="content">
       <p>${escapeHtml(greeting)},</p>
-      <p>We're excited to have you join our rocket science education community!</p>
+      <p>We're excited to have you join our local business discovery community!</p>
 
       <div class="features">
         <p><strong>Here's what you can do:</strong></p>
         <ul>
-          <li>Explore interactive lessons on rocket science and aerospace</li>
-          <li>Use AI-powered explanations to understand complex concepts</li>
-          <li>Track your progress as you learn</li>
-          <li>Take quizzes to test your knowledge</li>
+          <li>Discover amazing local businesses in your community</li>
+          <li>Track your economic impact as you support local</li>
+          <li>Bookmark your favorite spots and get notified of deals</li>
+          <li>Complete Boost Missions to unlock perks</li>
+          <li>Leave reviews to help others discover great local spots</li>
         </ul>
       </div>
 
       <div class="cta">
-        <a href="https://maxapogee.com/learn" class="cta-button">Start Learning</a>
+        <a href="https://pulse.local/discover" class="cta-button">Start Exploring</a>
       </div>
     </div>
     <div class="footer">
-      <p>Happy learning!</p>
-      <p>The Max Apogee Team</p>
+      <p>Power the heart of your community!</p>
+      <p>The Pulse Team</p>
     </div>
   </div>
 </body>
@@ -263,7 +265,7 @@ The Max Apogee Team
 
   return sendEmail({
     to: email,
-    subject: 'Welcome to Max Apogee!',
+    subject: 'Welcome to Pulse!',
     text,
     html,
   })
@@ -287,7 +289,7 @@ ${message}
 ${ctaText && ctaUrl ? `${ctaText}: ${ctaUrl}` : ''}
 
 ---
-Max Apogee
+Pulse - Powering the Heart of Local Business
   `.trim()
 
   const html = `
@@ -307,7 +309,7 @@ Max Apogee
 <body>
   <div class="container">
     <div class="header">
-      <h2 style="margin: 0;">Max Apogee</h2>
+      <h2 style="margin: 0;">Pulse</h2>
     </div>
     <div class="content">
       <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
@@ -318,7 +320,7 @@ Max Apogee
       ` : ''}
     </div>
     <div class="footer">
-      Max Apogee - Learn Rocket Science
+      Pulse - Powering the Heart of Local Business
     </div>
   </div>
 </body>

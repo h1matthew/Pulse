@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { TrendingUp, DollarSign, Store, Users, Star, Zap, Target, Award, Loader2 } from "lucide-react";
+import { TrendingUp, DollarSign, Store, Users, Star, Zap, Target, Award, Loader2, Heart, MapPin, ArrowRight } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,12 +14,49 @@ import { useMissionProgressDetails } from "@/hooks/useMissions";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { useBusinesses } from "@/hooks/useBusinesses";
 
 // Fetch recent activity
 async function fetchRecentActivity() {
   const response = await fetch('/api/activity');
   if (!response.ok) throw new Error('Failed to fetch activity');
   return response.json();
+}
+
+// Impact Story Card Component
+function ImpactStoryCard({
+  title,
+  value,
+  description,
+  icon: Icon,
+  color,
+  delay = 0,
+}: {
+  title: string;
+  value: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  delay?: number;
+}) {
+  return (
+    <AnimatedSection animation="fade-up" delay={delay}>
+      <Card className="h-full card-lift">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className={`h-12 w-12 rounded-xl ${color} flex items-center justify-center flex-shrink-0`}>
+              <Icon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold mb-1">{value}</div>
+              <div className="font-medium text-sm mb-1">{title}</div>
+              <div className="text-xs text-muted-foreground">{description}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </AnimatedSection>
+  );
 }
 
 export default function DashboardPage() {
@@ -34,6 +71,7 @@ export default function DashboardPage() {
   }, [authLoading, user, router]);
 
   const userId = user?.id || '';
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Friend';
 
   // Fetch real data
   const { data: impact, isLoading: impactLoading } = useUserImpact(userId);
@@ -45,6 +83,10 @@ export default function DashboardPage() {
     queryFn: fetchRecentActivity,
     enabled: !!userId,
   });
+
+  // Fetch featured business for spotlight
+  const { data: featuredBusinessData } = useBusinesses({}, 1, 1);
+  const featuredBusiness = featuredBusinessData?.businesses?.[0];
 
   // Calculate impact score
   const impactScore = impact
@@ -84,14 +126,28 @@ export default function DashboardPage() {
 
       <div className="pt-20 pb-12">
         <div className="mx-auto max-w-6xl px-6">
-          {/* Header */}
+          {/* Hero Section with Pulse Mission */}
           <AnimatedSection animation="fade-up">
             <div className="mb-8">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 mb-4">
+                <Heart className="h-4 w-4 text-primary animate-pulse" />
+                <span className="text-sm font-medium">Pulse — Powering the Heart of Local Business</span>
+              </div>
               <h1 className="text-3xl font-bold tracking-tight mb-2">
-                Your Economic Impact
+                Welcome back, {userName}! 💚
               </h1>
-              <p className="text-muted-foreground">
-                See how your support strengthens the local economy
+              <p className="text-muted-foreground max-w-2xl">
+                {impact && Number(impact.estimated_dollars_kept_local) > 0 ? (
+                  <>
+                    You&apos;ve kept <span className="font-semibold text-primary">${Math.round(Number(impact.estimated_dollars_kept_local)).toLocaleString()}</span> in your community.
+                    Every dollar you spend locally creates a ripple effect that supports families, creates jobs, and strengthens neighborhoods.
+                  </>
+                ) : (
+                  <>
+                    Start your journey to support local businesses! Every visit, review, and bookmark
+                    helps strengthen your community&apos;s economic heartbeat.
+                  </>
+                )}
               </p>
             </div>
           </AnimatedSection>
@@ -148,98 +204,53 @@ export default function DashboardPage() {
             </Card>
           </AnimatedSection>
 
-          {/* Impact Metrics */}
+          {/* Impact Story Cards */}
           <AnimatedSection animation="fade-up" delay={0.15}>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <DollarSign className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      {impactLoading ? (
-                        <Skeleton className="h-8 w-20" />
-                      ) : (
-                        <div className="text-2xl font-bold">
-                          ${Math.round(Number(impact?.estimated_dollars_kept_local || 0)).toLocaleString()}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        Dollars Kept Local
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-chart-2/10 flex items-center justify-center">
-                      <Store className="h-6 w-6 text-chart-2" />
-                    </div>
-                    <div>
-                      {impactLoading ? (
-                        <Skeleton className="h-8 w-12" />
-                      ) : (
-                        <div className="text-2xl font-bold">
-                          {impact?.businesses_supported || 0}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        Businesses Supported
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-chart-3/10 flex items-center justify-center">
-                      <Users className="h-6 w-6 text-chart-3" />
-                    </div>
-                    <div>
-                      {impactLoading ? (
-                        <Skeleton className="h-8 w-12" />
-                      ) : (
-                        <div className="text-2xl font-bold">
-                          {impact?.jobs_impacted_estimate || 0}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        Jobs Impacted
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-chart-4/10 flex items-center justify-center">
-                      <TrendingUp className="h-6 w-6 text-chart-4" />
-                    </div>
-                    <div>
-                      {impactLoading ? (
-                        <Skeleton className="h-8 w-12" />
-                      ) : (
-                        <div className="text-2xl font-bold">
-                          {impact?.total_check_ins || 0}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        Total Check-ins
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="mb-2">
+              <h2 className="text-lg font-semibold">Your Impact Story</h2>
+              <p className="text-sm text-muted-foreground">
+                See how your actions create real change in your community
+              </p>
             </div>
           </AnimatedSection>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <ImpactStoryCard
+              title="Dollars Kept Local"
+              value={impactLoading ? "..." : `$${Math.round(Number(impact?.estimated_dollars_kept_local || 0)).toLocaleString()}`}
+              description="Money that stayed in your community instead of going to corporate chains"
+              icon={DollarSign}
+              color="bg-primary"
+              delay={0.15}
+            />
+
+            <ImpactStoryCard
+              title="Businesses Supported"
+              value={impactLoading ? "..." : `${impact?.businesses_supported || 0}`}
+              description="Local entrepreneurs and family-owned businesses you've helped thrive"
+              icon={Store}
+              color="bg-chart-2"
+              delay={0.2}
+            />
+
+            <ImpactStoryCard
+              title="Jobs Impacted"
+              value={impactLoading ? "..." : `${impact?.jobs_impacted_estimate || 0}`}
+              description="Local workers whose livelihoods are supported by your choices"
+              icon={Users}
+              color="bg-chart-3"
+              delay={0.25}
+            />
+
+            <ImpactStoryCard
+              title="Check-ins"
+              value={impactLoading ? "..." : `${impact?.total_check_ins || 0}`}
+              description="Times you've visited and engaged with local businesses"
+              icon={MapPin}
+              color="bg-chart-4"
+              delay={0.3}
+            />
+          </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Active Missions */}
@@ -480,6 +491,41 @@ export default function DashboardPage() {
                         View Leaderboard
                       </Button>
                     </NavLink>
+                  </CardContent>
+                </Card>
+              </AnimatedSection>
+
+              {/* Business Spotlight */}
+              <AnimatedSection animation="fade-up" delay={0.4}>
+                <Card className="mt-6 bg-gradient-to-br from-chart-2/5 to-primary/5">
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Star className="h-4 w-4 text-chart-5" />
+                      Business Spotlight
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {featuredBusiness ? (
+                      <>
+                        <div className="h-24 bg-gradient-to-br from-primary/10 to-chart-2/10 rounded-lg flex items-center justify-center text-4xl mb-3">
+                          {featuredBusiness.category?.icon || "🏪"}
+                        </div>
+                        <h4 className="font-semibold mb-1">{featuredBusiness.name}</h4>
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                          {featuredBusiness.short_description || featuredBusiness.description}
+                        </p>
+                        <NavLink href={`/business/${featuredBusiness.id}`}>
+                          <Button variant="outline" size="sm" className="w-full">
+                            View Business
+                            <ArrowRight className="h-3 w-3 ml-1" />
+                          </Button>
+                        </NavLink>
+                      </>
+                    ) : (
+                      <div className="text-center py-4 text-muted-foreground text-sm">
+                        Discover amazing local businesses in your area!
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </AnimatedSection>

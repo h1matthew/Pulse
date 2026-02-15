@@ -11,32 +11,8 @@ vi.mock('@/components/layout/Header', () => ({
   Header: () => <header data-testid="header">Header</header>,
 }))
 
-vi.mock('@/components/features/home/SpaceBackground', () => ({
-  SpaceBackground: () => <div data-testid="space-background">Space Background</div>,
-}))
-
-vi.mock('@/components/features/home/HeroContent', () => ({
-  HeroContent: () => <div data-testid="hero-content">Hero Content</div>,
-}))
-
-vi.mock('@/components/features/home/FeaturesSection', () => ({
-  FeaturesSection: () => <section data-testid="features-section">Features</section>,
-}))
-
-vi.mock('@/components/features/home/ScrollRocket', () => ({
-  ScrollRocket: () => <div data-testid="scroll-rocket">Scroll Rocket</div>,
-}))
-
-vi.mock('@/components/features/home/ScrollSpeedIndicator', () => ({
-  ScrollSpeedIndicator: () => <div data-testid="scroll-speed">Speed Indicator</div>,
-}))
-
 vi.mock('@/components/features/home/AnimatedSection', () => ({
   AnimatedSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
-
-vi.mock('@/components/features/home/LaunchButton', () => ({
-  LaunchButton: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
 }))
 
 vi.mock('@/components/ui/nav-link', () => ({
@@ -58,59 +34,89 @@ describe('Home Page', () => {
     expect(screen.getByTestId('header')).toBeInTheDocument()
   })
 
-  it('renders the space background', () => {
+  it('renders hero section with main heading', () => {
     render(<Home />)
 
-    expect(screen.getByTestId('space-background')).toBeInTheDocument()
+    expect(screen.getByText('Discover Local.')).toBeInTheDocument()
   })
 
-  it('renders the hero content', () => {
+  it('renders subheading with gradient text', () => {
     render(<Home />)
 
-    expect(screen.getByTestId('hero-content')).toBeInTheDocument()
+    expect(screen.getByText('Impact Community.')).toBeInTheDocument()
   })
 
-  it('renders the features section', () => {
+  it('renders hero description', () => {
     render(<Home />)
 
-    expect(screen.getByTestId('features-section')).toBeInTheDocument()
+    expect(screen.getByText(/Every review, bookmark, and visit strengthens your local economy/)).toBeInTheDocument()
   })
 
-  it('renders the scroll rocket indicator', () => {
+  it('renders CTA button to explore businesses', () => {
     render(<Home />)
 
-    expect(screen.getByTestId('scroll-rocket')).toBeInTheDocument()
+    expect(screen.getByText('Explore Local Businesses')).toBeInTheDocument()
   })
 
-  it('renders CTA section with "Ready to launch?" heading', () => {
+  it('renders secondary CTA button', () => {
     render(<Home />)
 
-    expect(screen.getByText('Ready to launch?')).toBeInTheDocument()
+    expect(screen.getByText('Learn How It Works')).toBeInTheDocument()
   })
 
-  it('renders "Explore Modules" link', () => {
+  it('renders stats preview section', () => {
     render(<Home />)
 
-    expect(screen.getByText(/Explore Modules/)).toBeInTheDocument()
+    expect(screen.getByText('Kept Local')).toBeInTheDocument()
+    expect(screen.getByText('Businesses')).toBeInTheDocument()
+    expect(screen.getByText('Community Members')).toBeInTheDocument()
+  })
+
+  it('renders features section heading', () => {
+    render(<Home />)
+
+    expect(screen.getByText('More Than a Directory')).toBeInTheDocument()
+  })
+
+  it('renders feature cards', () => {
+    render(<Home />)
+
+    expect(screen.getByText('Economic Impact Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('AI-Matched For You')).toBeInTheDocument()
+    expect(screen.getByText('Boost Missions')).toBeInTheDocument()
+  })
+
+  it('renders community pulse section', () => {
+    render(<Home />)
+
+    expect(screen.getByText('Feel the Pulse of Your Community')).toBeInTheDocument()
+  })
+
+  it('renders final CTA section with correct heading', () => {
+    render(<Home />)
+
+    expect(screen.getByText('Ready to Make an Impact?')).toBeInTheDocument()
   })
 
   it('renders footer with brand name', () => {
     render(<Home />)
 
     // Footer contains brand name
-    const footerBrand = screen.getAllByText('Max Apogee')
+    const footerBrand = screen.getAllByText('Pulse')
     expect(footerBrand.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders About Us link in footer', () => {
+  it('renders footer navigation links', () => {
     render(<Home />)
 
-    expect(screen.getByText('About Us')).toBeInTheDocument()
+    expect(screen.getByText('Discover')).toBeInTheDocument()
+    expect(screen.getByText('Community')).toBeInTheDocument()
+    expect(screen.getByText('About')).toBeInTheDocument()
   })
 
-  it('renders non-profit tagline', () => {
+  it('renders mission tagline in footer', () => {
     render(<Home />)
 
-    expect(screen.getByText(/non-profit inspiring future rocket scientists/)).toBeInTheDocument()
+    expect(screen.getByText(/Strengthening local economies, one discovery at a time/)).toBeInTheDocument()
   })
 })

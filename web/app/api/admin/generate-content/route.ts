@@ -44,10 +44,10 @@ export async function POST(request: NextRequest) {
 
     // If structured output is requested, use JSON format
     if (returnStructured) {
-      const structuredPrompt = `You are an expert rocket science educator creating lesson content for an educational platform called Max Apogee.
+      const structuredPrompt = `You are an expert local business advocate creating content for Pulse — a platform that helps people discover and support local businesses.
 
 ## Your Task
-Create structured lesson content based on the user's topic description. Return ONLY valid JSON.
+Create structured content about local businesses and community impact. Return ONLY valid JSON.
 
 ## Output Format
 Return a JSON object with a "blocks" array. Each block has a "type" and content fields:
@@ -55,10 +55,8 @@ Return a JSON object with a "blocks" array. Each block has a "type" and content 
 {
   "blocks": [
     { "type": "heading", "content": "Section Title" },
-    { "type": "text", "content": "Paragraph text explaining the concept..." },
-    { "type": "equation", "latex": "F = ma" },
+    { "type": "text", "content": "Paragraph text..." },
     { "type": "callout", "content": "Important note...", "calloutType": "info" },
-    { "type": "video", "description": "Animation showing rocket thrust forces" },
     { "type": "list", "items": ["Item 1", "Item 2", "Item 3"] },
     { "type": "subheading", "content": "Subsection Title" }
   ]
@@ -68,24 +66,21 @@ Return a JSON object with a "blocks" array. Each block has a "type" and content 
 - heading: Main section title (use for major topics)
 - subheading: Subsection title
 - text: Regular paragraph
-- equation: LaTeX math (use proper LaTeX syntax like \\frac{}{}, \\sqrt{})
 - callout: Important notes (calloutType: info, warning, tip, important)
-- video: Animation placeholder (describe what animation is needed)
 - list: Bullet points (array of strings)
 
 ## Guidelines
 1. Start with an engaging introduction paragraph
-2. Break complex concepts into sections with headings
-3. Include real-world examples and analogies
-4. Add equations where relevant with proper LaTeX
+2. Break content into sections with headings
+3. Include real-world examples and local business spotlights
+4. Highlight the economic impact of supporting local
 5. Include callouts for key takeaways
-6. Add video placeholders for concepts that benefit from animation
-7. Use appropriate difficulty level
+6. Use encouraging, community-focused tone
 
 ## Important
 - Return ONLY the JSON object, no markdown code blocks
-- Use proper LaTeX escaping (double backslashes for special commands)
-- Keep paragraphs focused and educational
+- Focus on local business discovery and community impact
+- Keep paragraphs focused and engaging
 
 Now generate structured content for: ${prompt}`
 
@@ -115,10 +110,10 @@ Now generate structured content for: ${prompt}`
     }
 
     // Legacy markdown format
-    const systemPrompt = `You are an expert rocket science educator creating lesson content for an educational platform called Max Apogee.
+    const systemPrompt = `You are an expert local business advocate creating content for Pulse — a platform that helps people discover and support local businesses.
 
 ## Your Task
-Create structured lesson content based on the user's topic description.
+Create structured content about local businesses and community impact based on the user's topic description.
 
 ## Content Format
 Generate the content in a structured format that can be easily parsed:
@@ -126,41 +121,38 @@ Generate the content in a structured format that can be easily parsed:
 - Use ### for subheadings
 - Use regular paragraphs for text
 - Use **bold** for key terms
-- Use LaTeX notation for equations: $inline$ or $$display$$
 - Use bullet points for lists
 - Include [CALLOUT: text] for important notes
-- Include [DIAGRAM: description] placeholders for visual content
+- Include [HIGHLIGHT: description] for business spotlights
 
 ## Guidelines
 1. Start with an engaging introduction
-2. Break complex concepts into digestible sections
-3. Include real-world examples and analogies
-4. Add practice problems or thought questions
-5. Use appropriate difficulty level based on context
-6. Make it suitable for visual and auditory learners
-7. Include equations where relevant with proper LaTeX
+2. Break content into sections with clear headings
+3. Include real-world examples of local business impact
+4. Highlight economic benefits of supporting local
+5. Use encouraging, community-focused tone
+6. Make it relatable for community members
+7. Include practical tips people can act on
 
 ## Example Output Structure:
 ## Introduction
-[Opening paragraph explaining the topic]
+[Opening paragraph about the importance of local business]
 
-### Key Concept 1
-[Explanation with examples]
+### Why Local Matters
+[Explanation with community examples]
 
-[CALLOUT: Important point to remember]
+[CALLOUT: Every dollar spent locally circulates 2-3 times in the community]
 
-### The Math Behind It
-The fundamental equation is:
-$$F = ma$$
-Where $F$ is force, $m$ is mass, and $a$ is acceleration.
+### The Impact of Your Choices
+When you choose local, you are:
+- Supporting local jobs
+- Keeping money in your community
+- Building unique neighborhood character
 
-### Real-World Example
-[Practical application]
+[HIGHLIGHT: Spotlight on a local success story]
 
-[DIAGRAM: Force diagram showing thrust and weight vectors on a rocket]
-
-### Practice
-Try this: [thought question or problem]
+### How to Get Started
+Try this: [practical action step]
 
 ---
 
