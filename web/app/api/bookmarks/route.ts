@@ -1,34 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-
-interface CreateBookmarkInput {
-  business_id: string
-  note?: string
-}
-
-function validateBookmarkInput(body: unknown): { valid: true; data: CreateBookmarkInput } | { valid: false; error: string } {
-  if (typeof body !== 'object' || body === null) {
-    return { valid: false, error: 'Invalid input: expected object' }
-  }
-
-  const b = body as Record<string, unknown>
-
-  if (typeof b.business_id !== 'string' || !b.business_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-    return { valid: false, error: 'Invalid business_id: expected valid UUID' }
-  }
-
-  if (b.note !== undefined && (typeof b.note !== 'string' || b.note.length > 500)) {
-    return { valid: false, error: 'Invalid note: expected string with max 500 chars' }
-  }
-
-  return {
-    valid: true,
-    data: {
-      business_id: b.business_id,
-      note: b.note as string | undefined,
-    },
-  }
-}
+import { createBookmarkSchema, formatZodError } from '@/lib/validation'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -92,11 +64,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const validation = validateBookmarkInput(body)
+    const validation = createBookmarkSchema.safeParse(body)
 
-    if (!validation.valid) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error },
+        { error: formatZodError(validation.error) },
         { status: 400 }
       )
     }

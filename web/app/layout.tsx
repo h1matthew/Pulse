@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AchievementWrapper } from "@/components/providers/AchievementWrapper";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next"
+import { ChatWidget } from "@/components/features/assistant";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
@@ -53,6 +54,7 @@ export default function RootLayout({
               </AchievementWrapper>
               <Toaster />
               <Analytics />
+              <ChatWidget />
             </AuthProvider>
           </QueryProvider>
         </ThemeProvider>

@@ -1,9 +1,7 @@
 'use client'
 
-import { Rocket, Target, Users, GraduationCap, Sparkles, Zap, Globe } from 'lucide-react'
+import { Heart, Target, Users, Store, Sparkles, Zap, TrendingUp, MapPin } from 'lucide-react'
 import { AnimatedSection } from '@/components/features/home/AnimatedSection'
-import { SpaceBackground } from '@/components/features/home/SpaceBackground'
-import { MiniRocket } from '@/components/features/home/RocketIcon'
 import { useEffect, useState } from 'react'
 
 export default function MissionPage() {
@@ -23,34 +21,25 @@ export default function MissionPage() {
 
   return (
     <div className="relative overflow-hidden">
-      <SpaceBackground />
-
-      {/* Scroll-following rocket */}
-      <div
-        className="fixed right-8 top-1/2 -translate-y-1/2 z-50 hidden lg:block transition-all duration-300"
-        style={{
-          transform: `translateY(${(scrollProgress - 0.5) * 400}px)`,
-        }}
-      >
-        <MiniRocket progress={scrollProgress} />
-      </div>
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20 pointer-events-none" />
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border/50 px-6 pt-16 pb-24 lg:pb-32">
         <div className="relative mx-auto max-w-4xl text-center">
           <AnimatedSection animation="fade-in" delay={0}>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-muted-foreground backdrop-blur-sm">
-              <Rocket className="h-4 w-4 text-primary" />
+              <Heart className="h-4 w-4 text-primary" />
               Our Mission
             </div>
           </AnimatedSection>
 
           <AnimatedSection animation="fade-up" delay={0.1}>
             <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-              Inspiring the Next Generation of{' '}
+              Powering the Heart of{' '}
               <span className="relative">
                 <span className="bg-gradient-to-r from-primary via-chart-3 to-chart-2 bg-clip-text text-transparent">
-                  Rocket Scientists
+                  Local Business
                 </span>
                 <span className="absolute -bottom-2 left-0 right-0 h-1 rounded-full bg-gradient-to-r from-primary/60 via-chart-3/60 to-chart-2/60 blur-sm" />
               </span>
@@ -59,9 +48,9 @@ export default function MissionPage() {
 
           <AnimatedSection animation="fade-up" delay={0.2}>
             <p className="mt-8 text-lg leading-relaxed text-muted-foreground max-w-2xl mx-auto">
-              Max Apogee is a non-profit organization on a mission to make aerospace
-              education accessible, engaging, and hands-on for every student — regardless
-              of background or experience.
+              Pulse is a local business discovery platform on a mission to strengthen
+              communities by connecting people with the businesses that make their
+              neighborhoods unique — one discovery at a time.
             </p>
           </AnimatedSection>
 
@@ -86,17 +75,17 @@ export default function MissionPage() {
 
           <div className="grid gap-8 sm:grid-cols-3">
             <MissionCard3D
-              icon={<GraduationCap className="h-8 w-8" />}
-              title="Teach"
-              description="We create free, interactive online lessons that break down complex rocket science into concepts anyone can understand — from thrust and drag to orbital mechanics."
+              icon={<MapPin className="h-8 w-8" />}
+              title="Discover"
+              description="We help you find amazing local businesses in your community — from cozy coffee shops to unique boutiques — that you might otherwise miss in a world dominated by big chains."
               delay={0.1}
               color="from-primary/20 to-primary/5"
               iconAnimation="pulse"
             />
             <MissionCard3D
-              icon={<Rocket className="h-8 w-8" />}
-              title="Build"
-              description="We run hands-on workshops where students design, build, and launch real model rockets, turning classroom theory into tangible engineering experience."
+              icon={<TrendingUp className="h-8 w-8" />}
+              title="Impact"
+              description="We show you how your support makes a difference. When you spend locally, more money stays in your community, supporting local jobs and creating a stronger local economy."
               delay={0.2}
               color="from-chart-2/20 to-chart-2/5"
               iconAnimation="launch"
@@ -104,7 +93,7 @@ export default function MissionPage() {
             <MissionCard3D
               icon={<Users className="h-8 w-8" />}
               title="Connect"
-              description="We bring together students who share a passion for space and engineering, building a community that supports each other from first launch to competition."
+              description="We build communities around local businesses. Through reviews, check-ins, and missions, we help you become an active participant in your local economy."
               delay={0.3}
               color="from-chart-3/20 to-chart-3/5"
               iconAnimation="wave"
@@ -119,20 +108,20 @@ export default function MissionPage() {
           <div className="grid gap-8 sm:grid-cols-3">
             <StatCard
               icon={<Zap className="h-6 w-6" />}
-              value="6"
-              label="Interactive Modules"
+              value="68%"
+              label="More Money Stays Local"
               delay={0.1}
             />
             <StatCard
-              icon={<Globe className="h-6 w-6" />}
+              icon={<Store className="h-6 w-6" />}
               value="∞"
-              label="Open Access"
+              label="Businesses to Discover"
               delay={0.2}
             />
             <StatCard
-              icon={<Rocket className="h-6 w-6" />}
+              icon={<Target className="h-6 w-6" />}
               value="100%"
-              label="Hands-On Learning"
+              label="Community Focused"
               delay={0.3}
             />
           </div>
@@ -149,7 +138,7 @@ export default function MissionPage() {
         <div className="relative mx-auto max-w-3xl text-center">
           <AnimatedSection animation="fade-up">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-              <Target className="h-8 w-8 text-primary" />
+              <Heart className="h-8 w-8 text-primary" />
             </div>
           </AnimatedSection>
 
@@ -166,19 +155,19 @@ export default function MissionPage() {
               <div className="absolute -bottom-8 -right-4 text-6xl text-primary/20 font-serif animate-pulse-soft [animation-delay:1s]">&rdquo;</div>
 
               <p className="text-lg leading-relaxed text-muted-foreground">
-                Aerospace inspires like nothing else. When a student watches a rocket they
-                built leave the pad, something clicks — physics stops being abstract and
-                becomes real. We believe that spark can set a student on a path toward
-                engineering, science, or any field that demands creative problem-solving.
+                Small businesses are the foundation of our local economy. When you choose
+                to spend your money locally, you are not just buying a product or service —
+                you are investing in your community, supporting your neighbors&apos; livelihoods,
+                and helping create a vibrant, unique place to live.
               </p>
             </div>
           </AnimatedSection>
 
           <AnimatedSection animation="fade-up" delay={0.3}>
             <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-              Every lesson we publish and every rocket we help launch is a step toward a
-              future where more young people see themselves as builders, thinkers, and
-              explorers.
+              Every check-in, review, and bookmark on Pulse is a step toward stronger
+              communities, more thriving local businesses, and a more connected world
+              right where you live.
             </p>
           </AnimatedSection>
 

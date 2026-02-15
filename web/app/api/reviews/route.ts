@@ -1,64 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-
-interface CreateReviewInput {
-  business_id: string
-  rating: number
-  content: string
-  photos?: string[]
-}
-
-function isValidUUID(str: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)
-}
-
-function isValidUrl(str: string): boolean {
-  try {
-    new URL(str)
-    return true
-  } catch {
-    return false
-  }
-}
-
-function validateReviewInput(body: unknown): { valid: true; data: CreateReviewInput } | { valid: false; error: string } {
-  if (typeof body !== 'object' || body === null) {
-    return { valid: false, error: 'Invalid input: expected object' }
-  }
-
-  const b = body as Record<string, unknown>
-
-  if (typeof b.business_id !== 'string' || !isValidUUID(b.business_id)) {
-    return { valid: false, error: 'Invalid business_id: expected valid UUID' }
-  }
-
-  if (typeof b.rating !== 'number' || b.rating < 1 || b.rating > 5) {
-    return { valid: false, error: 'Invalid rating: expected number between 1 and 5' }
-  }
-
-  if (typeof b.content !== 'string' || b.content.length < 10 || b.content.length > 2000) {
-    return { valid: false, error: 'Invalid content: expected string between 10 and 2000 chars' }
-  }
-
-  if (b.photos !== undefined) {
-    if (!Array.isArray(b.photos) || b.photos.length > 5) {
-      return { valid: false, error: 'Invalid photos: expected array with max 5 items' }
-    }
-    if (!b.photos.every(p => typeof p === 'string' && isValidUrl(p))) {
-      return { valid: false, error: 'Invalid photos: expected array of valid URLs' }
-    }
-  }
-
-  return {
-    valid: true,
-    data: {
-      business_id: b.business_id,
-      rating: b.rating,
-      content: b.content,
-      photos: b.photos as string[] | undefined,
-    },
-  }
-}
+import { createReviewSchema, formatZodError } from '@/lib/validation'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -166,11 +108,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const validation = validateReviewInput(body)
+    const validation = createReviewSchema.safeParse(body)
 
-    if (!validation.valid) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error },
+        { error: formatZodError(validation.error) },
         { status: 400 }
       )
     }

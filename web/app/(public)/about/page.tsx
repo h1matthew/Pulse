@@ -7,8 +7,8 @@ import type { Founder } from '@/components/features/about/FounderCard'
 
 const FALLBACK_FOUNDERS: Founder[] = [
   {
-    id: 'felix',
-    name: 'Felix Oscar Gao',
+    id: 'oscar',
+    name: 'Oscar Gao',
     role: 'Co-founder',
     bio: '',
     image_url: null,
@@ -27,6 +27,17 @@ const FALLBACK_FOUNDERS: Founder[] = [
     image_offset_y: 50,
     image_zoom: 1,
     display_order: 1,
+  },
+  {
+    id: 'felix',
+    name: 'Felix Yin',
+    role: 'Co-founder',
+    bio: '',
+    image_url: null,
+    image_offset_x: 50,
+    image_offset_y: 50,
+    image_zoom: 1,
+    display_order: 2,
   },
 ]
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { LatLng } from '@/types/business'
 
 // ============================================================================
@@ -22,6 +22,10 @@ interface UseLocationOptions {
   onError?: (error: string) => void
 }
 
+// Track if we've shown the error toast recently to prevent spam
+let lastErrorTime = 0
+const ERROR_COOLDOWN = 3000 // 3 seconds
+
 // ============================================================================
 // Geocoding Utilities
 // ============================================================================
@@ -32,7 +36,7 @@ interface UseLocationOptions {
 export async function geocodeAddress(address: string): Promise<LatLng | null> {
   try {
     // Use Google Maps Geocoding API
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY
     if (!apiKey) {
       console.error('Google Maps API key not configured')
       return null
@@ -60,7 +64,7 @@ export async function geocodeAddress(address: string): Promise<LatLng | null> {
  */
 export async function reverseGeocode(location: LatLng): Promise<string | null> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY
     if (!apiKey) {
       console.error('Google Maps API key not configured')
       return null
@@ -119,7 +123,7 @@ export function formatDistance(miles: number): string {
 // ============================================================================
 
 export function useLocation(options: UseLocationOptions = {}): GeolocationState & {
-  requestLocation: () => void
+  requestLocation: (force?: boolean) => void
   watchLocation: () => (() => void)
 } {
   const {
@@ -156,17 +160,18 @@ export function useLocation(options: UseLocationOptions = {}): GeolocationState 
 
   const handleError = useCallback((error: GeolocationPositionError) => {
     let errorMessage = 'Unable to get location'
+    let newPermission: GeolocationState['permission'] = state.permission
 
     switch (error.code) {
       case error.PERMISSION_DENIED:
         errorMessage = 'Location permission denied. Please enable location access in your browser settings.'
-        setState(prev => ({ ...prev, permission: 'denied' }))
+        newPermission = 'denied'
         break
       case error.POSITION_UNAVAILABLE:
-        errorMessage = 'Location information unavailable.'
+        errorMessage = 'Location information unavailable. Please try again.'
         break
       case error.TIMEOUT:
-        errorMessage = 'Location request timed out.'
+        errorMessage = 'Location request timed out. Please try again.'
         break
     }
 
@@ -174,12 +179,18 @@ export function useLocation(options: UseLocationOptions = {}): GeolocationState 
       ...prev,
       error: errorMessage,
       loading: false,
+      permission: newPermission,
     }))
 
-    onError?.(errorMessage)
-  }, [onError])
+    // Prevent spamming error toasts
+    const now = Date.now()
+    if (now - lastErrorTime > ERROR_COOLDOWN) {
+      lastErrorTime = now
+      onError?.(errorMessage)
+    }
+  }, [onError, state.permission])
 
-  const requestLocation = useCallback(() => {
+  const requestLocation = useCallback((force = false) => {
     if (!navigator.geolocation) {
       setState(prev => ({
         ...prev,
@@ -188,12 +199,21 @@ export function useLocation(options: UseLocationOptions = {}): GeolocationState 
       return
     }
 
+    // Reset permission state when force is true
+    if (force) {
+      setState(prev => ({ ...prev, permission: 'unknown' }))
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     navigator.geolocation.getCurrentPosition(
       handleSuccess,
       handleError,
-      { enableHighAccuracy, timeout, maximumAge }
+      {
+        enableHighAccuracy,
+        timeout: force ? 15000 : timeout, // Longer timeout when forcing
+        maximumAge: force ? 0 : maximumAge // Get fresh location when forcing
+      }
     )
   }, [enableHighAccuracy, timeout, maximumAge, handleSuccess, handleError])
 
@@ -219,23 +239,42 @@ export function useLocation(options: UseLocationOptions = {}): GeolocationState 
 
   // Check permission on mount (if supported)
   useEffect(() => {
-    if (navigator.permissions && navigator.permissions.query) {
-      navigator.permissions
-        .query({ name: 'geolocation' as PermissionName })
-        .then((result) => {
+    let permissionStatus: PermissionStatus | null = null
+
+    const checkPermission = async () => {
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          permissionStatus = await navigator.permissions.query({ name: 'geolocation' as PermissionName })
+
           setState(prev => ({
             ...prev,
-            permission: result.state as 'granted' | 'denied' | 'prompt',
+            permission: permissionStatus?.state as 'granted' | 'denied' | 'prompt' || 'unknown',
           }))
 
           // Auto-request if permission already granted
-          if (result.state === 'granted') {
+          if (permissionStatus.state === 'granted') {
             requestLocation()
           }
-        })
-        .catch(() => {
+
+          // Listen for permission changes
+          permissionStatus.onchange = () => {
+            setState(prev => ({
+              ...prev,
+              permission: permissionStatus?.state as 'granted' | 'denied' | 'prompt' || 'unknown',
+            }))
+          }
+        } catch {
           // Permission API not supported, will fallback to getCurrentPosition
-        })
+        }
+      }
+    }
+
+    checkPermission()
+
+    return () => {
+      if (permissionStatus) {
+        permissionStatus.onchange = null
+      }
     }
   }, [requestLocation])
 

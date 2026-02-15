@@ -18,7 +18,13 @@ const bookmarkKeys = {
 // Fetch Functions
 // ============================================================================
 
-async function fetchUserBookmarks(userId: string): Promise<BookmarkWithBusiness[]> {
+interface BookmarksResponse {
+  bookmarks: BookmarkWithBusiness[]
+  total: number
+  hasMore: boolean
+}
+
+async function fetchUserBookmarks(userId: string): Promise<BookmarksResponse> {
   const response = await fetch('/api/bookmarks')
   if (!response.ok) throw new Error('Failed to fetch bookmarks')
   return response.json()

@@ -1,31 +1,31 @@
-import { Lightbulb, GraduationCap, Rocket } from 'lucide-react'
+import { MapPin, Heart, TrendingUp } from 'lucide-react'
 
 export function MissionStatement() {
   const values = [
     {
-      icon: <Lightbulb className="h-5 w-5" />,
-      title: 'Accessibility',
-      description: 'Free education for everyone, everywhere.',
+      icon: <MapPin className="h-5 w-5" />,
+      title: 'Discovery',
+      description: 'Find hidden gems in your community.',
     },
     {
-      icon: <GraduationCap className="h-5 w-5" />,
-      title: 'Education',
-      description: 'Rigorous content built by experts.',
+      icon: <TrendingUp className="h-5 w-5" />,
+      title: 'Impact',
+      description: 'See how your support strengthens local economy.',
     },
     {
-      icon: <Rocket className="h-5 w-5" />,
-      title: 'Innovation',
-      description: 'Interactive learning for the future.',
+      icon: <Heart className="h-5 w-5" />,
+      title: 'Community',
+      description: 'Connect with businesses that make your neighborhood unique.',
     },
   ]
 
   return (
     <div className="flex flex-col items-center text-center">
       <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-        Max Apogee is a California Public Benefit Corporation dedicated to making
-        aerospace education accessible to students worldwide. We believe every
-        curious mind deserves the opportunity to explore the wonders of rocket
-        science, regardless of their background or resources.
+        Pulse is a local business discovery platform dedicated to strengthening
+        communities by connecting people with local businesses. We believe every
+        community deserves to thrive, and that starts with keeping money local
+        and supporting the businesses that make our neighborhoods unique.
       </p>
 
       <div className="space-y-4">

@@ -11,6 +11,7 @@ describe('MobileMenu NAV_ITEMS', () => {
     expect(content).toContain("label: 'About'")
     expect(content).toContain("label: 'Our Mission'")
     expect(content).toContain("label: 'Get Involved'")
+    expect(content).toContain("label: 'Dashboard'")
 
     // Verify logged-in nav items include Dashboard
     expect(content).toContain("label: 'Dashboard'")

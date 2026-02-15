@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { searchBusinesses } from '@/lib/google-places'
 import { NextResponse } from 'next/server'
+import { createBusinessSchema, formatZodError } from '@/lib/validation'
 import type { BusinessSearchFilters } from '@/types/business'
 
 export async function GET(request: Request) {
@@ -95,9 +96,19 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+    const validation = createBusinessSchema.safeParse(body)
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: formatZodError(validation.error) },
+        { status: 400 }
+      )
+    }
+
+    const businessData = validation.data
 
     // Create slug from name
-    const slug = body.name
+    const slug = businessData.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
@@ -105,7 +116,7 @@ export async function POST(request: Request) {
     const { data: business, error } = await supabase
       .from('businesses')
       .insert({
-        ...body,
+        ...businessData,
         slug,
         owner_id: user.id,
         data_source: 'user_added',
