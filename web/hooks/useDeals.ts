@@ -1,12 +1,13 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Deal, DealWithBusiness, DealClaim } from '@/types/business'
+import type { Deal, DealWithBusiness, DealClaim, DealClaimWithDeal } from '@/types/business'
 
 // ============================================================================
 // Query Keys
 // ============================================================================
 
+/** React Query key factory for deal listings, business-specific deals, and user claim queries. */
 const dealKeys = {
   all: ['deals'] as const,
   lists: () => [...dealKeys.all, 'list'] as const,
@@ -26,13 +27,25 @@ async function fetchBusinessDeals(businessId: string): Promise<Deal[]> {
   return response.json()
 }
 
-async function fetchAvailableDeals(): Promise<DealWithBusiness[]> {
+interface DealsResponse {
+  deals: DealWithBusiness[]
+  total: number
+  hasMore: boolean
+}
+
+interface ClaimsResponse {
+  claims: DealClaimWithDeal[]
+  total: number
+  hasMore: boolean
+}
+
+async function fetchAvailableDeals(): Promise<DealsResponse> {
   const response = await fetch('/api/deals')
   if (!response.ok) throw new Error('Failed to fetch deals')
   return response.json()
 }
 
-async function fetchUserClaims(userId: string): Promise<DealClaim[]> {
+async function fetchUserClaims(): Promise<ClaimsResponse> {
   const response = await fetch('/api/deals/claims')
   if (!response.ok) throw new Error('Failed to fetch claims')
   return response.json()
@@ -42,7 +55,7 @@ async function fetchUserClaims(userId: string): Promise<DealClaim[]> {
 // Mutations
 // ============================================================================
 
-async function claimDeal(dealId: string): Promise<DealClaim> {
+async function claimDeal(dealId: string): Promise<DealClaimWithDeal> {
   const response = await fetch(`/api/deals/${dealId}/claim`, {
     method: 'POST',
   })
@@ -71,6 +84,10 @@ async function redeemDeal({ claimId, code }: RedeemDealParams): Promise<void> {
 // Hooks
 // ============================================================================
 
+/**
+ * Fetch active deals for a specific business.
+ * @param businessId - Business UUID
+ */
 export function useBusinessDeals(businessId: string) {
   return useQuery({
     queryKey: dealKeys.business(businessId),
@@ -80,23 +97,25 @@ export function useBusinessDeals(businessId: string) {
   })
 }
 
+/** Fetch all currently available deals across all businesses. */
 export function useAvailableDeals() {
-  return useQuery({
+  return useQuery<DealsResponse>({
     queryKey: dealKeys.available(),
     queryFn: fetchAvailableDeals,
     staleTime: 5 * 60 * 1000,
   })
 }
 
-export function useUserClaims(userId: string) {
-  return useQuery({
-    queryKey: dealKeys.userClaims(userId),
-    queryFn: () => fetchUserClaims(userId),
-    enabled: !!userId,
+/** Fetch the current user's claimed deals (requires authentication). */
+export function useUserClaims() {
+  return useQuery<ClaimsResponse>({
+    queryKey: dealKeys.userClaims('current'),
+    queryFn: fetchUserClaims,
     staleTime: 2 * 60 * 1000,
   })
 }
 
+/** Mutation to claim a deal. Generates a unique redemption code and invalidates deal caches. */
 export function useClaimDeal() {
   const queryClient = useQueryClient()
 
@@ -109,6 +128,7 @@ export function useClaimDeal() {
   })
 }
 
+/** Mutation to redeem a previously claimed deal using the redemption code. */
 export function useRedeemDeal() {
   const queryClient = useQueryClient()
 

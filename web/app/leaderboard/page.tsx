@@ -108,7 +108,7 @@ export default function LeaderboardPage() {
           <AnimatedSection animation="fade-up" delay={0.15}>
             <div className="grid grid-cols-3 gap-4 mb-8">
               <Card>
-                <CardContent className="p-4 text-center">
+                <CardContent className="p-4 text-center" suppressHydrationWarning>
                   <DollarSign className="h-5 w-5 text-primary mx-auto mb-1" />
                   <p className="text-2xl font-bold">
                     {isLoading ? (
@@ -121,7 +121,7 @@ export default function LeaderboardPage() {
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="p-4 text-center">
+                <CardContent className="p-4 text-center" suppressHydrationWarning>
                   <Users className="h-5 w-5 text-chart-2 mx-auto mb-1" />
                   <p className="text-2xl font-bold">
                     {isLoading ? (
@@ -134,7 +134,7 @@ export default function LeaderboardPage() {
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="p-4 text-center">
+                <CardContent className="p-4 text-center" suppressHydrationWarning>
                   <Trophy className="h-5 w-5 text-chart-3 mx-auto mb-1" />
                   <p className="text-2xl font-bold">
                     {isLoading ? (

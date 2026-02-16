@@ -18,6 +18,11 @@ let scriptLoading = false;
 let scriptLoaded = false;
 const callbacks: (() => void)[] = [];
 
+/**
+ * Lazily load the Cloudflare Turnstile script into the document head.
+ * Deduplicates concurrent calls — only one script tag is ever created.
+ * Resolves once the script's onload event fires.
+ */
 function loadTurnstileScript(): Promise<void> {
   return new Promise((resolve) => {
     if (scriptLoaded) {
