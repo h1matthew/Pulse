@@ -21,6 +21,22 @@ vi.mock('@/components/ui/nav-link', () => ({
   ),
 }))
 
+vi.mock('@/components/features/home/CommunityStatsIsland', () => ({
+  HeroStats: () => (
+    <div data-testid="hero-stats">
+      <span>Kept Local</span>
+      <span>Businesses</span>
+      <span>Reviews</span>
+      <span>Community Members</span>
+    </div>
+  ),
+  CommunityPulseCard: () => (
+    <div data-testid="community-pulse-card">
+      <span>Community Pulse Score</span>
+    </div>
+  ),
+}))
+
 describe('Home Page', () => {
   it('renders without crashing', () => {
     render(<Home />)
@@ -83,7 +99,8 @@ describe('Home Page', () => {
 
     expect(screen.getByText('Economic Impact Dashboard')).toBeInTheDocument()
     expect(screen.getByText('AI-Matched For You')).toBeInTheDocument()
-    expect(screen.getByText('Boost Missions')).toBeInTheDocument()
+    // "Boost Missions" appears in both feature cards and footer nav
+    expect(screen.getAllByText('Boost Missions').length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders community pulse section', () => {

@@ -6,6 +6,7 @@ import { LogOut, Shield, Users, Heart, LayoutDashboard, Handshake, Store, MapPin
 import { Button } from '@/components/ui/button'
 import { NavLink } from '@/components/ui/nav-link'
 import { MobileMenu } from './MobileMenu'
+import { HelpMenu } from '@/components/features/help/HelpMenu'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/components/providers/AuthProvider'
 
@@ -177,6 +178,7 @@ export function Header() {
         isCompact ? "max-w-3xl" : "max-w-5xl"
       )}>
         <nav
+          aria-label="Main navigation"
           className={cn(
             "flex items-center justify-between border transition-all duration-500 ease-out backdrop-blur-xl",
             isScrolling && "backdrop-blur-none",
@@ -188,6 +190,7 @@ export function Header() {
           {/* Logo */}
           <NavLink
             href="/"
+            aria-label="Pulse — Home"
             className={cn(
               "flex items-center gap-2.5 transition-all duration-300 hover:opacity-80",
               isCompact && "gap-2"
@@ -195,7 +198,7 @@ export function Header() {
           >
             <img
               src="/logo.svg"
-              alt="Pulse"
+              alt="Pulse logo"
               className={cn(
                 "transition-all duration-300",
                 isCompact ? "h-6 w-6" : "h-7 w-7"
@@ -242,6 +245,8 @@ export function Header() {
                     ref={(el) => {
                       if (el) buttonRefs.current.set(item.href, el)
                     }}
+                    aria-label={item.label}
+                    aria-current={isActive ? 'page' : undefined}
                     className={cn(
                       "relative flex items-center font-medium transition-colors duration-300 z-10",
                       isCompact
@@ -255,7 +260,7 @@ export function Header() {
                     <item.icon className={cn(
                       "transition-all duration-300",
                       isCompact ? "h-3 w-3" : "h-3.5 w-3.5"
-                    )} />
+                    )} aria-hidden="true" />
                     <span className={cn(
                       "transition-all duration-300",
                       isCompact ? "hidden xl:inline" : "hidden lg:inline"
@@ -270,9 +275,11 @@ export function Header() {
 
           {/* Right side actions */}
           <div className="hidden items-center gap-0.5 sm:flex">
+            <HelpMenu compact={isCompact} />
             {isAdmin && (
               <NavLink href="/admin">
                 <button
+                  aria-label="Admin panel"
                   className={cn(
                     "flex items-center gap-1.5 font-medium transition-all duration-300",
                     isCompact
@@ -286,7 +293,7 @@ export function Header() {
                   <Shield className={cn(
                     "transition-all duration-300",
                     isCompact ? "h-3.5 w-3.5" : "h-4 w-4"
-                  )} />
+                  )} aria-hidden="true" />
                   <span className="hidden lg:inline">Admin</span>
                 </button>
               </NavLink>
@@ -296,6 +303,7 @@ export function Header() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label="Sign out"
                   className={cn(
                     "gap-1.5 text-muted-foreground hover:text-foreground transition-all duration-300",
                     isCompact ? "h-7 rounded-full px-2 text-xs" : "rounded-lg"
@@ -304,7 +312,7 @@ export function Header() {
                   <LogOut className={cn(
                     "transition-all duration-300",
                     isCompact ? "h-3.5 w-3.5" : "h-4 w-4"
-                  )} />
+                  )} aria-hidden="true" />
                   <span className={cn(
                     "hidden transition-all duration-300",
                     isCompact ? "xl:inline" : "lg:inline"

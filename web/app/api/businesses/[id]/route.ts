@@ -1,6 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { shouldSyncReviews } from '@/lib/reviews/sync-shared'
+import { triggerBackgroundSync } from '@/lib/reviews/sync-server'
 
+/**
+ * GET /api/businesses/[id]
+ *
+ * Fetch a single business with its category, reviews (newest first, limit 50),
+ * active deals, and the current user's bookmark status. Triggers a background
+ * Google review sync if the cached reviews are stale.
+ */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -26,13 +35,25 @@ export async function GET(
       throw businessError
     }
 
+    // Trigger background sync if reviews are stale and business has a place_id
+    // This happens non-blocking - we return cached reviews immediately
+    if (
+      business.place_id &&
+      shouldSyncReviews({
+        place_id: business.place_id,
+        last_synced_at: business.last_synced_at,
+      })
+    ) {
+      triggerBackgroundSync(id, business.place_id)
+    }
+
     // Fetch reviews
     const { data: reviews } = await supabase
       .from('reviews')
       .select('*, user:profiles(id, full_name, avatar_url)')
       .eq('business_id', id)
       .order('created_at', { ascending: false })
-      .limit(10)
+      .limit(50)
 
     // Fetch deals
     const { data: deals } = await supabase
@@ -73,6 +94,12 @@ export async function GET(
   }
 }
 
+/**
+ * PATCH /api/businesses/[id]
+ *
+ * Update a business listing. Requires authentication — only the business owner
+ * or an admin can make changes. Returns the updated business record.
+ */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

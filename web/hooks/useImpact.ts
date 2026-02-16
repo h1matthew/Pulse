@@ -10,14 +10,18 @@ import type {
   ImpactTierConfig,
 } from '@/types/impact'
 import { IMPACT_TIERS } from '@/types/impact'
+import type { ImpactReportData } from '@/lib/report-generator'
 
 // ============================================================================
 // Query Keys
 // ============================================================================
 
+/** React Query key factory for impact, leaderboard, and community pulse queries. */
 const impactKeys = {
   all: ['impact'] as const,
   user: (userId: string) => [...impactKeys.all, 'user', userId] as const,
+  report: (from: string | undefined, to: string) =>
+    [...impactKeys.all, 'report', from ?? 'all', to] as const,
   leaderboard: (type: string, timeframe: string) =>
     [...impactKeys.all, 'leaderboard', type, timeframe] as const,
   community: () => [...impactKeys.all, 'community'] as const,
@@ -65,6 +69,15 @@ async function fetchCommunityPulse(): Promise<CommunityPulse> {
   return response.json()
 }
 
+async function fetchImpactReport(dateRange: { from?: string; to: string }): Promise<ImpactReportData> {
+  const params = new URLSearchParams()
+  if (dateRange.from) params.set('from', dateRange.from)
+  params.set('to', dateRange.to)
+  const response = await fetch(`/api/impact/report?${params}`)
+  if (!response.ok) throw new Error('Failed to fetch impact report')
+  return response.json()
+}
+
 // ============================================================================
 // Mutations
 // ============================================================================
@@ -80,6 +93,10 @@ async function recalculateImpact(): Promise<void> {
 // Hooks
 // ============================================================================
 
+/**
+ * Fetch the authenticated user's economic impact data (dollars kept local, businesses supported, etc.).
+ * @param userId - The user's UUID (used for cache keying; API uses session auth)
+ */
 export function useUserImpact(userId: string) {
   return useQuery({
     queryKey: impactKeys.user(userId),
@@ -89,6 +106,10 @@ export function useUserImpact(userId: string) {
   })
 }
 
+/**
+ * Trigger and fetch a fresh impact calculation for the user.
+ * @param userId - The user's UUID (used for cache keying)
+ */
 export function useImpactCalculation(userId: string) {
   return useQuery({
     queryKey: [...impactKeys.user(userId), 'calculation'],
@@ -98,6 +119,11 @@ export function useImpactCalculation(userId: string) {
   })
 }
 
+/**
+ * Fetch the community leaderboard rankings.
+ * @param type - Leaderboard scope: "global" or region-based
+ * @param timeframe - Time window: "all_time", "monthly", "weekly"
+ */
 export function useLeaderboard(type = 'global', timeframe = 'all_time') {
   return useQuery({
     queryKey: impactKeys.leaderboard(type, timeframe),
@@ -106,6 +132,7 @@ export function useLeaderboard(type = 'global', timeframe = 'all_time') {
   })
 }
 
+/** Fetch aggregate community impact metrics (total dollars local, businesses supported, active users). */
 export function useCommunityPulse() {
   return useQuery({
     queryKey: impactKeys.community(),
@@ -114,6 +141,20 @@ export function useCommunityPulse() {
   })
 }
 
+/**
+ * Fetch a detailed impact report for a given date range, used by the report export feature.
+ * @param dateRange - Start and end dates for the report (ISO strings)
+ */
+export function useImpactReport(dateRange: { from?: string; to: string }) {
+  return useQuery({
+    queryKey: impactKeys.report(dateRange.from, dateRange.to),
+    queryFn: () => fetchImpactReport(dateRange),
+    enabled: !!dateRange.to,
+    staleTime: 2 * 60 * 1000,
+  })
+}
+
+/** Mutation to force-recalculate the user's impact metrics. Invalidates all impact queries on success. */
 export function useRecalculateImpact() {
   const queryClient = useQueryClient()
 
@@ -129,6 +170,12 @@ export function useRecalculateImpact() {
 // Impact Display Helpers
 // ============================================================================
 
+/**
+ * Derive display-ready impact data from raw user impact metrics.
+ * Computes formatted metrics, current tier, next tier, and progress toward the next tier.
+ * @param userId - The user's UUID
+ * @returns Impact data, tier info, and progress percentage (0–1)
+ */
 export function useImpactDisplay(userId: string) {
   const { data: impact, ...rest } = useUserImpact(userId)
 
@@ -170,6 +217,11 @@ export function useImpactDisplay(userId: string) {
 // Impact Comparison Helpers
 // ============================================================================
 
+/**
+ * Compare the user's impact against the community leaderboard.
+ * Returns rank, percentile, and a human-readable comparison label.
+ * @param userId - The user's UUID
+ */
 export function useImpactComparison(userId: string) {
   const { data: leaderboardData } = useLeaderboard('global', 'all_time')
   const { data: userImpact } = useUserImpact(userId)

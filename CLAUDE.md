@@ -201,6 +201,28 @@ web/
     └── scripts/           # DB management scripts
 ```
 
+## Key File Paths
+
+| Area | File | Purpose |
+|------|------|---------|
+| **Discover** | `web/app/discover/page.tsx` | Discover page with filters, search, business grid |
+| **Discover** | `web/components/features/discover/BusinessCard.tsx` | Business card component for grid display |
+| **Discover** | `web/app/api/businesses/nearby/route.ts` | Nearby businesses API, Google Places sync |
+| **Business Detail** | `web/app/business/[id]/page.tsx` | Business detail page (About, Reviews, Deals tabs) |
+| **Business Detail** | `web/app/api/businesses/[id]/route.ts` | Business detail API (GET, PATCH) |
+| **AI Descriptions** | `web/lib/gemini-business.ts` | Gemini AI functions for business descriptions |
+| **AI Descriptions** | `web/app/api/businesses/[id]/generate-description/route.ts` | Generate AI description API |
+| **Reviews** | `web/lib/reviews/sync-server.ts` | Google review sync logic |
+| **Reviews** | `web/lib/reviews/sync-shared.ts` | Sync status utilities (client-safe) |
+| **Reviews** | `web/app/api/businesses/[id]/reviews/sync/route.ts` | Review sync API endpoint |
+| **Types** | `web/types/business.ts` | Business, Review, Deal, Category types |
+| **Auth** | `web/components/providers/AuthProvider.tsx` | Auth context provider |
+| **Hooks** | `web/hooks/useBusinesses.ts` | React Query hooks for business data |
+| **Hooks** | `web/hooks/useDeals.ts` | Deal-related hooks |
+| **Hooks** | `web/hooks/useBookmarks.ts` | Bookmark-related hooks |
+| **Theme** | `web/app/theme.css` | All colors, radii, animations |
+| **Layout** | `web/components/layout/Header.tsx` | Site header/navigation |
+
 ## Database Schema
 
 Key tables in `web/supabase/pulse_schema.sql`:

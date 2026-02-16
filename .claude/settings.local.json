@@ -9,7 +9,26 @@
       "Bash(npm install:*)",
       "Bash(npm run test:run:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(bash -c:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:developers.google.com)",
+      "Bash(npx kill-port:*)",
+      "Bash(node -e:*)",
+      "Bash(curl:*)",
+      "Bash(timeout /t:*)",
+      "Bash(npx vitest:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:www.openwebninja.com)",
+      "WebFetch(domain:platform.sulu.sh)",
+      "WebFetch(domain:www.allthingsdev.co)",
+      "WebFetch(domain:api.market)",
+      "WebFetch(domain:www.apyflux.com)"
     ]
   }
 }
