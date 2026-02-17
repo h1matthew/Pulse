@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { searchBusinesses as searchGooglePlaces } from '@/lib/google-places'
+import { isRealBusinessPlaceTypes, isRealBusinessRecord } from '@/lib/business/display'
 import { NextResponse } from 'next/server'
 import type { LatLng } from '@/types/business'
 
@@ -46,55 +47,66 @@ export async function GET(request: Request) {
       console.error('Google Places search error:', error)
     }
 
+    const filteredLocalBusinesses = (localBusinesses || []).filter((business) =>
+      isRealBusinessRecord({
+        data_source: business.data_source,
+        tags: business.tags,
+        name: business.name,
+      })
+    )
+
     // Transform Google Places results to match our format
-    const transformedGoogleResults = googleResults?.places.map(place => ({
-      id: place.place_id,
-      name: place.name,
-      slug: place.place_id,
-      category_id: null,
-      description: null,
-      short_description: null,
-      address: place.formatted_address,
-      city: '', // Would need to parse from address
-      state: '',
-      zip_code: '',
-      phone: place.formatted_phone_number || null,
-      email: null,
-      website: place.website || null,
-      latitude: place.geometry.location.lat,
-      longitude: place.geometry.location.lng,
-      hours: place.opening_hours || {},
-      photos: place.photos?.map(p => p.photo_reference) || [],
-      logo_url: null,
-      owner_id: null,
-      is_verified: false,
-      is_featured: false,
-      price_range: place.price_level || null,
-      tags: place.types || [],
-      amenities: [],
-      average_rating: place.rating || 0,
-      review_count: place.user_ratings_total || 0,
-      bookmark_count: 0,
-      place_id: place.place_id,
-      data_source: 'google' as const,
-      last_synced_at: new Date().toISOString(),
-      sync_status: 'active' as const,
-      claimed_at: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      category: null,
-    })) || []
+    const transformedGoogleResults =
+      googleResults?.places
+        .filter((place) => isRealBusinessPlaceTypes(place.types || []))
+        .map((place) => ({
+          id: place.place_id,
+          name: place.name,
+          slug: place.place_id,
+          category_id: null,
+          description: null,
+          short_description: null,
+          address: place.formatted_address,
+          city: '', // Would need to parse from address
+          state: '',
+          zip_code: '',
+          phone: place.formatted_phone_number || null,
+          email: null,
+          website: place.website || null,
+          latitude: place.geometry.location.lat,
+          longitude: place.geometry.location.lng,
+          hours: place.opening_hours || {},
+          photos: place.photos?.map((p) => p.photo_reference) || [],
+          logo_url: null,
+          owner_id: null,
+          is_verified: false,
+          is_featured: false,
+          price_range: place.price_level || null,
+          tags: place.types || [],
+          amenities: [],
+          average_rating: place.rating || 0,
+          review_count: place.user_ratings_total || 0,
+          bookmark_count: 0,
+          place_id: place.place_id,
+          data_source: 'google' as const,
+          last_synced_at: new Date().toISOString(),
+          sync_status: 'active' as const,
+          claimed_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          category: null,
+        })) || []
 
     // Combine results, prioritizing local businesses
-    const localIds = new Set(localBusinesses?.map(b => b.place_id).filter(Boolean))
+    const localIds = new Set(filteredLocalBusinesses.map((business) => business.place_id).filter(Boolean))
     const uniqueGoogleResults = transformedGoogleResults.filter(
-      b => b.place_id && !localIds.has(b.place_id)
+      (business) => business.place_id && !localIds.has(business.place_id)
     )
 
     return NextResponse.json({
-      businesses: [...(localBusinesses || []), ...uniqueGoogleResults],
+      businesses: [...filteredLocalBusinesses, ...uniqueGoogleResults],
       fromCache: googleResults?.fromCache || false,
-      localCount: localBusinesses?.length || 0,
+      localCount: filteredLocalBusinesses.length,
       googleCount: uniqueGoogleResults.length,
     })
   } catch (error) {

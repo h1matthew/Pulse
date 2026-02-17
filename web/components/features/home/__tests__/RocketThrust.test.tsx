@@ -5,18 +5,21 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
 import React from 'react'
 
+const requestAnimationFrameMock = (callback: FrameRequestCallback): number => {
+  return setTimeout(() => callback(performance.now()), 16) as unknown as number
+}
+
+const cancelAnimationFrameMock = (id: number): void => {
+  clearTimeout(id)
+}
+
 // Mock requestAnimationFrame and cancelAnimationFrame before importing component
 beforeEach(() => {
-  vi.stubGlobal('requestAnimationFrame', vi.fn((cb: FrameRequestCallback) => {
-    return setTimeout(() => cb(performance.now()), 16) as unknown as number
-  }))
-  vi.stubGlobal('cancelAnimationFrame', vi.fn((id: number) => {
-    clearTimeout(id)
-  }))
+  globalThis.requestAnimationFrame = vi.fn(requestAnimationFrameMock)
+  globalThis.cancelAnimationFrame = vi.fn(cancelAnimationFrameMock)
 })
 
 afterEach(() => {
-  vi.unstubAllGlobals()
   vi.clearAllMocks()
 })
 

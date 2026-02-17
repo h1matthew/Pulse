@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { Deal, DealWithBusiness, DealClaim } from '@/types/business'
+import type { Deal, DealWithBusiness, DealClaimWithDeal } from '@/types/business'
 
 // ============================================================================
 // Query Keys
@@ -21,34 +21,39 @@ const dealKeys = {
 // ============================================================================
 
 async function fetchBusinessDeals(businessId: string): Promise<Deal[]> {
-  const response = await fetch(`/api/businesses/${businessId}/deals`)
+  const response = await fetch(`/api/deals?businessId=${encodeURIComponent(businessId)}`)
   if (!response.ok) throw new Error('Failed to fetch deals')
-  return response.json()
+  const payload = await response.json()
+  return payload.deals || []
 }
 
-async function fetchAvailableDeals(): Promise<DealWithBusiness[]> {
+export type AvailableDeal = DealWithBusiness & { isClaimed?: boolean }
+
+async function fetchAvailableDeals(): Promise<AvailableDeal[]> {
   const response = await fetch('/api/deals')
   if (!response.ok) throw new Error('Failed to fetch deals')
-  return response.json()
+  const payload = await response.json()
+  return payload.deals || []
 }
 
-async function fetchUserClaims(userId: string): Promise<DealClaim[]> {
+async function fetchUserClaims(userId: string): Promise<DealClaimWithDeal[]> {
   const response = await fetch('/api/deals/claims')
   if (!response.ok) throw new Error('Failed to fetch claims')
-  return response.json()
+  const payload = await response.json()
+  return payload.claims || []
 }
 
 // ============================================================================
 // Mutations
 // ============================================================================
 
-async function claimDeal(dealId: string): Promise<DealClaim> {
+async function claimDeal(dealId: string): Promise<DealClaimWithDeal> {
   const response = await fetch(`/api/deals/${dealId}/claim`, {
     method: 'POST',
   })
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.message || 'Failed to claim deal')
+    throw new Error(error.error || error.message || 'Failed to claim deal')
   }
   return response.json()
 }
@@ -103,7 +108,8 @@ export function useClaimDeal() {
   return useMutation({
     mutationFn: claimDeal,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dealKeys.userClaims('') })
+      queryClient.invalidateQueries({ queryKey: dealKeys.available() })
+      queryClient.invalidateQueries({ queryKey: dealKeys.lists() })
       queryClient.invalidateQueries({ queryKey: ['impact'] })
     },
   })

@@ -1,5 +1,3 @@
-import type { Json } from './database.types'
-
 // ============================================================================
 // Business Types
 // ============================================================================
@@ -33,7 +31,7 @@ export interface Business {
   latitude: number | null
   longitude: number | null
   hours: BusinessHours
-  photos: string[]
+  photos: Array<string | BusinessPhotoReference>
   logo_url: string | null
   owner_id: string | null
   is_verified: boolean
@@ -63,15 +61,23 @@ export interface BusinessHours {
   sunday?: string
 }
 
+export interface BusinessPhotoReference {
+  photo_reference: string
+  height?: number
+  width?: number
+}
+
 export interface BusinessWithCategory extends Business {
   category: Category | null
 }
 
 export interface BusinessWithDetails extends BusinessWithCategory {
   reviews: ReviewWithUser[]
+  external_reviews?: ExternalReview[]
   deals: Deal[]
   is_bookmarked?: boolean
   user_check_in_count?: number
+  local_review_count?: number
 }
 
 // ============================================================================
@@ -98,6 +104,19 @@ export interface ReviewWithUser extends Review {
     full_name: string | null
     avatar_url: string | null
   }
+}
+
+export interface ExternalReview {
+  id: string
+  source: 'google'
+  rating: number
+  content: string
+  author_name: string
+  author_photo_url?: string | null
+  author_profile_url?: string | null
+  created_at?: string | null
+  relative_time?: string | null
+  maps_url?: string | null
 }
 
 export interface ReviewCreateInput {

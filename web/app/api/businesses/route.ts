@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { searchBusinesses } from '@/lib/google-places'
+import { isRealBusinessRecord } from '@/lib/business/display'
 import { NextResponse } from 'next/server'
 import { createBusinessSchema, formatZodError } from '@/lib/validation'
 import type { BusinessSearchFilters } from '@/types/business'
@@ -68,8 +69,16 @@ export async function GET(request: Request) {
       )
     }
 
+    const filteredBusinesses = (businesses || []).filter((business) =>
+      isRealBusinessRecord({
+        data_source: business.data_source,
+        tags: business.tags,
+        name: business.name,
+      })
+    )
+
     return NextResponse.json({
-      businesses: businesses || [],
+      businesses: filteredBusinesses,
       total: count || 0,
       hasMore: count ? offset + limit < count : false,
     })

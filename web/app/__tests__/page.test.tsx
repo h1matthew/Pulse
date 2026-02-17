@@ -83,7 +83,7 @@ describe('Home Page', () => {
 
     expect(screen.getByText('Economic Impact Dashboard')).toBeInTheDocument()
     expect(screen.getByText('AI-Matched For You')).toBeInTheDocument()
-    expect(screen.getByText('Boost Missions')).toBeInTheDocument()
+    expect(screen.getAllByText('Boost Missions').length).toBeGreaterThan(0)
   })
 
   it('renders community pulse section', () => {

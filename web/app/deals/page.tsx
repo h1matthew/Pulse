@@ -1,124 +1,131 @@
 "use client";
 
-import { Tag, Clock, MapPin, Star, ChevronRight } from "lucide-react";
+import { useMemo } from "react";
+import {
+  Tag,
+  Clock,
+  MapPin,
+  Star,
+  ChevronRight,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { Header } from "@/components/layout/Header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { useAvailableDeals, useClaimDeal, useUserClaims } from "@/hooks/useDeals";
+import { toast } from "sonner";
+import type { DealClaimWithDeal } from "@/types/business";
 
-const ACTIVE_DEALS = [
-  {
-    id: "1",
-    business: "The Local Bean",
-    title: "First Visit Special",
-    description: "Get 15% off your first purchase when you check in on Pulse!",
-    discount: "15% OFF",
-    type: "standard",
-    code: "PULSE15",
-    expiresIn: "No expiration",
-    category: "Food & Drink",
-    rating: 4.7,
-    reviewCount: 128,
-    icon: "☕",
-  },
-  {
-    id: "2",
-    business: "Artisan Books & Gifts",
-    title: "Book Lover's Deal",
-    description: "Buy 2 books, get the 3rd at 50% off!",
-    discount: "BOGO 50%",
-    type: "standard",
-    code: "BOOKS50",
-    expiresIn: "7 days left",
-    category: "Retail",
-    rating: 4.9,
-    reviewCount: 89,
-    icon: "📚",
-  },
-  {
-    id: "3",
-    business: "Wellness Hub Spa",
-    title: "New Client Special",
-    description: "First-time clients receive 20% off any service",
-    discount: "20% OFF",
-    type: "standard",
-    code: "WELCOME20",
-    expiresIn: "14 days left",
-    category: "Health & Wellness",
-    rating: 4.6,
-    reviewCount: 64,
-    icon: "💆",
-  },
-  {
-    id: "4",
-    business: "The Local Bean",
-    title: "Coffee Explorer Mission",
-    description: "Try 3 different local coffee shops this month and unlock a free pastry!",
-    discount: "FREE PASTRY",
-    type: "boost_mission",
-    code: "COFFEE3",
-    expiresIn: "12 days left",
-    category: "Food & Drink",
-    rating: 4.7,
-    reviewCount: 128,
-    icon: "☕",
-    missionProgress: 2,
-    missionTarget: 3,
-  },
-  {
-    id: "5",
-    business: "Corner Bistro",
-    title: "Flash Deal: Happy Hour",
-    description: "50% off appetizers from 4-6pm today only!",
-    discount: "50% OFF",
-    type: "flash",
-    code: "FLASH50",
-    expiresIn: "4 hours left",
-    category: "Food & Drink",
-    rating: 4.5,
-    reviewCount: 213,
-    icon: "🍽️",
-  },
-];
+function formatDiscount(
+  discountType: string,
+  discountValue: number | null
+): string {
+  if (discountType === "percentage" && discountValue) {
+    return `${discountValue}% OFF`;
+  }
+  if (discountType === "fixed_amount" && discountValue) {
+    return `$${discountValue} OFF`;
+  }
+  if (discountType === "bogo") return "BOGO";
+  if (discountType === "free_item") return "FREE ITEM";
+  return "SPECIAL";
+}
 
-const CLAIMED_DEALS = [
-  {
-    id: "6",
-    business: "The Local Bean",
-    title: "Welcome Offer",
-    description: "10% off your first visit",
-    discount: "10% OFF",
-    claimedAt: "2 weeks ago",
-    used: true,
-    icon: "☕",
-  },
-];
+function formatExpiry(endDate: string | null): string {
+  if (!endDate) return "No expiration";
+  const end = new Date(endDate);
+  const now = new Date();
+  const diffMs = end.getTime() - now.getTime();
+  if (diffMs <= 0) return "Expired";
+
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const totalDays = Math.floor(totalHours / 24);
+
+  if (totalDays > 0) {
+    return `${totalDays} day${totalDays === 1 ? "" : "s"} left`;
+  }
+  return `${totalHours} hour${totalHours === 1 ? "" : "s"} left`;
+}
+
+function formatClaimedAt(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "recently";
+  return date.toLocaleDateString();
+}
+
+function getBusinessIcon(claim: DealClaimWithDeal["deal"]): string {
+  return claim.business?.category?.icon || "🏪";
+}
 
 export default function DealsPage() {
+  const { isLoggedIn, userId } = useAuth();
+
+  const {
+    data: availableDeals = [],
+    isLoading: availableLoading,
+    isError: availableError,
+  } = useAvailableDeals();
+  const {
+    data: claimedDeals = [],
+    isLoading: claimsLoading,
+    isError: claimsError,
+  } = useUserClaims(userId || "");
+  const claimDeal = useClaimDeal();
+
+  const flashCount = useMemo(
+    () => availableDeals.filter((deal) => deal.deal_type === "flash").length,
+    [availableDeals]
+  );
+  const visibleClaims = isLoggedIn ? claimedDeals : [];
+
+  async function handleClaim(dealId: string, alreadyClaimed?: boolean) {
+    if (alreadyClaimed) return;
+
+    if (!isLoggedIn) {
+      toast.error("Sign in required", {
+        description: "Please sign in to claim deals.",
+      });
+      return;
+    }
+
+    try {
+      await claimDeal.mutateAsync(dealId);
+      toast.success("Deal claimed", {
+        description: "Your deal is now in the Claimed tab.",
+      });
+    } catch (error) {
+      const description =
+        error instanceof Error ? error.message : "Failed to claim deal";
+      toast.error("Unable to claim deal", { description });
+    }
+  }
+
+  const isLoading = availableLoading || (isLoggedIn && claimsLoading);
+  const isError = availableError || (isLoggedIn && claimsError);
+
   return (
     <div className="relative min-h-screen bg-background">
       <Header />
 
       <div className="pt-20 pb-12">
         <div className="mx-auto max-w-6xl px-6">
-          {/* Header */}
           <AnimatedSection animation="fade-up">
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-2">
                 <Tag className="h-6 w-6 text-chart-2" />
-                <h1 className="text-3xl font-bold tracking-tight">
-                  Deals & Offers
-                </h1>
+                <h1 className="text-3xl font-bold tracking-tight">Deals & Offers</h1>
               </div>
               <p className="text-muted-foreground">
-                Exclusive deals and Boost Mission rewards from local businesses
+                Live offers and mission rewards from local businesses
               </p>
             </div>
           </AnimatedSection>
 
-          {/* Stats */}
           <AnimatedSection animation="fade-up" delay={0.1}>
             <div className="grid sm:grid-cols-3 gap-4 mb-8">
               <Card>
@@ -127,29 +134,37 @@ export default function DealsPage() {
                     <Tag className="h-6 w-6 text-chart-2" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">5</div>
+                    <div className="text-2xl font-bold" data-testid="stat-available">
+                      {availableDeals.length}
+                    </div>
                     <div className="text-xs text-muted-foreground">Available Deals</div>
                   </div>
                 </CardContent>
               </Card>
+
               <Card>
                 <CardContent className="p-6 flex items-center gap-4">
                   <div className="h-12 w-12 rounded-xl bg-chart-3/10 flex items-center justify-center">
                     <Clock className="h-6 w-6 text-chart-3" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">2</div>
+                    <div className="text-2xl font-bold" data-testid="stat-flash">
+                      {flashCount}
+                    </div>
                     <div className="text-xs text-muted-foreground">Flash Deals</div>
                   </div>
                 </CardContent>
               </Card>
+
               <Card>
                 <CardContent className="p-6 flex items-center gap-4">
                   <div className="h-12 w-12 rounded-xl bg-chart-5/10 flex items-center justify-center">
                     <Star className="h-6 w-6 text-chart-5" />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold">1</div>
+                    <div className="text-2xl font-bold" data-testid="stat-claimed">
+                      {visibleClaims.length}
+                    </div>
                     <div className="text-xs text-muted-foreground">Claimed</div>
                   </div>
                 </CardContent>
@@ -157,124 +172,186 @@ export default function DealsPage() {
             </div>
           </AnimatedSection>
 
-          {/* Deals Tabs */}
-          <AnimatedSection animation="fade-up" delay={0.15}>
-            <Tabs defaultValue="available" className="w-full">
-              <TabsList className="mb-6">
-                <TabsTrigger value="available">Available Deals</TabsTrigger>
-                <TabsTrigger value="claimed">Claimed</TabsTrigger>
-              </TabsList>
+          {isLoading && (
+            <div className="py-12 text-center">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3 text-muted-foreground" />
+              <p className="text-muted-foreground">Loading deals...</p>
+            </div>
+          )}
 
-              <TabsContent value="available" className="space-y-4">
-                {ACTIVE_DEALS.map((deal, index) => (
-                  <AnimatedSection key={deal.id} animation="fade-up" delay={0.1 * (index + 2)}>
-                    <Card className="group">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col md:flex-row md:items-center gap-6">
-                          {/* Icon */}
-                          <div className="text-5xl">{deal.icon}</div>
+          {!isLoading && isError && (
+            <div className="py-12 text-center">
+              <AlertCircle className="h-6 w-6 mx-auto mb-3 text-destructive" />
+              <p className="font-medium">Could not load deals</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Try refreshing in a moment.
+              </p>
+            </div>
+          )}
 
-                          {/* Content */}
-                          <div className="flex-1">
-                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                              <h3 className="text-lg font-semibold">{deal.title}</h3>
-                              {deal.type === "boost_mission" && (
-                                <Badge className="bg-chart-3 text-white">Boost Mission</Badge>
-                              )}
-                              {deal.type === "flash" && (
-                                <Badge className="bg-destructive text-white animate-pulse">Flash Deal</Badge>
-                              )}
-                              <Badge variant="secondary">{deal.category}</Badge>
-                            </div>
+          {!isLoading && !isError && (
+            <AnimatedSection animation="fade-up" delay={0.15}>
+              <Tabs defaultValue="available" className="w-full">
+                <TabsList className="mb-6">
+                  <TabsTrigger value="available">Available Deals</TabsTrigger>
+                  <TabsTrigger value="claimed">Claimed</TabsTrigger>
+                </TabsList>
 
-                            <p className="text-muted-foreground mb-2">{deal.description}</p>
+                <TabsContent value="available" className="space-y-4">
+                  {availableDeals.length === 0 && (
+                    <div className="text-center py-16">
+                      <div className="text-4xl mb-4">🏷️</div>
+                      <h3 className="text-lg font-semibold mb-2">
+                        No available deals right now
+                      </h3>
+                      <p className="text-muted-foreground">
+                        Check back soon for new local offers.
+                      </p>
+                    </div>
+                  )}
 
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {deal.business}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-chart-5 text-chart-5" />
-                                {deal.rating} ({deal.reviewCount} reviews)
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {deal.expiresIn}
-                              </span>
-                            </div>
+                  {availableDeals.map((deal, index) => {
+                    const actionLabel = deal.isClaimed
+                      ? "Claimed"
+                      : deal.deal_type === "boost_mission"
+                        ? "Continue Mission"
+                        : "Claim Deal";
+                    const isClaiming = claimDeal.isPending;
 
-                            {deal.type === "boost_mission" && deal.missionProgress !== undefined && (
-                              <div className="mt-3 p-3 bg-chart-3/10 rounded-lg">
-                                <div className="flex justify-between text-sm mb-1">
-                                  <span>Mission Progress</span>
-                                  <span className="font-medium">{deal.missionProgress}/{deal.missionTarget}</span>
+                    return (
+                      <AnimatedSection
+                        key={deal.id}
+                        animation="fade-up"
+                        delay={0.05 * (index + 1)}
+                      >
+                        <Card className="group">
+                          <CardContent className="p-6">
+                            <div className="flex flex-col md:flex-row md:items-center gap-6">
+                              <div className="text-5xl">
+                                {deal.business?.category?.icon || "🏪"}
+                              </div>
+
+                              <div className="flex-1">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <h3 className="text-lg font-semibold">{deal.title}</h3>
+                                  {deal.deal_type === "boost_mission" && (
+                                    <Badge className="bg-chart-3 text-white">Boost Mission</Badge>
+                                  )}
+                                  {deal.deal_type === "flash" && (
+                                    <Badge className="bg-destructive text-white">
+                                      Flash Deal
+                                    </Badge>
+                                  )}
+                                  {deal.business?.category?.name && (
+                                    <Badge variant="secondary">
+                                      {deal.business.category.name}
+                                    </Badge>
+                                  )}
                                 </div>
-                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-chart-3 rounded-full"
-                                    style={{ width: `${(deal.missionProgress / deal.missionTarget) * 100}%` }}
-                                  />
+
+                                <p className="text-muted-foreground mb-2">{deal.description}</p>
+
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {deal.business?.name || "Local business"}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Star className="h-3 w-3 fill-chart-5 text-chart-5" />
+                                    {deal.business?.average_rating || "New"} (
+                                    {deal.business?.review_count || 0} reviews)
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatExpiry(deal.end_date)}
+                                  </span>
                                 </div>
                               </div>
-                            )}
-                          </div>
 
-                          {/* Action */}
-                          <div className="flex flex-col items-end gap-2">
-                            <div className="text-2xl font-bold text-chart-2">{deal.discount}</div>
-                            <Button className="group" size="sm">
-                              {deal.type === "boost_mission" ? "Continue Mission" : "Claim Deal"}
-                              <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                            </Button>
-                            {deal.code && (
-                              <div className="text-xs text-muted-foreground">
-                                Code: <span className="font-mono font-medium">{deal.code}</span>
+                              <div className="flex flex-col items-end gap-2">
+                                <div className="text-2xl font-bold text-chart-2">
+                                  {formatDiscount(deal.discount_type, deal.discount_value)}
+                                </div>
+                                <Button
+                                  className="group"
+                                  size="sm"
+                                  disabled={deal.isClaimed || isClaiming}
+                                  onClick={() => handleClaim(deal.id, deal.isClaimed)}
+                                >
+                                  {isClaiming ? "Claiming..." : actionLabel}
+                                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                </Button>
+                                {deal.code && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Code:{" "}
+                                    <span className="font-mono font-medium">{deal.code}</span>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </AnimatedSection>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="claimed" className="space-y-4">
-                {CLAIMED_DEALS.map((deal, index) => (
-                  <AnimatedSection key={deal.id} animation="fade-up" delay={0.1 * (index + 2)}>
-                    <Card className="bg-muted/30">
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-6">
-                          <div className="text-5xl opacity-50">{deal.icon}</div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="text-lg font-semibold">{deal.title}</h3>
-                              <Badge variant="outline">Used</Badge>
                             </div>
-                            <p className="text-muted-foreground text-sm">{deal.description}</p>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                              <span>{deal.business}</span>
-                              <span>Claimed {deal.claimedAt}</span>
+                          </CardContent>
+                        </Card>
+                      </AnimatedSection>
+                    );
+                  })}
+                </TabsContent>
+
+                <TabsContent value="claimed" className="space-y-4">
+                  {visibleClaims.length === 0 && (
+                    <div className="text-center py-16">
+                      <div className="text-4xl mb-4">🎁</div>
+                      <h3 className="text-lg font-semibold mb-2">No claimed deals yet</h3>
+                      <p className="text-muted-foreground">
+                        Claim an offer to see it here.
+                      </p>
+                    </div>
+                  )}
+
+                  {visibleClaims.map((claim, index) => (
+                    <AnimatedSection
+                      key={claim.id}
+                      animation="fade-up"
+                      delay={0.05 * (index + 1)}
+                    >
+                      <Card className="bg-muted/30">
+                        <CardContent className="p-6">
+                          <div className="flex items-center gap-6">
+                            <div className="text-5xl opacity-70">
+                              {getBusinessIcon(claim.deal)}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-lg font-semibold">{claim.deal.title}</h3>
+                                <Badge variant="outline">
+                                  {claim.redeemed_at ? "Used" : "Claimed"}
+                                </Badge>
+                              </div>
+                              <p className="text-muted-foreground text-sm">
+                                {claim.deal.description}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                <span>{claim.deal.business?.name || "Local business"}</span>
+                                <span>Claimed {formatClaimedAt(claim.claimed_at)}</span>
+                                {claim.redeemed_code && (
+                                  <span className="font-mono">{claim.redeemed_code}</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-xl font-bold text-muted-foreground">
+                              {formatDiscount(
+                                claim.deal.discount_type,
+                                claim.deal.discount_value
+                              )}
                             </div>
                           </div>
-                          <div className="text-xl font-bold text-muted-foreground">{deal.discount}</div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </AnimatedSection>
-                ))}
-
-                {CLAIMED_DEALS.length === 0 && (
-                  <div className="text-center py-16">
-                    <div className="text-4xl mb-4">🎁</div>
-                    <h3 className="text-lg font-semibold mb-2">No claimed deals yet</h3>
-                    <p className="text-muted-foreground">Start exploring and claim your first deal!</p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </AnimatedSection>
+                        </CardContent>
+                      </Card>
+                    </AnimatedSection>
+                  ))}
+                </TabsContent>
+              </Tabs>
+            </AnimatedSection>
+          )}
         </div>
       </div>
     </div>

@@ -20,15 +20,17 @@ const reviewKeys = {
 // ============================================================================
 
 async function fetchBusinessReviews(businessId: string): Promise<ReviewWithUser[]> {
-  const response = await fetch(`/api/businesses/${businessId}/reviews`)
+  const response = await fetch(`/api/reviews?businessId=${encodeURIComponent(businessId)}&limit=20`)
   if (!response.ok) throw new Error('Failed to fetch reviews')
-  return response.json()
+  const payload = await response.json()
+  return payload.reviews || []
 }
 
 async function fetchUserReviews(userId: string): Promise<ReviewWithUser[]> {
-  const response = await fetch(`/api/users/${userId}/reviews`)
+  const response = await fetch(`/api/reviews?userId=${encodeURIComponent(userId)}&limit=20`)
   if (!response.ok) throw new Error('Failed to fetch user reviews')
-  return response.json()
+  const payload = await response.json()
+  return payload.reviews || []
 }
 
 // ============================================================================
@@ -43,7 +45,7 @@ async function createReview(data: ReviewCreateInput): Promise<Review> {
   })
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.message || 'Failed to create review')
+    throw new Error(error.error || error.message || 'Failed to create review')
   }
   return response.json()
 }
@@ -122,7 +124,7 @@ export function useDeleteReview() {
 
   return useMutation({
     mutationFn: deleteReview,
-    onSuccess: (_, id) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: reviewKeys.lists() })
     },
   })

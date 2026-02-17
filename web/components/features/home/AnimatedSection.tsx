@@ -16,7 +16,7 @@ export function AnimatedSection({
   animation = 'fade-up',
   delay = 0,
   className,
-  once = false,
+  once = true,
 }: AnimatedSectionProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)

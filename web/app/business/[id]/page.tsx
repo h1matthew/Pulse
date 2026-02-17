@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   MapPin,
   Phone,
@@ -14,9 +15,10 @@ import {
   DollarSign,
   Tag,
   TrendingUp,
-  Loader2,
   Send,
+  ExternalLink,
 } from "lucide-react";
+import Image from "next/image";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { useBusiness } from "@/hooks/useBusinesses";
+import { useClaimDeal } from "@/hooks/useDeals";
 import {
   useIsBookmarked,
   useToggleBookmark,
@@ -33,7 +36,19 @@ import {
 import { useAuth } from "@/components/providers/AuthProvider";
 import { toast } from "sonner";
 import { NavLink } from "@/components/ui/nav-link";
-import type { BusinessWithDetails, ReviewWithUser } from "@/types/business";
+import {
+  buildBusinessFallbackImageUrl,
+  buildBusinessPhotoUrl,
+  buildBusinessSummary,
+  getBusinessReviewLabel,
+  getGoogleMapsReviewUrl,
+  shouldShowGoogleReviewHint,
+} from "@/lib/business/display";
+import {
+  buildCombinedReviewFeed,
+  buildReviewPageNumbers,
+  paginateCombinedReviewFeed,
+} from "@/lib/business/review-feed";
 
 interface BusinessDetailPageProps {
   params: Promise<{ id: string }>;
@@ -44,12 +59,25 @@ export default function BusinessDetailPage({
 }: BusinessDetailPageProps) {
   const { id } = use(params);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [reviewText, setReviewText] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [heroPhotoFailed, setHeroPhotoFailed] = useState(false);
 
   const { data: business, isLoading } = useBusiness(id);
-  const { data: isBookmarked } = useIsBookmarked(id);
+  const canonicalBusinessId = business?.id || id;
+  const { data: isBookmarked } = useIsBookmarked(canonicalBusinessId);
   const toggleBookmark = useToggleBookmark();
+  const claimDeal = useClaimDeal();
+
+  useEffect(() => {
+    setHeroPhotoFailed(false);
+  }, [business?.id]);
+
+  useEffect(() => {
+    setReviewsPage(1);
+  }, [business?.id, business?.reviews?.length, business?.external_reviews?.length]);
 
   const handleBookmark = async () => {
     if (!user) {
@@ -61,7 +89,7 @@ export default function BusinessDetailPage({
 
     try {
       await toggleBookmark.mutateAsync({
-        businessId: id,
+        businessId: canonicalBusinessId,
         isBookmarked: isBookmarked || false,
       });
       toast.success(isBookmarked ? "Bookmark removed" : "Business bookmarked", {
@@ -69,7 +97,7 @@ export default function BusinessDetailPage({
           ? "Removed from your saved businesses"
           : "Added to your saved businesses",
       });
-    } catch (error) {
+    } catch {
       toast.error("Error", {
         description: "Failed to update bookmark",
       });
@@ -80,7 +108,15 @@ export default function BusinessDetailPage({
     try {
       await navigator.share({
         title: business?.name || "",
-        text: business?.short_description || business?.description || "",
+        text: buildBusinessSummary({
+          name: business?.name || "",
+          short_description: business?.short_description,
+          description: business?.description,
+          categoryName: business?.category?.name,
+          city: business?.city,
+          state: business?.state,
+          tags: business?.tags,
+        }),
         url: window.location.href,
       });
     } catch {
@@ -116,12 +152,19 @@ export default function BusinessDetailPage({
       return;
     }
 
+    if (!business?.id) {
+      toast.error("Business unavailable", {
+        description: "Could not resolve this business. Please refresh and try again.",
+      });
+      return;
+    }
+
     try {
       const response = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          business_id: id,
+          business_id: business.id,
           rating: reviewRating,
           content: reviewText,
         }),
@@ -134,9 +177,35 @@ export default function BusinessDetailPage({
       });
       setReviewText("");
       setReviewRating(5);
-    } catch (error) {
+      queryClient.invalidateQueries({ queryKey: ["businesses", "detail"] });
+    } catch {
       toast.error("Error", {
         description: "Failed to submit review. Please try again.",
+      });
+    }
+  };
+
+  const handleClaimDeal = async (dealId: string) => {
+    if (!user) {
+      toast.error("Sign in required", {
+        description: "Please sign in to claim deals",
+      });
+      return;
+    }
+
+    try {
+      await claimDeal.mutateAsync(dealId);
+      toast.success("Deal claimed", {
+        description: "Your deal is now available in your claims.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["businesses", "detail"] });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to claim deal.";
+      toast.error("Could not claim deal", {
+        description: message,
       });
     }
   };
@@ -205,6 +274,47 @@ export default function BusinessDetailPage({
   const { hours: businessHours, today } = getBusinessHours(
     (business.hours as Record<string, string>) || {}
   );
+  const localReviews = business.reviews || [];
+  const externalReviews = business.external_reviews || [];
+  const localReviewCount = business.local_review_count ?? localReviews.length;
+  const combinedReviewFeed = buildCombinedReviewFeed(localReviews, externalReviews);
+  const combinedReviewCount = combinedReviewFeed.length;
+  const reviewTabCount =
+    business.data_source === "google"
+      ? Math.max(business.review_count || 0, combinedReviewCount)
+      : combinedReviewCount;
+  const paginatedReviews = paginateCombinedReviewFeed(combinedReviewFeed, reviewsPage);
+  const reviewPages = buildReviewPageNumbers(paginatedReviews.totalPages);
+  const reviewLabel = getBusinessReviewLabel({
+    data_source: business.data_source,
+    review_count: business.review_count,
+  });
+  const defaultTab = reviewTabCount > 0 ? "reviews" : "about";
+  const businessSummary = buildBusinessSummary({
+    name: business.name,
+    short_description: business.short_description,
+    description: business.description,
+    categoryName: business.category?.name,
+    city: business.city,
+    state: business.state,
+    tags: business.tags,
+  });
+  const showGoogleReviewHint = shouldShowGoogleReviewHint({
+    data_source: business.data_source,
+    review_count: business.review_count,
+    local_review_count: localReviewCount,
+  });
+  const fallbackHeroImageUrl = buildBusinessFallbackImageUrl({
+    name: business.name,
+    categoryName: business.category?.name,
+  });
+  const googleReviewsUrl = getGoogleMapsReviewUrl({
+    name: business.name,
+    address: [business.address, business.city, business.state]
+      .filter(Boolean)
+      .join(", "),
+    place_id: business.place_id,
+  });
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -212,14 +322,46 @@ export default function BusinessDetailPage({
 
       <div className="pt-20 pb-12">
         <div className="mx-auto max-w-6xl px-6">
-          {/* Hero Image Placeholder */}
+          {/* Hero Image */}
           <AnimatedSection animation="fade-up">
-            <div className="h-64 md:h-80 bg-gradient-to-br from-primary/10 via-chart-2/10 to-chart-3/10 rounded-2xl flex items-center justify-center mb-6 relative overflow-hidden">
-              <div className="text-8xl">
-                {business.category?.icon || "🏪"}
-              </div>
+            <div className="h-64 md:h-80 rounded-2xl mb-6 relative overflow-hidden">
+              {(() => {
+                const photoUrl = buildBusinessPhotoUrl(business.photos?.[0], {
+                  maxWidth: 800,
+                  maxHeight: 500,
+                });
+                const showPhoto = !!photoUrl && !heroPhotoFailed;
+                return showPhoto ? (
+                  <>
+                    <Image
+                      src={photoUrl}
+                      alt={business.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1200px) 100vw, 1152px"
+                      priority
+                      unoptimized
+                      onError={() => setHeroPhotoFailed(true)}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  </>
+                ) : (
+                  <>
+                    <Image
+                      src={fallbackHeroImageUrl}
+                      alt={`${business.name} default cover`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1200px) 100vw, 1152px"
+                      priority
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+                  </>
+                );
+              })()}
               {business.is_featured && (
-                <Badge className="absolute top-4 left-4 bg-chart-2 text-white">
+                <Badge className="absolute top-4 left-4 bg-chart-2 text-white border-0 shadow-lg">
                   Featured
                 </Badge>
               )}
@@ -245,7 +387,7 @@ export default function BusinessDetailPage({
                     <span className="font-medium text-foreground">
                       {business.average_rating}
                     </span>
-                    <span>({business.review_count} reviews)</span>
+                    <span>({reviewLabel})</span>
                   </span>
                   <span>•</span>
                   <span>{business.category?.name}</span>
@@ -286,11 +428,11 @@ export default function BusinessDetailPage({
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
               <AnimatedSection animation="fade-up" delay={0.15}>
-                <Tabs defaultValue="about" className="w-full">
+                <Tabs defaultValue={defaultTab} className="w-full">
                   <TabsList className="w-full justify-start">
                     <TabsTrigger value="about">About</TabsTrigger>
                     <TabsTrigger value="reviews">
-                      Reviews ({business.reviews?.length || 0})
+                      Reviews ({reviewTabCount})
                     </TabsTrigger>
                     <TabsTrigger value="deals">
                       Deals ({business.deals?.length || 0})
@@ -302,8 +444,8 @@ export default function BusinessDetailPage({
                     <Card>
                       <CardContent className="p-6">
                         <h3 className="font-semibold mb-3">About</h3>
-                        <p className="text-muted-foreground">
-                          {business.description || business.short_description || "No description available."}
+                        <p className="text-foreground leading-relaxed">
+                          {businessSummary}
                         </p>
 
                         {business.tags && business.tags.length > 0 && (
@@ -409,6 +551,31 @@ export default function BusinessDetailPage({
                   </TabsContent>
 
                   <TabsContent value="reviews" className="mt-6 space-y-6">
+                    {business.data_source === "google" && business.review_count > 0 && (
+                      <Card>
+                        <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="font-medium text-foreground">
+                              Want to read all {reviewLabel.toLowerCase()}?
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Open the full review feed on Google Maps.
+                            </p>
+                          </div>
+                          <Button variant="outline" size="sm" asChild>
+                            <a
+                              href={googleReviewsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Read all reviews on Google Maps
+                              <ExternalLink className="h-3.5 w-3.5 ml-2" />
+                            </a>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    )}
+
                     {/* Write Review */}
                     {user && (
                       <Card>
@@ -458,48 +625,181 @@ export default function BusinessDetailPage({
                     )}
 
                     {/* Reviews List */}
-                    {business.reviews && business.reviews.length > 0 ? (
-                      business.reviews.map((review: ReviewWithUser, index: number) => (
-                        <AnimatedSection
-                          key={review.id}
-                          animation="fade-up"
-                          delay={0.1 * index}
-                        >
+                    {combinedReviewCount > 0 ? (
+                      <>
+                        {paginatedReviews.items.map((item, index: number) => (
+                          <AnimatedSection
+                            key={item.id}
+                            animation="fade-up"
+                            delay={0.08 * index}
+                          >
+                            <Card>
+                              <CardContent className="p-6">
+                                {item.source === "pulse" ? (
+                                  <>
+                                    <div className="flex items-start justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                          <span className="font-medium">
+                                            {item.review.user?.full_name?.[0] || "U"}
+                                          </span>
+                                        </div>
+                                        <div>
+                                          <p className="font-medium">
+                                            {item.review.user?.full_name || "Anonymous"}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {new Date(item.review.created_at).toLocaleDateString()}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-[10px]">
+                                          Pulse
+                                        </Badge>
+                                        <div className="flex items-center gap-1">
+                                          <Star className="h-4 w-4 fill-chart-5 text-chart-5" />
+                                          <span>{item.review.rating}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <p className="text-foreground leading-relaxed">
+                                      {item.review.content}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="flex items-start justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                          <span className="font-medium">
+                                            {item.review.author_name?.[0] || "G"}
+                                          </span>
+                                        </div>
+                                        <div>
+                                          <p className="font-medium">
+                                            {item.review.author_name || "Google user"}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {item.review.relative_time ||
+                                              (item.review.created_at
+                                                ? new Date(item.review.created_at).toLocaleDateString()
+                                                : "Google review")}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[10px] border-primary/40 text-primary"
+                                        >
+                                          Google
+                                        </Badge>
+                                        <div className="flex items-center gap-1">
+                                          <Star className="h-4 w-4 fill-chart-5 text-chart-5" />
+                                          <span>{item.review.rating}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <p className="text-foreground leading-relaxed">
+                                      {item.review.content}
+                                    </p>
+                                    {item.review.maps_url && (
+                                      <div className="mt-3">
+                                        <a
+                                          href={item.review.maps_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                                        >
+                                          View on Google Maps
+                                          <ExternalLink className="h-3.5 w-3.5" />
+                                        </a>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </CardContent>
+                            </Card>
+                          </AnimatedSection>
+                        ))}
+
+                        {paginatedReviews.totalPages > 1 && (
                           <Card>
-                            <CardContent className="p-6">
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <span className="font-medium">
-                                      {review.user?.full_name?.[0] || "U"}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <p className="font-medium">
-                                      {review.user?.full_name || "Anonymous"}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {new Date(review.created_at).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Star className="h-4 w-4 fill-chart-5 text-chart-5" />
-                                  <span>{review.rating}</span>
-                                </div>
+                            <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <p className="text-sm text-muted-foreground">
+                                Page {paginatedReviews.page} of {paginatedReviews.totalPages}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={!paginatedReviews.hasPreviousPage}
+                                  onClick={() =>
+                                    setReviewsPage((currentPage) => Math.max(1, currentPage - 1))
+                                  }
+                                >
+                                  Previous
+                                </Button>
+                                {reviewPages.map((pageNumber) => (
+                                  <Button
+                                    key={pageNumber}
+                                    variant={pageNumber === paginatedReviews.page ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setReviewsPage(pageNumber)}
+                                    aria-label={`Go to reviews page ${pageNumber}`}
+                                  >
+                                    {pageNumber}
+                                  </Button>
+                                ))}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={!paginatedReviews.hasNextPage}
+                                  onClick={() =>
+                                    setReviewsPage((currentPage) =>
+                                      Math.min(paginatedReviews.totalPages, currentPage + 1)
+                                    )
+                                  }
+                                >
+                                  Next
+                                </Button>
                               </div>
-                              <p className="text-muted-foreground">{review.content}</p>
                             </CardContent>
                           </Card>
-                        </AnimatedSection>
-                      ))
+                        )}
+                      </>
                     ) : (
                       <Card>
                         <CardContent className="p-6 text-center">
-                          <p className="text-muted-foreground">No reviews yet</p>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Be the first to share your experience!
-                          </p>
+                          {showGoogleReviewHint ? (
+                            <>
+                              <p className="text-foreground font-medium">
+                                No written Pulse reviews yet
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-1 mb-4">
+                                This business has {reviewLabel.toLowerCase()} from Google, but
+                                no detailed reviews have been posted in Pulse yet.
+                              </p>
+                              <Button variant="outline" size="sm" asChild>
+                                <a
+                                  href={googleReviewsUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Read on Google Maps
+                                  <ExternalLink className="h-3.5 w-3.5 ml-2" />
+                                </a>
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-muted-foreground">No reviews yet</p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Be the first to share your experience!
+                              </p>
+                            </>
+                          )}
                         </CardContent>
                       </Card>
                     )}
@@ -544,9 +844,14 @@ export default function BusinessDetailPage({
                                         : `$${deal.discount_value}`}
                                     </div>
                                   )}
-                                  <Button size="sm" className="mt-2">
+                                  <Button
+                                    size="sm"
+                                    className="mt-2"
+                                    disabled={claimDeal.isPending}
+                                    onClick={() => handleClaimDeal(deal.id)}
+                                  >
                                     <DollarSign className="h-4 w-4 mr-1" />
-                                    Claim
+                                    {claimDeal.isPending ? "Claiming..." : "Claim"}
                                   </Button>
                                 </div>
                               </div>
@@ -624,7 +929,9 @@ export default function BusinessDetailPage({
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Total reviews</span>
+                      <span className="text-muted-foreground">
+                        {business.data_source === "google" ? "Total ratings" : "Total reviews"}
+                      </span>
                       <span className="font-medium">
                         {business.review_count}
                       </span>
