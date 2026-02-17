@@ -14,6 +14,7 @@ import { Header } from "@/components/layout/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -354,6 +355,41 @@ export default function DealsPage() {
           )}
         </div>
       </div>
+
+      {/* Claim Success Dialog */}
+      <Dialog open={!!claimedDeal} onOpenChange={handleCloseDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deal Claimed! 🎉</DialogTitle>
+            <DialogDescription>
+              {selectedDeal?.title} at {selectedDeal?.business?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-2">Your redemption code:</p>
+              <div className="flex items-center justify-center gap-2">
+                <code className="text-2xl font-bold bg-muted px-4 py-2 rounded-lg">
+                  {claimedDeal?.redeemed_code}
+                </code>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleCopyCode}
+                >
+                  {copiedCode ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              Show this code to the business to redeem your deal.
+            </p>
+          </div>
+          <Button onClick={handleCloseDialog} className="w-full">
+            Got it!
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

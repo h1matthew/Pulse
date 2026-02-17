@@ -1,6 +1,8 @@
 import { Heart, MapPin, Star, TrendingUp, ArrowRight, Zap, Target, Users } from "lucide-react"
 import { Header } from "@/components/layout/Header"
 import { AnimatedSection } from "@/components/features/home/AnimatedSection"
+import { HeroStats, CommunityPulseCard } from "@/components/features/home/CommunityStatsIsland"
+import { OnboardingTour } from "@/components/features/help/OnboardingTour"
 import { NavLink } from "@/components/ui/nav-link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,7 +14,7 @@ export default function Home() {
       <Header />
 
       {/* Hero Section */}
-      <section className="relative isolate flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 pt-16">
+      <section aria-label="Hero" className="relative isolate flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 pt-16">
         {/* Background gradient */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-chart-2/5" />
@@ -58,40 +60,15 @@ export default function Home() {
             </div>
           </AnimatedSection>
 
-          {/* Stats Preview */}
+          {/* Stats Preview — live community data */}
           <AnimatedSection animation="fade-up" delay={0.4}>
-            <div className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
-              <Card className="bg-card/50 backdrop-blur">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-primary">$2.4M</div>
-                  <div className="text-xs text-muted-foreground">Kept Local</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/50 backdrop-blur">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-chart-2">847</div>
-                  <div className="text-xs text-muted-foreground">Businesses</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/50 backdrop-blur">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-chart-3">12.5K</div>
-                  <div className="text-xs text-muted-foreground">Reviews</div>
-                </CardContent>
-              </Card>
-              <Card className="bg-card/50 backdrop-blur">
-                <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-chart-4">3.2K</div>
-                  <div className="text-xs text-muted-foreground">Community Members</div>
-                </CardContent>
-              </Card>
-            </div>
+            <HeroStats />
           </AnimatedSection>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="relative px-6 py-24 bg-muted/30">
+      <section aria-label="Features" className="relative px-6 py-24 bg-muted/30">
         <div className="mx-auto max-w-6xl">
           <AnimatedSection animation="fade-up">
             <div className="text-center mb-16">
@@ -200,7 +177,7 @@ export default function Home() {
       </section>
 
       {/* Community Pulse Section */}
-      <section className="relative px-6 py-24">
+      <section aria-label="Community Pulse" className="relative px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <AnimatedSection animation="fade-up">
@@ -245,37 +222,7 @@ export default function Home() {
             <AnimatedSection animation="fade-up" delay={0.2}>
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-chart-2/20 rounded-3xl blur-3xl" />
-                <Card className="relative bg-card/80 backdrop-blur">
-                  <CardContent className="p-8">
-                    <div className="text-center mb-8">
-                      <div className="text-5xl font-bold gradient-text mb-2">8,742</div>
-                      <div className="text-sm text-muted-foreground">Community Pulse Score</div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Dollars Kept Local</span>
-                        <span className="font-medium">$2.4M</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full w-3/4 bg-gradient-to-r from-primary to-chart-2 rounded-full" />
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Businesses Supported</span>
-                        <span className="font-medium">847</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full w-2/3 bg-gradient-to-r from-chart-3 to-chart-4 rounded-full" />
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Jobs Impacted</span>
-                        <span className="font-medium">156</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full w-1/2 bg-gradient-to-r from-chart-5 to-primary rounded-full" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <CommunityPulseCard />
               </div>
             </AnimatedSection>
           </div>
@@ -283,7 +230,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative overflow-hidden px-6 py-24 bg-muted/30">
+      <section aria-label="Call to action" className="relative overflow-hidden px-6 py-24 bg-muted/30">
         <div className="relative mx-auto max-w-2xl text-center">
           <AnimatedSection animation="fade-up">
             <h2 className="text-3xl font-bold tracking-tight mb-4">
@@ -310,7 +257,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="relative px-6 py-12 border-t">
+      <footer role="contentinfo" aria-label="Site footer" className="relative px-6 py-12 border-t">
         <div className="mx-auto max-w-6xl">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -362,6 +309,9 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* First-time user onboarding tour */}
+      <OnboardingTour />
     </div>
   )
 }

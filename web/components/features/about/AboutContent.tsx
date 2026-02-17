@@ -4,7 +4,6 @@ import { Heart, Sparkles, Store } from 'lucide-react'
 import { FounderCard } from './FounderCard'
 import type { Founder } from './FounderCard'
 import { AnimatedSection } from '@/components/features/home/AnimatedSection'
-import { FloatingElement } from '@/components/features/home/FloatingElement'
 
 interface AboutContentProps {
   founders: Founder[]
@@ -57,10 +56,8 @@ export function AboutContent({ founders }: AboutContentProps) {
             </div>
 
             {/* Floating decorations */}
-            <div className="absolute top-8 right-8 hidden lg:block">
-              <FloatingElement amplitude={10} duration={4}>
-                <Sparkles className="h-6 w-6 text-primary/40" />
-              </FloatingElement>
+            <div className="absolute top-8 right-8 hidden lg:block animate-float">
+              <Sparkles className="h-6 w-6 text-primary/40" />
             </div>
 
             <div className="relative mx-auto max-w-3xl text-center">

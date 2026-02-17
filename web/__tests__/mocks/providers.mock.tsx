@@ -6,6 +6,29 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 
+// Mock accessibility context
+interface MockAccessibilityContextValue {
+  announce: (message: string, priority?: 'polite' | 'assertive') => void
+  clearAnnouncements: () => void
+}
+
+const defaultMockAccessibility: MockAccessibilityContextValue = {
+  announce: vi.fn(),
+  clearAnnouncements: vi.fn(),
+}
+
+export function createMockAccessibilityProvider() {
+  const AccessibilityContext = React.createContext<MockAccessibilityContextValue>(defaultMockAccessibility)
+
+  const MockAccessibilityProvider = ({ children }: { children: React.ReactNode }) => (
+    <AccessibilityContext.Provider value={defaultMockAccessibility}>{children}</AccessibilityContext.Provider>
+  )
+
+  const useAccessibility = () => React.useContext(AccessibilityContext)
+
+  return { MockAccessibilityProvider, useAccessibility, AccessibilityContext }
+}
+
 // Create a fresh QueryClient for each test
 export function createTestQueryClient() {
   return new QueryClient({
@@ -107,13 +130,16 @@ export function createTestWrapper(options: {
   const { authValue = defaultMockAuth, queryClient = createTestQueryClient() } = options
   const { MockAuthProvider } = createMockAuthProvider(authValue)
   const { MockAchievementProvider } = createMockAchievementProvider()
+  const { MockAccessibilityProvider } = createMockAccessibilityProvider()
 
   return function TestWrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
         <MockAuthProvider>
           <MockAchievementProvider>
-            {children}
+            <MockAccessibilityProvider>
+              {children}
+            </MockAccessibilityProvider>
           </MockAchievementProvider>
         </MockAuthProvider>
       </QueryClientProvider>

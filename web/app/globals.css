@@ -9,6 +9,21 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Enhanced focus-visible outlines for keyboard accessibility */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Ensure interactive elements have clear focus indicators */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary ring-2 ring-primary/20;
+  }
 }
 
 /* ─── KaTeX Enhancements ─── */
@@ -66,4 +81,26 @@
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: oklch(0.5 0 0 / 0.3);
+}
+
+/* ─── Impact Report Print Styles ─── */
+@media print {
+  body.printing-report * {
+    visibility: hidden;
+  }
+  body.printing-report .impact-report-printable,
+  body.printing-report .impact-report-printable * {
+    visibility: visible;
+  }
+  body.printing-report .impact-report-printable {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  body.printing-report [data-slot="dialog-overlay"],
+  body.printing-report [data-slot="dialog-close"],
+  body.printing-report .no-print {
+    display: none !important;
+  }
 }

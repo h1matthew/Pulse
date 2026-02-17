@@ -35,6 +35,11 @@ vi.mock('../MobileMenu', () => ({
   MobileMenu: () => <div data-testid="mobile-menu">Mobile Menu</div>,
 }))
 
+// Mock HelpMenu
+vi.mock('@/components/features/help/HelpMenu', () => ({
+  HelpMenu: ({ compact }: { compact?: boolean }) => <div data-testid="help-menu">Help</div>,
+}))
+
 describe('Header', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -45,7 +50,7 @@ describe('Header', () => {
   it('renders logo', () => {
     render(<Header />)
 
-    const logo = screen.getByAltText('Pulse')
+    const logo = screen.getByAltText('Pulse logo')
     expect(logo).toBeInTheDocument()
   })
 
