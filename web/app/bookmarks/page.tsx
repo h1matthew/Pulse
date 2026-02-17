@@ -261,7 +261,7 @@ export default function BookmarksPage() {
                   <div className="h-12 w-12 rounded-xl bg-chart-5/10 flex items-center justify-center">
                     <Heart className="h-6 w-6 text-chart-5" />
                   </div>
-                  <div>
+                  <div suppressHydrationWarning>
                     {isLoading ? (
                       <Skeleton className="h-8 w-12" />
                     ) : (
@@ -278,7 +278,7 @@ export default function BookmarksPage() {
                   <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
                     <Star className="h-6 w-6 text-primary" />
                   </div>
-                  <div>
+                  <div suppressHydrationWarning>
                     {isLoading ? (
                       <Skeleton className="h-8 w-12" />
                     ) : (
@@ -295,7 +295,7 @@ export default function BookmarksPage() {
                   <div className="h-12 w-12 rounded-xl bg-chart-2/10 flex items-center justify-center">
                     <MapPin className="h-6 w-6 text-chart-2" />
                   </div>
-                  <div>
+                  <div suppressHydrationWarning>
                     {isLoading ? (
                       <Skeleton className="h-8 w-12" />
                     ) : (

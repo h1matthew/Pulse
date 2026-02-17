@@ -1169,35 +1169,7 @@ SELECT
 FROM categories c WHERE c.slug = 'health-wellness'
 ON CONFLICT (slug) DO NOTHING;
 
--- Sample deals
-INSERT INTO deals (business_id, title, description, deal_type, discount_type, discount_value, code, is_active)
-SELECT
-  b.id,
-  'First Visit Special',
-  'Get 15% off your first purchase when you check in on Pulse!',
-  'standard',
-  'percentage',
-  15,
-  'PULSE15',
-  true
-FROM businesses b WHERE b.slug = 'the-local-bean'
-ON CONFLICT DO NOTHING;
-
-INSERT INTO deals (business_id, title, description, deal_type, discount_type, discount_value, mission_requirement, code, is_active)
-SELECT
-  b.id,
-  'Coffee Explorer Mission',
-  'Try 3 different local coffee shops this month and unlock a free pastry!',
-  'boost_mission',
-  'free_item',
-  NULL,
-  'Visit 3 coffee shops',
-  'COFFEE3',
-  true
-FROM businesses b WHERE b.slug = 'the-local-bean'
-ON CONFLICT DO NOTHING;
-
--- Sample boost missions
+-- Sample boost missions (these are app features, not business deals)
 INSERT INTO boost_missions (title, description, mission_type, target_count, reward_description, is_active)
 VALUES
   ('Coffee Explorer', 'Visit 3 different local coffee shops this month', 'category_explore', 3, 'Free pastry at any participating coffee shop', true),

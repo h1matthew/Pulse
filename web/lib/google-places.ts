@@ -1,18 +1,19 @@
 /**
- * Google Places API Client with Caching
+ * OpenWeb Ninja Local Business Data API Client with Caching
+ *
+ * Provides business search, details, and photo retrieval using the
+ * OpenWeb Ninja API (https://api.openwebninja.com/local-business-data).
  *
  * Implements cost-saving strategies:
  * - Cache place_id indefinitely
- * - Cache business details for 30 days (max allowed by Google)
+ * - Cache business details for 30 days
  * - Debounced search (300ms delay)
- * - Session tokens for autocomplete
  */
 
 import { createClient } from './supabase/server'
 import type {
   GooglePlace,
   GooglePlacePhoto,
-  CachedPlace,
   LatLng,
   BusinessSearchFilters,
 } from '@/types/business'
@@ -21,59 +22,79 @@ import type {
 // Configuration
 // ============================================================================
 
-const GOOGLE_PLACES_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || ''
+const OPENWEBNINJA_API_KEY = process.env.OPENWEBNINJA_API_KEY || ''
 const CACHE_DURATION_DAYS = 30
-const API_BASE_URL = 'https://places.googleapis.com/v1'
-
-// Field masks for different API calls (controls pricing tier)
-const SEARCH_FIELD_MASK = 'places.id,places.displayName,places.formattedAddress,places.location,places.types,places.priceLevel,places.rating,places.userRatingCount,places.photos'
-const DETAILS_FIELD_MASK = 'id,displayName,formattedAddress,location,types,priceLevel,rating,userRatingCount,photos,formattedPhoneNumber,websiteUri,regularOpeningHours,editorialSummary'
+const API_BASE_URL = 'https://api.openwebninja.com/local-business-data'
 
 // ============================================================================
-// Types
+// OpenWeb Ninja Response Types
 // ============================================================================
 
-interface PlacesSearchResponse {
-  places?: GooglePlaceResult[]
-  nextPageToken?: string
+interface OWNPhotoSample {
+  photo_id: string
+  photo_url: string
+  photo_url_large: string
+  video_thumbnail_url: string | null
+  latitude: number
+  longitude: number
+  type: string
+  photo_datetime_utc: string
+  photo_timestamp: number
 }
 
-interface GooglePlaceResult {
-  id: string // This is the place_id in new API
-  displayName?: {
-    text: string
-    languageCode: string
-  }
-  formattedAddress?: string
-  location?: {
-    latitude: number
-    longitude: number
-  }
-  types?: string[]
-  priceLevel?: 'PRICE_LEVEL_UNSPECIFIED' | 'FREE' | 'INEXPENSIVE' | 'MODERATE' | 'EXPENSIVE' | 'VERY_EXPENSIVE'
-  rating?: number
-  userRatingCount?: number
-  photos?: GooglePlacePhotoResult[]
-  formattedPhoneNumber?: string
-  websiteUri?: string
-  regularOpeningHours?: {
-    openNow?: boolean
-    periods?: {
-      open: { day: number; hour: number; minute: number }
-      close?: { day: number; hour: number; minute: number }
-    }[]
-    weekdayDescriptions?: string[]
-  }
-  editorialSummary?: {
-    text: string
-    languageCode: string
-  }
+interface OWNBusinessResult {
+  business_id: string
+  google_id: string
+  place_id: string
+  google_mid?: string
+  phone_number: string | null
+  name: string
+  latitude: number
+  longitude: number
+  full_address: string
+  review_count: number
+  rating: number
+  timezone: string
+  opening_status: string | null
+  working_hours: Record<string, string[]>
+  website: string | null
+  tld?: string
+  verified: boolean
+  place_link: string
+  cid: string
+  reviews_link: string
+  owner_id: string | null
+  owner_link: string | null
+  owner_name: string | null
+  booking_link: string | null
+  reservations_link: string | null
+  business_status: string
+  type: string
+  subtypes: string[]
+  subtype_gcids?: string[]
+  photos_sample: OWNPhotoSample[]
+  reviews_per_rating: Record<string, number> | null
+  photo_count: number
+  about: {
+    summary: string | null
+    details: Record<string, Record<string, boolean>> | null
+  } | null
+  address: string
+  order_link: string | null
+  price_level: string | null
+  district: string | null
+  street_address: string
+  city: string
+  zipcode: string
+  state: string
+  country: string
 }
 
-interface GooglePlacePhotoResult {
-  name: string // Format: places/PLACE_ID/photos/PHOTO_REFERENCE
-  widthPx: number
-  heightPx: number
+interface OWNSearchResponse {
+  status?: string
+  request_id: string
+  parameters: Record<string, unknown>
+  data: OWNBusinessResult[]
 }
 
 // ============================================================================
@@ -81,17 +102,16 @@ interface GooglePlacePhotoResult {
 // ============================================================================
 
 /**
- * Search businesses using Google Places Text Search API with caching
+ * Search businesses using OpenWeb Ninja Text Search API with caching
  */
 export async function searchBusinesses(
   query: string,
   location?: LatLng,
-  radius: number = 5000, // 5km default
+  radius: number = 5000,
   filters?: BusinessSearchFilters
 ): Promise<{ places: GooglePlace[]; fromCache: boolean }> {
   // 1. Check cache first
   const supabase = await createClient()
-  const cacheKey = generateSearchCacheKey(query, location, filters)
 
   const { data: cachedResults } = await supabase
     .from('cached_places')
@@ -107,8 +127,8 @@ export async function searchBusinesses(
     }
   }
 
-  // 2. Call Google Places API if cache miss
-  const places = await searchGooglePlaces(query, location, radius, filters)
+  // 2. Call OpenWeb Ninja API if cache miss
+  const places = await searchOWNPlaces(query, location, radius, filters)
 
   // 3. Store results in cache
   await cachePlaces(places)
@@ -129,65 +149,47 @@ export async function searchNearbyBusinesses(
   return places
 }
 
-async function searchGooglePlaces(
+async function searchOWNPlaces(
   query: string,
   location?: LatLng,
-  radius?: number,
+  _radius?: number,
   filters?: BusinessSearchFilters
 ): Promise<GooglePlace[]> {
-  const requestBody: Record<string, unknown> = {
-    textQuery: query,
-    maxResultCount: 20,
+  const params: Record<string, string | number | boolean> = {
+    query,
+    limit: 20,
+    language: 'en',
+    region: 'us',
+    business_status: 'OPEN',
   }
 
   if (location) {
-    requestBody.locationBias = {
-      circle: {
-        center: {
-          latitude: location.lat,
-          longitude: location.lng,
-        },
-        radius: radius || 5000,
-      },
-    }
+    params.lat = location.lat
+    params.lng = location.lng
+    params.zoom = 13
   }
 
-  // Add price level filter if specified
-  if (filters?.priceRange && filters.priceRange.length > 0) {
-    const priceLevels = filters.priceRange.map(p => {
-      switch (p) {
-        case 1: return 'PRICE_LEVEL_INEXPENSIVE'
-        case 2: return 'PRICE_LEVEL_MODERATE'
-        case 3: return 'PRICE_LEVEL_EXPENSIVE'
-        case 4: return 'PRICE_LEVEL_VERY_EXPENSIVE'
-        default: return null
-      }
-    }).filter(Boolean)
-
-    if (priceLevels.length > 0) {
-      requestBody.priceLevels = priceLevels
-    }
+  // Add subtype filter from category
+  if (filters?.category) {
+    params.subtypes = filters.category
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/places:searchText`, {
-      method: 'POST',
+    const url = buildUrl('/search', params)
+    const response = await fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': SEARCH_FIELD_MASK,
+        'x-api-key': OPENWEBNINJA_API_KEY,
       },
-      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {
       const error = await response.text()
-      console.error('Google Places API error:', error)
-      throw new Error(`Google Places API error: ${response.status}`)
+      console.error('OpenWeb Ninja API error:', error)
+      throw new Error(`OpenWeb Ninja API error: ${response.status}`)
     }
 
-    const data: PlacesSearchResponse = await response.json()
-    return (data.places || []).map(transformPlaceResult)
+    const data: OWNSearchResponse = await response.json()
+    return (data.data || []).map(transformOWNResult)
   } catch (error) {
     console.error('Failed to search places:', error)
     return []
@@ -218,20 +220,29 @@ export async function getBusinessDetails(placeId: string): Promise<GooglePlace |
 
   // 2. Call API if not cached or expired
   try {
-    const response = await fetch(`${API_BASE_URL}/places/${placeId}`, {
+    const params: Record<string, string | number | boolean> = {
+      business_id: placeId,
+      extract_emails_and_contacts: false,
+      language: 'en',
+      region: 'us',
+    }
+
+    const url = buildUrl('/business-details', params)
+    const response = await fetch(url, {
       headers: {
-        'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
-        'X-Goog-FieldMask': DETAILS_FIELD_MASK,
+        'x-api-key': OPENWEBNINJA_API_KEY,
       },
     })
 
     if (!response.ok) {
       if (response.status === 404) return null
-      throw new Error(`Google Places API error: ${response.status}`)
+      throw new Error(`OpenWeb Ninja API error: ${response.status}`)
     }
 
-    const result: GooglePlaceResult = await response.json()
-    const place = transformPlaceResult(result)
+    const data = await response.json() as { data: OWNBusinessResult[] }
+    if (!data.data || data.data.length === 0) return null
+
+    const place = transformOWNResult(data.data[0])
 
     // 3. Cache the result
     await cachePlaces([place])
@@ -248,24 +259,25 @@ export async function getBusinessDetails(placeId: string): Promise<GooglePlace |
 // ============================================================================
 
 /**
- * Get photo URL from Google Places Photo API
+ * Get photo URL — OpenWeb Ninja provides direct CDN URLs, no API key needed
  */
 export function getPhotoUrl(
-  photoName: string, // Format: places/PLACE_ID/photos/PHOTO_REFERENCE
-  maxWidth: number = 800
+  photoUrl: string,
+  _maxWidth: number = 800
 ): string {
-  return `${API_BASE_URL}/${photoName}/media?key=${GOOGLE_PLACES_API_KEY}&maxWidthPx=${maxWidth}`
+  // OpenWeb Ninja already provides direct URLs to Google CDN
+  return photoUrl
 }
 
 /**
  * Get photo URLs for a place
  */
-export function getPlacePhotos(place: GooglePlace, maxWidth: number = 800): string[] {
+export function getPlacePhotos(place: GooglePlace, _maxWidth: number = 800): string[] {
   if (!place.photos || place.photos.length === 0) return []
 
   return place.photos
-    .slice(0, 5) // Limit to 5 photos
-    .map(photo => getPhotoUrl(photo.photo_reference, maxWidth))
+    .slice(0, 5)
+    .map(photo => photo.photo_reference)
 }
 
 // ============================================================================
@@ -289,7 +301,6 @@ async function cachePlaces(places: GooglePlace[]): Promise<void> {
     expires_at: expiresAt.toISOString(),
   }))
 
-  // Upsert to handle updates
   const { error } = await supabase
     .from('cached_places')
     .upsert(cacheEntries, {
@@ -302,83 +313,64 @@ async function cachePlaces(places: GooglePlace[]): Promise<void> {
   }
 }
 
-function generateSearchCacheKey(
-  query: string,
-  location?: LatLng,
-  filters?: BusinessSearchFilters
-): string {
-  const parts = [query.toLowerCase().trim()]
-  if (location) parts.push(`${location.lat},${location.lng}`)
-  if (filters?.category) parts.push(filters.category)
-  return parts.join(':')
-}
-
 // ============================================================================
 // Transformation Functions
 // ============================================================================
 
-function transformPlaceResult(result: GooglePlaceResult): GooglePlace {
+/**
+ * Transform OpenWeb Ninja business result to our GooglePlace format
+ * for backward compatibility with the rest of the app
+ */
+function transformOWNResult(result: OWNBusinessResult): GooglePlace {
   // Convert price level from string to number
   let priceLevel: number | undefined
-  switch (result.priceLevel) {
-    case 'INEXPENSIVE': priceLevel = 1; break
-    case 'MODERATE': priceLevel = 2; break
-    case 'EXPENSIVE': priceLevel = 3; break
-    case 'VERY_EXPENSIVE': priceLevel = 4; break
+  switch (result.price_level) {
+    case '$': priceLevel = 1; break
+    case '$$': priceLevel = 2; break
+    case '$$$': priceLevel = 3; break
+    case '$$$$': priceLevel = 4; break
     default: priceLevel = undefined
   }
 
-  // Transform photos
-  const photos: GooglePlacePhoto[] = (result.photos || []).map(photo => ({
-    photo_reference: photo.name,
-    height: photo.heightPx,
-    width: photo.widthPx,
-    html_attributions: [], // New API doesn't provide this in the same way
+  // Transform photos — OpenWeb Ninja provides direct URLs
+  const photos: GooglePlacePhoto[] = (result.photos_sample || []).map(photo => ({
+    photo_reference: photo.photo_url_large || photo.photo_url,
+    height: 0,
+    width: 0,
+    html_attributions: [],
   }))
 
-  // Transform hours
-  const hours: Record<string, string> = {}
-  if (result.regularOpeningHours?.weekdayDescriptions) {
-    const dayMap: Record<string, string> = {
-      'Monday': 'monday',
-      'Tuesday': 'tuesday',
-      'Wednesday': 'wednesday',
-      'Thursday': 'thursday',
-      'Friday': 'friday',
-      'Saturday': 'saturday',
-      'Sunday': 'sunday',
+  // Transform hours from { "Monday": ["9 AM–5 PM"] } to weekday_text format
+  const weekdayText: string[] = []
+  const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  for (const day of dayOrder) {
+    const hours = result.working_hours?.[day]
+    if (hours && hours.length > 0) {
+      weekdayText.push(`${day}: ${hours.join(', ')}`)
     }
-
-    result.regularOpeningHours.weekdayDescriptions.forEach(desc => {
-      const [day, ...timeParts] = desc.split(': ')
-      const dayKey = dayMap[day]
-      if (dayKey && timeParts.length > 0) {
-        hours[dayKey] = timeParts.join(': ')
-      }
-    })
   }
 
   return {
-    place_id: result.id,
-    name: result.displayName?.text || 'Unknown',
-    formatted_address: result.formattedAddress || '',
+    place_id: result.place_id || result.business_id,
+    name: result.name || 'Unknown',
+    formatted_address: result.full_address || result.address || '',
     geometry: {
       location: {
-        lat: result.location?.latitude || 0,
-        lng: result.location?.longitude || 0,
+        lat: result.latitude || 0,
+        lng: result.longitude || 0,
       },
     },
-    formatted_phone_number: result.formattedPhoneNumber,
-    website: result.websiteUri,
+    formatted_phone_number: result.phone_number || undefined,
+    website: result.website || undefined,
     price_level: priceLevel,
     rating: result.rating,
-    user_ratings_total: result.userRatingCount,
+    user_ratings_total: result.review_count,
     photos,
-    opening_hours: result.regularOpeningHours ? {
-      weekday_text: result.regularOpeningHours.weekdayDescriptions || [],
-      open_now: result.regularOpeningHours.openNow,
+    opening_hours: weekdayText.length > 0 ? {
+      weekday_text: weekdayText,
+      open_now: result.opening_status === 'Open' || undefined,
     } : undefined,
-    types: result.types || [],
+    types: result.subtype_gcids || result.subtypes || [],
   }
 }
 
@@ -387,7 +379,20 @@ function transformPlaceResult(result: GooglePlaceResult): GooglePlace {
 // ============================================================================
 
 /**
- * Enrich business data from Google Places
+ * Build URL with query parameters
+ */
+function buildUrl(endpoint: string, params: Record<string, string | number | boolean>): string {
+  const url = new URL(`${API_BASE_URL}${endpoint}`)
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, String(value))
+    }
+  }
+  return url.toString()
+}
+
+/**
+ * Enrich business data from OpenWeb Ninja
  * Used to update existing businesses with fresh data
  */
 export async function enrichBusinessData(placeId: string): Promise<Partial<GooglePlace> | null> {
@@ -427,5 +432,5 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
  * Check if API key is configured
  */
 export function isGooglePlacesConfigured(): boolean {
-  return !!GOOGLE_PLACES_API_KEY && GOOGLE_PLACES_API_KEY.length > 0
+  return !!OPENWEBNINJA_API_KEY && OPENWEBNINJA_API_KEY.length > 0
 }

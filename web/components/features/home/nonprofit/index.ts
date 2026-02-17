@@ -1,5 +1,3 @@
-export { NonProfitSection } from './NonProfitSection'
 export { MissionStatement } from './MissionStatement'
 export { PartnerLogos } from './PartnerLogos'
-export { SupportCTA } from './SupportCTA'
 export { Socials } from './Socials'

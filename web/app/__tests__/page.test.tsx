@@ -21,6 +21,22 @@ vi.mock('@/components/ui/nav-link', () => ({
   ),
 }))
 
+vi.mock('@/components/features/home/CommunityStatsIsland', () => ({
+  HeroStats: () => (
+    <div data-testid="hero-stats">
+      <span>Kept Local</span>
+      <span>Businesses</span>
+      <span>Reviews</span>
+      <span>Community Members</span>
+    </div>
+  ),
+  CommunityPulseCard: () => (
+    <div data-testid="community-pulse-card">
+      <span>Community Pulse Score</span>
+    </div>
+  ),
+}))
+
 describe('Home Page', () => {
   it('renders without crashing', () => {
     render(<Home />)

@@ -96,6 +96,13 @@ async function fetchGoogleReviews(placeId: string): Promise<ExternalReview[]> {
   }
 }
 
+/**
+ * GET /api/businesses/[id]
+ *
+ * Fetch a single business with its category, reviews (newest first, limit 50),
+ * active deals, and the current user's bookmark status. Triggers a background
+ * Google review sync if the cached reviews are stale.
+ */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -206,6 +213,12 @@ export async function GET(
   }
 }
 
+/**
+ * PATCH /api/businesses/[id]
+ *
+ * Update a business listing. Requires authentication — only the business owner
+ * or an admin can make changes. Returns the updated business record.
+ */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

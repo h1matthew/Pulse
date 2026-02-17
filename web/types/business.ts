@@ -49,6 +49,11 @@ export interface Business {
   claimed_at: string | null
   created_at: string
   updated_at: string
+  ai_description: string | null
+  ai_description_generated_at: string | null
+  ai_description_source: string | null
+  editorial_summary: string | null
+  ai_business_summary: string | null
 }
 
 export interface BusinessHours {
@@ -87,13 +92,18 @@ export interface BusinessWithDetails extends BusinessWithCategory {
 export interface Review {
   id: string
   business_id: string
-  user_id: string
+  user_id: string | null
   rating: number
   content: string
   photos: string[]
   verified_purchase: boolean
   helpful_count: number
   is_featured: boolean
+  source: 'pulse' | 'google' | 'yelp'
+  external_id: string | null
+  external_author_name: string | null
+  external_author_photo: string | null
+  external_time: string | null
   created_at: string
   updated_at: string
 }
@@ -103,7 +113,7 @@ export interface ReviewWithUser extends Review {
     id: string
     full_name: string | null
     avatar_url: string | null
-  }
+  } | null
 }
 
 export interface ExternalReview {
@@ -171,7 +181,7 @@ export interface Deal {
 }
 
 export interface DealWithBusiness extends Deal {
-  business: Business
+  business: BusinessWithCategory
 }
 
 export interface DealClaim {

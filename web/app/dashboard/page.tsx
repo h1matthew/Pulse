@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { TrendingUp, DollarSign, Store, Users, Star, Zap, Target, Award, Loader2, Heart, MapPin, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { TrendingUp, DollarSign, Store, Users, Star, Zap, Target, Award, Loader2, Heart, MapPin, ArrowRight, FileText } from "lucide-react";
+import { ImpactReportDialog } from "@/components/features/dashboard/ImpactReport";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ function ImpactStoryCard({
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -157,7 +159,7 @@ export default function DashboardPage() {
             <Card className="mb-8 bg-gradient-to-br from-primary/5 via-background to-chart-2/5">
               <CardContent className="p-8">
                 <div className="grid md:grid-cols-2 gap-8 items-center">
-                  <div>
+                  <div suppressHydrationWarning>
                     <div className="text-sm text-muted-foreground mb-1">
                       Your Impact Score
                     </div>
@@ -168,7 +170,7 @@ export default function DashboardPage() {
                         {impactScore.toLocaleString()}
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground" suppressHydrationWarning>
                       <Award className="h-4 w-4 text-chart-5" />
                       {impactLoading ? (
                         <Skeleton className="h-4 w-24" />
@@ -198,6 +200,13 @@ export default function DashboardPage() {
                         <>Start engaging to reach your first tier!</>
                       )}
                     </p>
+                    <Button
+                      onClick={() => setReportOpen(true)}
+                      className="mt-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Download My Impact Report
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -404,7 +413,7 @@ export default function DashboardPage() {
                     <CardTitle className="text-base">Quick Stats</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm" suppressHydrationWarning>
                       <span className="text-muted-foreground">Reviews Left</span>
                       {impactLoading ? (
                         <Skeleton className="h-4 w-8" />
@@ -412,7 +421,7 @@ export default function DashboardPage() {
                         <span className="font-medium">{impact?.reviews_left || 0}</span>
                       )}
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm" suppressHydrationWarning>
                       <span className="text-muted-foreground">
                         Missions Completed
                       </span>
@@ -424,7 +433,7 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm" suppressHydrationWarning>
                       <span className="text-muted-foreground">Deals Claimed</span>
                       {impactLoading ? (
                         <Skeleton className="h-4 w-8" />
@@ -444,7 +453,7 @@ export default function DashboardPage() {
                     <CardTitle className="text-base">Community Impact</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="text-center">
+                    <div className="text-center" suppressHydrationWarning>
                       {pulseLoading ? (
                         <Skeleton className="h-10 w-24 mx-auto mb-1" />
                       ) : (
@@ -457,7 +466,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-xs" suppressHydrationWarning>
                         <span className="text-muted-foreground">
                           Total Dollars Kept Local
                         </span>
@@ -467,7 +476,7 @@ export default function DashboardPage() {
                           <span>${((communityPulse?.total_dollars_kept_local || 0) / 1000000).toFixed(1)}M</span>
                         )}
                       </div>
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-xs" suppressHydrationWarning>
                         <span className="text-muted-foreground">
                           Businesses Supported
                         </span>
@@ -477,7 +486,7 @@ export default function DashboardPage() {
                           <span>{(communityPulse?.total_businesses_supported || 0).toLocaleString()}</span>
                         )}
                       </div>
-                      <div className="flex justify-between text-xs">
+                      <div className="flex justify-between text-xs" suppressHydrationWarning>
                         <span className="text-muted-foreground">Active Members</span>
                         {pulseLoading ? (
                           <Skeleton className="h-4 w-12" />
@@ -533,6 +542,13 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      <ImpactReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        userId={userId}
+        userName={userName}
+      />
     </div>
   );
 }

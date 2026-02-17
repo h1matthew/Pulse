@@ -34,6 +34,8 @@ import {
   useToggleBookmark,
 } from "@/hooks/useBookmarks";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useClaimDeal } from "@/hooks/useDeals";
+import { PhotoGallery } from "@/components/features/business/PhotoGallery";
 import { toast } from "sonner";
 import { NavLink } from "@/components/ui/nav-link";
 import {
@@ -145,9 +147,30 @@ export default function BusinessDetailPage({
       return;
     }
 
-    if (!reviewText.trim()) {
-      toast.error("Review required", {
-        description: "Please write a review before submitting",
+    // Client-side Zod validation
+    const validation = createReviewSchema.safeParse({
+      business_id: id,
+      rating: reviewRating,
+      content: reviewText,
+    });
+
+    if (!validation.success) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of validation.error.issues) {
+        const field = issue.path[0]?.toString() || "form";
+        if (!fieldErrors[field]) {
+          fieldErrors[field] = issue.message;
+        }
+      }
+      setReviewErrors(fieldErrors);
+      return;
+    }
+
+    setReviewErrors({});
+
+    if (!captchaToken) {
+      toast.error("Verification required", {
+        description: "Please complete the CAPTCHA verification",
       });
       return;
     }
@@ -167,10 +190,14 @@ export default function BusinessDetailPage({
           business_id: business.id,
           rating: reviewRating,
           content: reviewText,
+          captchaToken,
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to submit review");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to submit review");
+      }
 
       toast.success("Review submitted", {
         description: "Thank you for sharing your experience!",
@@ -182,6 +209,135 @@ export default function BusinessDetailPage({
       toast.error("Error", {
         description: "Failed to submit review. Please try again.",
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to sync reviews");
+      }
+
+      const result = await response.json();
+      if (!silent) {
+        toast.success("Reviews synced", {
+          description: `Synced ${result.synced} Google reviews`,
+        });
+      }
+
+      // Refresh business data to show new reviews
+      refetch();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to sync reviews";
+      if (!silent) {
+        toast.error("Error", { description: message });
+      } else {
+        console.error("Auto-sync reviews failed:", message);
+      }
+    } finally {
+      setIsSyncingReviews(false);
+    }
+  };
+
+  const handleClaimDeal = async (deal: Deal) => {
+    if (!user) {
+      toast.error("Sign in required", {
+        description: "Please sign in to claim deals",
+      });
+      return;
+    }
+
+    try {
+      const result = await claimDeal.mutateAsync(deal.id);
+      // Store the redemption code
+      setClaimedDeals(prev => ({
+        ...prev,
+        [deal.id]: result.redeemed_code
+      }));
+      toast.success("Deal claimed!", {
+        description: `Your redemption code is: ${result.redeemed_code}`,
+      });
+      // Refresh business data to update claim status
+      refetch();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to claim deal";
+      toast.error("Error", { description: message });
+    }
+  };
+
+  const handleCheckIn = async () => {
+    if (!user) {
+      toast.error("Sign in required", {
+        description: "Please sign in to check in",
+      });
+      return;
+    }
+
+    setIsCheckingIn(true);
+    try {
+      const response = await fetch(`/api/businesses/${id}/checkin`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        if (response.status === 409) {
+          toast.info("Already checked in", {
+            description: "You've already checked in today!",
+          });
+          setHasCheckedIn(true);
+          return;
+        }
+        throw new Error(error.error || "Failed to check in");
+      }
+
+      const result = await response.json();
+      toast.success("Checked in!", {
+        description: `+$${result.impact.estimated_dollars} estimated local impact`,
+      });
+      setHasCheckedIn(true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to check in";
+      toast.error("Error", { description: message });
+    } finally {
+      setIsCheckingIn(false);
+    }
+  };
+
+  const handleGenerateDescription = async (force = false, silent = false) => {
+    setIsGeneratingDescription(true);
+    try {
+      const url = `/api/businesses/${id}/generate-description${force ? '?force=true' : ''}`;
+      const response = await fetch(url, { method: 'POST' });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate description');
+      }
+
+      const data = await response.json();
+      setAiDescription(data.description);
+      setAiDescriptionCached(data.cached || false);
+
+      if (!silent) {
+        if (data.cached) {
+          toast.info('Using cached description', {
+            description: 'This description was previously generated.',
+          });
+        } else {
+          toast.success('Description generated!', {
+            description: force
+              ? 'Fresh AI description created.'
+              : 'AI description created from website and reviews.',
+          });
+        }
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to generate description';
+      if (!silent) {
+        toast.error('Error', { description: message });
+      } else {
+        console.error('Auto-generate description failed:', message);
+      }
+    } finally {
+      setIsGeneratingDescription(false);
     }
   };
 
@@ -212,7 +368,7 @@ export default function BusinessDetailPage({
 
   if (isLoading) {
     return (
-      <div className="relative min-h-screen bg-background">
+      <div className="relative min-h-screen bg-background" suppressHydrationWarning>
         <Header />
         <div className="pt-20 pb-12">
           <div className="mx-auto max-w-6xl px-6">
@@ -320,7 +476,8 @@ export default function BusinessDetailPage({
     <div className="relative min-h-screen bg-background">
       <Header />
 
-      <div className="pt-20 pb-12">
+      {/* Hero area with subtle gradient */}
+      <div className="bg-gradient-to-b from-primary/5 via-background to-background pt-20 pb-6">
         <div className="mx-auto max-w-6xl px-6">
           {/* Hero Image */}
           <AnimatedSection animation="fade-up">
@@ -383,8 +540,18 @@ export default function BusinessDetailPage({
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-chart-5 text-chart-5" />
-                    <span className="font-medium text-foreground">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star
+                        key={i}
+                        className={cn(
+                          "h-4 w-4",
+                          i < Math.round(business.average_rating)
+                            ? "fill-chart-5 text-chart-5"
+                            : "text-muted-foreground/30"
+                        )}
+                      />
+                    ))}
+                    <span className="font-medium text-foreground ml-1">
                       {business.average_rating}
                     </span>
                     <span>({reviewLabel})</span>
@@ -406,24 +573,30 @@ export default function BusinessDetailPage({
                   size="icon"
                   onClick={handleBookmark}
                   disabled={toggleBookmark.isPending}
+                  aria-label={isBookmarked ? "Remove bookmark" : "Bookmark this business"}
                 >
                   <Heart
                     className={`h-4 w-4 ${
                       isBookmarked ? "fill-chart-5 text-chart-5" : ""
                     }`}
+                    aria-hidden="true"
                   />
                 </Button>
-                <Button variant="outline" size="icon" onClick={handleShare}>
-                  <Share2 className="h-4 w-4" />
+                <Button variant="outline" size="icon" onClick={handleShare} aria-label="Share this business">
+                  <Share2 className="h-4 w-4" aria-hidden="true" />
                 </Button>
-                <Button onClick={handleGetDirections}>
-                  <Navigation className="h-4 w-4 mr-2" />
+                <Button onClick={handleGetDirections} aria-label="Get directions to this business">
+                  <Navigation className="h-4 w-4 mr-2" aria-hidden="true" />
                   Directions
                 </Button>
               </div>
             </div>
           </AnimatedSection>
+        </div>
+      </div>
 
+      <div className="pb-12">
+        <div className="mx-auto max-w-6xl px-6">
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
@@ -440,8 +613,8 @@ export default function BusinessDetailPage({
                   </TabsList>
 
                   <TabsContent value="about" className="mt-6 space-y-6">
-                    {/* Description */}
-                    <Card>
+                    {/* AI Description */}
+                    <Card className="overflow-hidden border-t-2 border-t-primary/30">
                       <CardContent className="p-6">
                         <h3 className="font-semibold mb-3">About</h3>
                         <p className="text-foreground leading-relaxed">
@@ -583,15 +756,24 @@ export default function BusinessDetailPage({
                           <h3 className="font-semibold mb-4">Write a Review</h3>
                           <div className="space-y-4">
                             <div>
-                              <label className="text-sm font-medium mb-2 block">
+                              <label className="text-sm font-medium mb-2 block" id="rating-label">
                                 Rating
                               </label>
-                              <div className="flex gap-1">
+                              <div className="flex gap-1" role="group" aria-labelledby="rating-label">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <button
                                     key={star}
-                                    onClick={() => setReviewRating(star)}
+                                    onClick={() => {
+                                      setReviewRating(star);
+                                      setReviewErrors((prev) => {
+                                        const next = { ...prev };
+                                        delete next.rating;
+                                        return next;
+                                      });
+                                    }}
                                     className="p-1"
+                                    aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                                    aria-pressed={star === reviewRating}
                                   >
                                     <Star
                                       className={`h-6 w-6 ${
@@ -599,27 +781,121 @@ export default function BusinessDetailPage({
                                           ? "fill-chart-5 text-chart-5"
                                           : "text-muted-foreground"
                                       }`}
+                                      aria-hidden="true"
                                     />
                                   </button>
                                 ))}
                               </div>
+                              {reviewErrors.rating && (
+                                <p className="text-sm text-destructive mt-1">{reviewErrors.rating}</p>
+                              )}
                             </div>
                             <div>
-                              <label className="text-sm font-medium mb-2 block">
+                              <label className="text-sm font-medium mb-2 block" htmlFor="review-content">
                                 Your Review
                               </label>
                               <Textarea
-                                placeholder="Share your experience..."
+                                id="review-content"
+                                placeholder="Share your experience... (minimum 10 characters)"
                                 value={reviewText}
-                                onChange={(e) => setReviewText(e.target.value)}
+                                onChange={(e) => {
+                                  setReviewText(e.target.value);
+                                  setReviewErrors((prev) => {
+                                    const next = { ...prev };
+                                    delete next.content;
+                                    return next;
+                                  });
+                                }}
                                 rows={4}
+                                maxLength={2000}
+                                aria-describedby="review-char-count"
+                                className={reviewErrors.content ? "border-destructive" : ""}
                               />
+                              <div className="flex justify-between mt-1">
+                                {reviewErrors.content ? (
+                                  <p className="text-sm text-destructive">{reviewErrors.content}</p>
+                                ) : (
+                                  <span />
+                                )}
+                                <p
+                                  id="review-char-count"
+                                  className={cn(
+                                    "text-xs",
+                                    reviewText.length < 10
+                                      ? "text-muted-foreground"
+                                      : reviewText.length > 1900
+                                        ? "text-destructive"
+                                        : "text-muted-foreground"
+                                  )}
+                                >
+                                  {reviewText.length}/2000
+                                </p>
+                              </div>
                             </div>
-                            <Button onClick={handleSubmitReview}>
-                              <Send className="h-4 w-4 mr-2" />
-                              Submit Review
+                            <CaptchaWidget
+                              onVerify={handleCaptchaVerify}
+                              action="review"
+                            />
+                            <Button
+                              onClick={handleSubmitReview}
+                              disabled={isSubmittingReview || !captchaToken}
+                            >
+                              {isSubmittingReview ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Send className="h-4 w-4 mr-2" />
+                              )}
+                              {isSubmittingReview ? "Submitting..." : "Submit Review"}
                             </Button>
                           </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Sync Google Reviews Button */}
+                    {business.place_id && (
+                      <Card>
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">Google Reviews</p>
+                              {(() => {
+                                const syncStatus = getSyncStatus({
+                                  last_synced_at: business.last_synced_at,
+                                  sync_status: business.sync_status,
+                                });
+                                return (
+                                  <Badge
+                                    variant={syncStatus.isStale ? "secondary" : "outline"}
+                                    className="text-xs"
+                                  >
+                                    {syncStatus.isStale ? "Needs Sync" : "Up to date"}
+                                  </Badge>
+                                );
+                              })()}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {(() => {
+                                const syncStatus = getSyncStatus({
+                                  last_synced_at: business.last_synced_at,
+                                  sync_status: business.sync_status,
+                                });
+                                return syncStatus.lastSyncedText;
+                              })()}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() => handleSyncGoogleReviews()}
+                            disabled={isSyncingReviews}
+                          >
+                            {isSyncingReviews ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Globe className="h-4 w-4 mr-2" />
+                            )}
+                            {isSyncingReviews ? "Syncing..." : "Refresh"}
+                          </Button>
                         </CardContent>
                       </Card>
                     )}
@@ -877,7 +1153,7 @@ export default function BusinessDetailPage({
             {/* Sidebar */}
             <div className="space-y-6">
               <AnimatedSection animation="fade-up" delay={0.2}>
-                <Card>
+                <Card className="transition-shadow hover:shadow-md">
                   <CardHeader>
                     <CardTitle className="text-base">Quick Actions</CardTitle>
                   </CardHeader>
@@ -885,6 +1161,21 @@ export default function BusinessDetailPage({
                     <Button className="w-full" onClick={handleGetDirections}>
                       <Navigation className="h-4 w-4 mr-2" />
                       Get Directions
+                    </Button>
+                    <Button
+                      variant={hasCheckedIn ? "secondary" : "outline"}
+                      className="w-full"
+                      onClick={handleCheckIn}
+                      disabled={isCheckingIn || hasCheckedIn}
+                    >
+                      {isCheckingIn ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : hasCheckedIn ? (
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                      ) : (
+                        <MapPinned className="h-4 w-4 mr-2" />
+                      )}
+                      {hasCheckedIn ? "Checked In Today" : "Check In"}
                     </Button>
                     <Button
                       variant="outline"
@@ -917,7 +1208,7 @@ export default function BusinessDetailPage({
 
               {/* Impact Card */}
               <AnimatedSection animation="fade-up" delay={0.25}>
-                <Card>
+                <Card className="transition-shadow hover:shadow-md">
                   <CardHeader>
                     <CardTitle className="text-base">Community Impact</CardTitle>
                   </CardHeader>
@@ -946,6 +1237,39 @@ export default function BusinessDetailPage({
                   </CardContent>
                 </Card>
               </AnimatedSection>
+
+              {/* Map Card */}
+              {business.latitude && business.longitude && (
+                <AnimatedSection animation="fade-up" delay={0.3}>
+                  <Card className="transition-shadow hover:shadow-md">
+                    <CardHeader>
+                      <CardTitle className="text-base">Location</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 overflow-hidden rounded-b-lg">
+                      <iframe
+                        width="100%"
+                        height="200"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        allowFullScreen
+                        referrerPolicy="no-referrer-when-downgrade"
+                        title={`Map showing location of ${business.name}`}
+                        src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}&q=${encodeURIComponent(business.name)}&center=${business.latitude},${business.longitude}&zoom=15`}
+                      />
+                      <div className="p-4">
+                        <Button
+                          variant="outline"
+                          className="w-full"
+                          onClick={handleGetDirections}
+                        >
+                          <Navigation className="h-4 w-4 mr-2" />
+                          Open in Google Maps
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </AnimatedSection>
+              )}
             </div>
           </div>
         </div>
