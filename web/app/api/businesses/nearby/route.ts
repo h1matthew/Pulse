@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { isRealBusinessPlaceTypes, isRealBusinessRecord } from '@/lib/business/display'
 import { NextResponse } from 'next/server'
 import type { LatLng } from '@/types/business'
 
@@ -93,28 +94,54 @@ function generateDescription(place: GooglePlaceResult): string {
     return place.editorialSummary.text.substring(0, 200)
   }
 
-  const typeLabels: Record<string, string> = {
-    'restaurant': 'Restaurant serving delicious food',
-    'cafe': 'Cozy café with great coffee',
-    'bakery': 'Fresh baked goods daily',
-    'bar': 'Local bar and nightlife spot',
-    'store': 'Local retail shop',
-    'hair_care': 'Hair salon and styling services',
-    'beauty_salon': 'Beauty and wellness services',
-    'gym': 'Fitness center and gym',
-    'spa': 'Relaxing spa services',
-    'museum': 'Cultural museum and exhibits',
-    'park': 'Outdoor park and recreation',
-    'lodging': 'Hotel and accommodation',
+  const name = place.displayName?.text || ''
+
+  // Build description templates that incorporate the business name
+  const typeTemplates: Record<string, (n: string) => string> = {
+    'restaurant': (n) => `${n} is a local restaurant known for its great food and welcoming atmosphere`,
+    'cafe': (n) => `${n} is a neighborhood café serving coffee, pastries, and light bites`,
+    'bakery': (n) => `${n} offers freshly baked goods, pastries, and artisan breads`,
+    'bar': (n) => `${n} is a popular local spot for drinks, good vibes, and nightlife`,
+    'meal_delivery': (n) => `${n} delivers fresh, made-to-order meals right to your door`,
+    'meal_takeaway': (n) => `${n} serves up delicious takeout meals ready when you are`,
+    'store': (n) => `${n} is a local shop offering a curated selection of goods`,
+    'shopping_mall': (n) => `${n} features a variety of shops, dining, and entertainment`,
+    'clothing_store': (n) => `${n} carries a curated selection of apparel and accessories`,
+    'book_store': (n) => `${n} is an independent bookstore with a thoughtful collection of reads`,
+    'electronics_store': (n) => `${n} offers electronics, gadgets, and tech accessories`,
+    'grocery_or_supermarket': (n) => `${n} stocks fresh groceries, produce, and everyday essentials`,
+    'convenience_store': (n) => `${n} has quick essentials, snacks, and everyday items`,
+    'hair_care': (n) => `${n} provides professional hair styling, cuts, and treatments`,
+    'beauty_salon': (n) => `${n} offers beauty services, treatments, and personal care`,
+    'spa': (n) => `${n} provides relaxing spa treatments and wellness services`,
+    'gym': (n) => `${n} is a fitness center with equipment, classes, and training`,
+    'health': (n) => `${n} provides health and wellness services for the community`,
+    'doctor': (n) => `${n} offers professional medical care and health services`,
+    'dentist': (n) => `${n} provides dental care, cleanings, and oral health services`,
+    'museum': (n) => `${n} features exhibits, collections, and cultural experiences`,
+    'park': (n) => `${n} is a green space for recreation, relaxation, and outdoor activities`,
+    'lodging': (n) => `${n} offers comfortable accommodations for travelers and visitors`,
+    'car_repair': (n) => `${n} provides auto repair, maintenance, and vehicle services`,
+    'car_wash': (n) => `${n} keeps your vehicle looking its best with professional washes`,
+    'gas_station': (n) => `${n} offers fuel, convenience items, and roadside essentials`,
+    'movie_theater': (n) => `${n} screens the latest films in a great viewing experience`,
+    'night_club': (n) => `${n} is a nightlife destination with music, dancing, and drinks`,
+    'art_gallery': (n) => `${n} showcases artwork, exhibitions, and creative collections`,
+    'tourist_attraction': (n) => `${n} is a must-visit destination and local landmark`,
+    'bank': (n) => `${n} provides banking, financial services, and account management`,
   }
 
   for (const type of place.types || []) {
-    if (typeLabels[type]) {
-      return typeLabels[type]
+    if (typeTemplates[type]) {
+      return typeTemplates[type](name)
     }
   }
 
-  return 'Local business in your community'
+  if (name) {
+    return `${name} is a local business proudly serving the community`
+  }
+
+  return 'A local business proudly serving the community'
 }
 
 // Fetch from Google Places API
@@ -175,6 +202,10 @@ async function syncPlacesToDatabase(
 
   for (const place of places) {
     try {
+      if (!isRealBusinessPlaceTypes(place.types || [])) {
+        continue
+      }
+
       // Get category ID
       const categorySlug = mapGoogleTypeToCategory(place.types || [])
       const { data: category } = await db
@@ -221,7 +252,9 @@ async function syncPlacesToDatabase(
           width: p.widthPx,
         })) || [],
         hours: place.regularOpeningHours?.weekdayDescriptions || [],
-        tags: place.types?.filter(t => !t.includes('_') && t !== 'establishment' && t !== 'point_of_interest').slice(0, 5) || [],
+        tags: place.types
+          ?.filter((type) => type !== 'establishment' && type !== 'point_of_interest')
+          .slice(0, 10) || [],
       }
 
       if (existing) {
@@ -278,10 +311,18 @@ export async function GET(request: Request) {
       console.error('Database error:', dbError)
     }
 
+    const filteredExistingBusinesses = (existingBusinesses || []).filter((business) =>
+      isRealBusinessRecord({
+        data_source: business.data_source,
+        tags: business.tags,
+        name: business.name,
+      })
+    )
+
     // If we have enough businesses from the database, return them
-    if (existingBusinesses && existingBusinesses.length >= 10) {
+    if (filteredExistingBusinesses.length >= 10) {
       // Sort by distance
-      const sorted = existingBusinesses.sort((a, b) => {
+      const sorted = filteredExistingBusinesses.sort((a, b) => {
         const distA = Math.sqrt(
           Math.pow((a.latitude || 0) - lat, 2) +
           Math.pow((a.longitude || 0) - lng, 2)
@@ -321,8 +362,16 @@ export async function GET(request: Request) {
       )
     }
 
+    const filteredSyncedBusinesses = (syncedBusinesses || []).filter((business) =>
+      isRealBusinessRecord({
+        data_source: business.data_source,
+        tags: business.tags,
+        name: business.name,
+      })
+    )
+
     // Sort by distance
-    const sorted = (syncedBusinesses || []).sort((a, b) => {
+    const sorted = filteredSyncedBusinesses.sort((a, b) => {
       const distA = Math.sqrt(
         Math.pow((a.latitude || 0) - lat, 2) +
         Math.pow((a.longitude || 0) - lng, 2)

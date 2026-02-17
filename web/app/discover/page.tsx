@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, SlidersHorizontal, MapPin, Star, Heart, Loader2, LocateFixed, Navigation, MapPinned } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin, Star, Heart, Loader2, LocateFixed, Navigation, MapPinned, Clock, TrendingUp } from "lucide-react";
+import Image from "next/image";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,12 @@ import {
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useLocation, formatDistance, calculateDistance } from "@/hooks/useLocation";
 import { toast } from "sonner";
+import {
+  buildBusinessFallbackImageUrl,
+  buildBusinessPhotoUrl,
+  buildBusinessSummary,
+  getBusinessReviewLabel,
+} from "@/lib/business/display";
 import type { BusinessWithCategory } from "@/types/business";
 import type { LatLng } from "@/types/business";
 
@@ -41,13 +48,13 @@ function BusinessCard({
   const { user } = useAuth();
   const { data: isBookmarked } = useIsBookmarked(business.id);
   const toggleBookmark = useToggleBookmark();
+  const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
 
   const getPriceRange = (level: number | null) => {
     if (!level) return "";
     return "$".repeat(level);
   };
 
-  // Calculate distance if user location is available
   const getDistance = () => {
     if (!userLocation || !business.latitude || !business.longitude) return null;
     const distance = calculateDistance(
@@ -58,6 +65,28 @@ function BusinessCard({
   };
 
   const distance = getDistance();
+  const photoUrl = buildBusinessPhotoUrl(business.photos?.[0], {
+    maxWidth: 400,
+    maxHeight: 300,
+  });
+  const fallbackImageUrl = buildBusinessFallbackImageUrl({
+    name: business.name,
+    categoryName: business.category?.name,
+  });
+  const showPhoto = !!photoUrl && !photoLoadFailed;
+  const reviewLabel = getBusinessReviewLabel({
+    data_source: business.data_source,
+    review_count: business.review_count,
+  });
+  const summary = buildBusinessSummary({
+    name: business.name,
+    short_description: business.short_description,
+    description: business.description,
+    categoryName: business.category?.name,
+    city: business.city,
+    state: business.state,
+    tags: business.tags,
+  });
 
   const handleBookmark = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -80,7 +109,7 @@ function BusinessCard({
           ? "Removed from your saved businesses"
           : "Added to your saved businesses",
       });
-    } catch (error) {
+    } catch {
       toast.error("Error", {
         description: "Failed to update bookmark",
       });
@@ -88,94 +117,153 @@ function BusinessCard({
   };
 
   return (
-    <AnimatedSection animation="fade-up" delay={0.1 * (index + 3)}>
+    <AnimatedSection animation="fade-up" delay={0.05 * (index % 6)}>
       <NavLink href={`/business/${business.id}`}>
-        <Card className="h-full card-lift cursor-pointer group">
+        <Card className="h-full cursor-pointer group overflow-hidden border border-border/60 bg-card/90 backdrop-blur-sm shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
           <CardContent className="p-0">
-            {/* Image Placeholder */}
-            <div className="h-40 bg-gradient-to-br from-primary/10 to-chart-2/10 flex items-center justify-center text-6xl relative">
-              {business.category?.icon || "🏪"}
-              {business.is_featured && (
-                <Badge className="absolute top-3 left-3 bg-chart-2 text-white">
-                  Featured
-                </Badge>
+            {/* Image / Hero */}
+            <div className="relative h-48 overflow-hidden">
+              {showPhoto ? (
+                <>
+                  <Image
+                    src={photoUrl}
+                    alt={business.name}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    unoptimized
+                    onError={() => setPhotoLoadFailed(true)}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                </>
+              ) : (
+                <>
+                  <Image
+                    src={fallbackImageUrl}
+                    alt={`${business.name} default cover`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10" />
+                </>
               )}
+
+              {/* Overlaid badges */}
+              <div className="absolute top-3 left-3 flex gap-2">
+                {business.is_featured && (
+                  <Badge className="bg-chart-2 text-white border-0 shadow-lg text-xs font-semibold">
+                    Featured
+                  </Badge>
+                )}
+                {business.is_verified && (
+                  <Badge className="bg-primary text-primary-foreground border-0 shadow-lg text-xs font-semibold">
+                    Verified
+                  </Badge>
+                )}
+              </div>
+
+              {/* Bookmark button */}
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-3 right-3 bg-background/80 hover:bg-background"
+                className="absolute top-3 right-3 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white border-0 h-8 w-8"
                 onClick={handleBookmark}
                 disabled={toggleBookmark.isPending}
               >
                 <Heart
                   className={`h-4 w-4 ${
-                    isBookmarked ? "fill-chart-5 text-chart-5" : ""
+                    isBookmarked ? "fill-red-400 text-red-400" : "text-white"
                   }`}
                 />
               </Button>
+
+              {/* Bottom overlay info (on photo cards) */}
+              {showPhoto && (
+                <div className="absolute bottom-3 left-3 right-3">
+                  <h3 className="font-bold text-lg text-white drop-shadow-md leading-tight">
+                    {business.name}
+                  </h3>
+                  <p className="text-white/80 text-sm drop-shadow-md">
+                    {business.category?.name}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Content */}
-            <div className="p-5">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+            <div className="p-4">
+              {/* Name + category (only when no photo) */}
+              {!showPhoto && (
+                <div className="mb-2">
+                  <h3 className="font-bold text-lg group-hover:text-primary transition-colors leading-tight">
                     {business.name}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     {business.category?.name}
                   </p>
                 </div>
-                {business.is_verified && (
-                  <Badge variant="secondary" className="text-xs">
-                    ✓ Verified
+              )}
+
+              {/* Rating row */}
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-1 bg-chart-5/10 px-2 py-0.5 rounded-full">
+                  <Star className="h-3.5 w-3.5 fill-chart-5 text-chart-5" />
+                  <span className="font-semibold text-sm">{business.average_rating || "New"}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {reviewLabel}
+                </span>
+                {business.data_source === "google" && business.review_count > 0 && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/40 text-primary">
+                    Google
                   </Badge>
                 )}
-              </div>
-
-              <p className="text-sm text-muted-foreground mb-3">
-                {business.short_description || business.description}
-              </p>
-
-              <div className="flex items-center gap-1 mb-3">
-                <Star className="h-4 w-4 fill-chart-5 text-chart-5" />
-                <span className="font-medium">{business.average_rating}</span>
-                <span className="text-muted-foreground">
-                  ({business.review_count} reviews)
-                </span>
                 {business.price_range && (
                   <>
-                    <span className="text-muted-foreground mx-1">•</span>
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">·</span>
+                    <span className="text-sm font-medium text-muted-foreground">
                       {getPriceRange(business.price_range)}
                     </span>
                   </>
                 )}
               </div>
 
-              <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-                <MapPin className="h-3 w-3" />
-                {business.address}
+              {/* Description */}
+              <p className="text-sm text-foreground/80 line-clamp-2 mb-3 leading-relaxed">
+                {summary}
+              </p>
+
+              {/* Location + distance */}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                <span className="flex items-center gap-1 truncate">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{business.address}</span>
+                </span>
+                {distance && (
+                  <span className="flex items-center gap-1 text-primary font-medium whitespace-nowrap">
+                    <Navigation className="h-3 w-3" />
+                    {distance}
+                  </span>
+                )}
               </div>
 
-              {distance && (
-                <div className="flex items-center gap-1 text-sm text-primary mb-3">
-                  <Navigation className="h-3 w-3" />
-                  {distance} away
-                </div>
-              )}
-
+              {/* Tags */}
               {business.tags && business.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 pt-2 border-t border-border/50">
                   {business.tags.slice(0, 3).map((tag: string) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
+                    <span
+                      key={tag}
+                      className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
+                    >
                       {tag}
-                    </Badge>
+                    </span>
                   ))}
                   {business.tags.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                       +{business.tags.length - 3}
-                    </Badge>
+                    </span>
                   )}
                 </div>
               )}
@@ -274,6 +362,17 @@ export default function DiscoverPage() {
     }
     return 0;
   });
+  const averageVisibleRating =
+    sortedBusinesses.length > 0
+      ? (
+          sortedBusinesses.reduce((total, business) => {
+            if (!business.average_rating) return total;
+            return total + business.average_rating;
+          }, 0) / sortedBusinesses.length
+        ).toFixed(1)
+      : "0.0";
+  const featuredCount = sortedBusinesses.filter((business) => business.is_featured).length;
+  const googleCount = sortedBusinesses.filter((business) => business.data_source === "google").length;
 
   const handleNearbyClick = async () => {
     if (!nearbyMode) {
@@ -302,20 +401,59 @@ export default function DiscoverPage() {
 
   return (
     <div className="relative min-h-screen bg-background">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-gradient-to-b from-primary/10 via-chart-2/5 to-transparent" />
+      <div className="pointer-events-none absolute -top-20 right-4 h-72 w-72 rounded-full bg-chart-2/10 blur-3xl" />
+      <div className="pointer-events-none absolute top-10 -left-16 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
       <Header />
 
       {/* Hero Section */}
       <section className="relative px-6 pt-24 pb-8">
         <div className="mx-auto max-w-6xl">
           <AnimatedSection animation="fade-up">
-            <h1 className="text-3xl font-bold tracking-tight mb-2">
-              {nearbyMode ? 'Businesses Near You' : 'Discover Local Businesses'}
-            </h1>
-            <p className="text-muted-foreground mb-6">
-              {nearbyMode
-                ? 'Real businesses from Google Places in your area'
-                : 'Find and support amazing local businesses in your community'}
-            </p>
+            <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/85 backdrop-blur-sm p-6 md:p-8 shadow-xl shadow-primary/5">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-chart-2/8" />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold tracking-tight">
+                    {nearbyMode ? "Businesses Near You" : "Discover Local Businesses"}
+                  </h1>
+                  {nearbyMode && (
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-muted-foreground mb-6 text-lg">
+                  {nearbyMode
+                    ? "Live places pulled from Google around your current location."
+                    : "Find standout neighborhood spots with real rating signals and community feedback."}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-border/50 bg-background/70 px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" />
+                      Businesses
+                    </div>
+                    <p className="text-2xl font-semibold mt-1">{sortedBusinesses.length}</p>
+                  </div>
+                  <div className="rounded-xl border border-border/50 bg-background/70 px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+                      <Star className="h-3.5 w-3.5" />
+                      Avg Rating
+                    </div>
+                    <p className="text-2xl font-semibold mt-1">{averageVisibleRating}</p>
+                  </div>
+                  <div className="rounded-xl border border-border/50 bg-background/70 px-4 py-3">
+                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+                      {nearbyMode ? <Clock className="h-3.5 w-3.5" /> : <TrendingUp className="h-3.5 w-3.5" />}
+                      {nearbyMode ? "Google Sources" : "Featured Picks"}
+                    </div>
+                    <p className="text-2xl font-semibold mt-1">{nearbyMode ? googleCount : featuredCount}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </AnimatedSection>
 
           {/* Search and Filters */}

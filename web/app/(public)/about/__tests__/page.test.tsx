@@ -29,11 +29,15 @@ beforeAll(() => {
 })
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-  Rocket: () => <span data-testid="rocket-icon" />,
-  Heart: () => <span data-testid="heart-icon" />,
-  Sparkles: () => <span data-testid="sparkles-icon" />,
-}))
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('lucide-react')>()
+  return {
+    ...actual,
+    Rocket: () => <span data-testid="rocket-icon" />,
+    Heart: () => <span data-testid="heart-icon" />,
+    Sparkles: () => <span data-testid="sparkles-icon" />,
+  }
+})
 
 const TEST_FOUNDERS: Founder[] = [
   {
@@ -79,14 +83,18 @@ describe('AboutPage', () => {
     expect(screen.getByText(/Our Story/)).toBeInTheDocument()
   })
 
-  it('renders the Meet the Founders heading', () => {
+  it('renders the Meet the Team heading', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
     expect(screen.getByText(/Meet the/)).toBeInTheDocument()
-    expect(screen.getByText('Founders')).toBeInTheDocument()
+    expect(screen.getByText('Team')).toBeInTheDocument()
   })
 
   it('renders description text', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    expect(screen.getByText(/Two students on a mission/)).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /A passionate team on a mission to strengthen local communities through business discovery\./
+      )
+    ).toBeInTheDocument()
   })
 })

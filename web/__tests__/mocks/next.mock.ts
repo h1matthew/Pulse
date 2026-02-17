@@ -4,6 +4,7 @@
  */
 import { vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
+import { createElement } from 'react'
 
 // Mock router
 export interface MockRouter {
@@ -172,8 +173,10 @@ export function setupRedirectMock() {
 export function setupImageMock() {
   vi.mock('next/image', () => ({
     default: (props: Record<string, unknown>) => {
-      // eslint-disable-next-line @next/next/no-img-element
-      return <img {...props} alt={props.alt as string} />
+      return createElement('img', {
+        ...props,
+        alt: typeof props.alt === 'string' ? props.alt : '',
+      })
     },
   }))
 }
@@ -190,11 +193,7 @@ export function setupLinkMock() {
       href: string
       [key: string]: unknown
     }) => {
-      return (
-        <a href={href} {...props}>
-          {children}
-        </a>
-      )
+      return createElement('a', { href, ...props }, children)
     },
   }))
 }

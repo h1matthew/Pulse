@@ -2,12 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { SIDEBAR_NAVIGATION } from '../navigation'
 
 describe('Sidebar Navigation', () => {
-  it('Practice section has Practice link, not Flashcards', () => {
-    const practiceSection = SIDEBAR_NAVIGATION.find((s) => s.title === 'Practice')
-    const practiceItem = practiceSection?.items.find((i) => i.href === '/practice')
+  it('Engage section has Boost Missions link', () => {
+    const engageSection = SIDEBAR_NAVIGATION.find((s) => s.title === 'Engage')
+    const missionsItem = engageSection?.items.find((i) => i.href === '/missions')
 
-    expect(practiceItem?.label).toBe('Practice')
-    expect(practiceItem?.label).not.toBe('Flashcards')
+    expect(missionsItem?.label).toBe('Boost Missions')
   })
 
   it('no item labeled Flashcards exists', () => {
