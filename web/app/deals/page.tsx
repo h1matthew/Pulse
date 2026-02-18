@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Tag,
   Clock,
@@ -9,6 +9,8 @@ import {
   ChevronRight,
   Loader2,
   AlertCircle,
+  Check,
+  Copy,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,8 +19,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { useAvailableDeals, useClaimDeal, useUserClaims } from "@/hooks/useDeals";
+import { useAvailableDeals, useClaimDeal, useUserClaims, useScrapeDeals } from "@/hooks/useDeals";
 import { toast } from "sonner";
 import type { DealClaimWithDeal } from "@/types/business";
 
@@ -75,8 +79,24 @@ export default function DealsPage() {
     data: claimedDeals = [],
     isLoading: claimsLoading,
     isError: claimsError,
-  } = useUserClaims(userId || "");
+  } = useUserClaims();
   const claimDeal = useClaimDeal();
+  const scrapeDeals = useScrapeDeals();
+  const [claimedDeal, setClaimedDeal] = useState<DealClaimWithDeal | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const handleCloseDialog = () => {
+    setClaimedDeal(null);
+    setCopiedCode(false);
+  };
+
+  const handleCopyCode = () => {
+    if (claimedDeal?.redeemed_code) {
+      navigator.clipboard.writeText(claimedDeal.redeemed_code);
+      setCopiedCode(true);
+      toast.success("Code copied to clipboard");
+    }
+  };
 
   const flashCount = useMemo(
     () => availableDeals.filter((deal) => deal.deal_type === "flash").length,
@@ -117,9 +137,46 @@ export default function DealsPage() {
         <div className="mx-auto max-w-6xl px-6">
           <AnimatedSection animation="fade-up">
             <div className="mb-8">
-              <div className="flex items-center gap-2 mb-2">
-                <Tag className="h-6 w-6 text-chart-2" />
-                <h1 className="text-3xl font-bold tracking-tight">Deals & Offers</h1>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-6 w-6 text-chart-2" />
+                  <h1 className="text-3xl font-bold tracking-tight">Deals & Offers</h1>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={scrapeDeals.isPending}
+                  onClick={async () => {
+                    try {
+                      const result = await scrapeDeals.mutateAsync(undefined);
+                      if (result.dealsFound > 0) {
+                        toast.success(`Found ${result.dealsFound} new deal${result.dealsFound === 1 ? "" : "s"}`, {
+                          description: `Scanned ${result.scraped} business website${result.scraped === 1 ? "" : "s"}`,
+                        });
+                      } else {
+                        toast.info("No new deals found", {
+                          description: result.scraped > 0
+                            ? `Scanned ${result.scraped} business website${result.scraped === 1 ? "" : "s"}`
+                            : "No businesses to scan right now",
+                        });
+                      }
+                    } catch {
+                      toast.error("Failed to scan for deals");
+                    }
+                  }}
+                >
+                  {scrapeDeals.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Scanning...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Scan for Deals
+                    </>
+                  )}
+                </Button>
               </div>
               <p className="text-muted-foreground">
                 Live offers and mission rewards from local businesses
@@ -243,6 +300,9 @@ export default function DealsPage() {
                                       Flash Deal
                                     </Badge>
                                   )}
+                                  {deal.source === "scraped" && (
+                                    <Badge variant="outline">From website</Badge>
+                                  )}
                                   {deal.business?.category?.name && (
                                     <Badge variant="secondary">
                                       {deal.business.category.name}
@@ -362,7 +422,7 @@ export default function DealsPage() {
           <DialogHeader>
             <DialogTitle>Deal Claimed! 🎉</DialogTitle>
             <DialogDescription>
-              {selectedDeal?.title} at {selectedDeal?.business?.name}
+              {claimedDeal?.deal?.title} at {claimedDeal?.deal?.business?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

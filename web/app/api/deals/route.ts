@@ -34,10 +34,39 @@ export async function GET(request: Request) {
         .or('start_date.is.null,start_date.lte.now()')
     }
 
-    query = query.order('created_at', { ascending: false })
+    // Try to filter by source=scraped (only available after migration)
+    // If the column doesn't exist yet, fall back to showing all deals
+    let deals: any[] | null = null
+    let error: any = null
+    let count: number | null = null
+
+    const filteredQuery = query.eq('source', 'scraped')
+      .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    const { data: deals, error, count } = await query
+    const filteredResult = await filteredQuery
+
+    if (filteredResult.error?.code === '42703') {
+      // Column doesn't exist yet — fall back to unfiltered query
+      const fallbackQuery = supabase
+        .from('deals')
+        .select(`
+          *,
+          business:businesses(*, category:categories(*))
+        `, { count: 'exact' })
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1)
+
+      const fallbackResult = await fallbackQuery
+      deals = fallbackResult.data
+      error = fallbackResult.error
+      count = fallbackResult.count
+    } else {
+      deals = filteredResult.data
+      error = filteredResult.error
+      count = filteredResult.count
+    }
 
     if (error) {
       console.error('Database error:', error)

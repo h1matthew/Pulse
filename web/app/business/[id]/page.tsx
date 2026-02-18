@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   MapPin,
@@ -17,6 +17,8 @@ import {
   TrendingUp,
   Send,
   ExternalLink,
+  Loader2,
+  MapPinned,
 } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
@@ -27,6 +29,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
+import { cn } from "@/lib/utils";
+import { CaptchaWidget } from "@/components/features/bot/CaptchaWidget";
+import { getSyncStatus } from "@/lib/reviews/sync-shared";
 import { useBusiness } from "@/hooks/useBusinesses";
 import { useClaimDeal } from "@/hooks/useDeals";
 import {
@@ -34,7 +39,6 @@ import {
   useToggleBookmark,
 } from "@/hooks/useBookmarks";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { useClaimDeal } from "@/hooks/useDeals";
 import { PhotoGallery } from "@/components/features/business/PhotoGallery";
 import { toast } from "sonner";
 import { NavLink } from "@/components/ui/nav-link";
@@ -51,6 +55,7 @@ import {
   buildReviewPageNumbers,
   paginateCombinedReviewFeed,
 } from "@/lib/business/review-feed";
+import { createReviewSchema } from "@/lib/validation";
 
 interface BusinessDetailPageProps {
   params: Promise<{ id: string }>;
@@ -66,8 +71,18 @@ export default function BusinessDetailPage({
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewsPage, setReviewsPage] = useState(1);
   const [heroPhotoFailed, setHeroPhotoFailed] = useState(false);
+  const [isSyncingReviews, setIsSyncingReviews] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [hasCheckedIn, setHasCheckedIn] = useState(false);
+  const [reviewErrors, setReviewErrors] = useState<Record<string, string>>({});
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const [aiDescription, setAiDescription] = useState<string | null>(null);
+  const [aiDescriptionCached, setAiDescriptionCached] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
-  const { data: business, isLoading } = useBusiness(id);
+  const { data: business, isLoading, refetch } = useBusiness(id);
   const canonicalBusinessId = business?.id || id;
   const { data: isBookmarked } = useIsBookmarked(canonicalBusinessId);
   const toggleBookmark = useToggleBookmark();
@@ -205,9 +220,27 @@ export default function BusinessDetailPage({
       setReviewText("");
       setReviewRating(5);
       queryClient.invalidateQueries({ queryKey: ["businesses", "detail"] });
-    } catch {
-      toast.error("Error", {
-        description: "Failed to submit review. Please try again.",
+      refetch();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to submit review. Please try again.";
+      toast.error("Error", { description: message });
+    }
+  };
+
+  const handleSyncGoogleReviews = async (silent = false) => {
+    if (!business?.place_id) {
+      if (!silent) {
+        toast.error("No Google Place ID", {
+          description: "This business doesn't have a Google Place ID.",
+        });
+      }
+      return;
+    }
+
+    setIsSyncingReviews(true);
+    try {
+      const response = await fetch(`/api/businesses/${id}/reviews/sync`, {
+        method: "POST",
       });
 
       if (!response.ok) {
@@ -233,32 +266,6 @@ export default function BusinessDetailPage({
       }
     } finally {
       setIsSyncingReviews(false);
-    }
-  };
-
-  const handleClaimDeal = async (deal: Deal) => {
-    if (!user) {
-      toast.error("Sign in required", {
-        description: "Please sign in to claim deals",
-      });
-      return;
-    }
-
-    try {
-      const result = await claimDeal.mutateAsync(deal.id);
-      // Store the redemption code
-      setClaimedDeals(prev => ({
-        ...prev,
-        [deal.id]: result.redeemed_code
-      }));
-      toast.success("Deal claimed!", {
-        description: `Your redemption code is: ${result.redeemed_code}`,
-      });
-      // Refresh business data to update claim status
-      refetch();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to claim deal";
-      toast.error("Error", { description: message });
     }
   };
 

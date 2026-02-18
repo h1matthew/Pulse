@@ -176,6 +176,7 @@ export interface Deal {
   start_date: string | null
   end_date: string | null
   is_active: boolean
+  source: 'manual' | 'scraped'
   created_at: string
   updated_at: string
 }

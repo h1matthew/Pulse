@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from "react";
-import { Search, SlidersHorizontal, MapPin, Star, Heart, Loader2, LocateFixed, Navigation, MapPinned, Clock, TrendingUp } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, SlidersHorizontal, MapPin, Star, Heart, Loader2, LocateFixed, Navigation, MapPinned, Clock, TrendingUp, Store, RefreshCw, Minus, Plus } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -18,16 +18,15 @@ import {
 } from '@/components/ui/select'
 import { CATEGORY_FILTERS } from '@/lib/constants/navigation'
 import { AnimatedSection } from '@/components/features/home/AnimatedSection'
-import { BusinessCard, BusinessCardSkeleton } from '@/components/features/discover/BusinessCard'
+// BusinessCard and BusinessCardSkeleton are defined locally below
 import { LocationPrompt } from '@/components/features/discover/LocationPrompt'
 import { useNearbyBusinesses } from '@/hooks/useBusinesses'
-import { useLocation } from '@/hooks/useLocation'
+import { useLocation, formatDistance, calculateDistance } from "@/hooks/useLocation";
 import {
   useIsBookmarked,
   useToggleBookmark,
 } from "@/hooks/useBookmarks";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { useLocation, formatDistance, calculateDistance } from "@/hooks/useLocation";
 import { toast } from "sonner";
 import {
   buildBusinessFallbackImageUrl,
@@ -35,8 +34,20 @@ import {
   buildBusinessSummary,
   getBusinessReviewLabel,
 } from "@/lib/business/display";
+import { NavLink } from "@/components/ui/nav-link";
+import { getCachedLocation, geocodeZipCode, cacheLocation } from "@/lib/location";
+import { cn } from "@/lib/utils";
 import type { BusinessWithCategory } from "@/types/business";
 import type { LatLng } from "@/types/business";
+
+const RADIUS_OPTIONS = [
+  { value: 5000, label: '5 km' },
+  { value: 10000, label: '10 km' },
+  { value: 25000, label: '25 km' },
+]
+
+// Default location: Diamond Bar, CA
+const DIAMOND_BAR_DEFAULT: LatLng = { lat: 34.0286, lng: -117.8208 };
 
 function BusinessCard({
   business,
@@ -297,6 +308,7 @@ function BusinessCardSkeleton() {
 }
 
 export default function DiscoverPage() {
+  const [nearbyMode, setNearbyMode] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('distance')
   const [searchQuery, setSearchQuery] = useState('')
@@ -402,14 +414,14 @@ export default function DiscoverPage() {
 
     // Filter by category in nearby mode
     if (nearbyMode && selectedCategory !== "all") {
-      return business.category?.slug === selectedCategory;
+      filtered = filtered.filter(b => b.category?.slug === selectedCategory);
     }
 
-    return true;
-  });
+    return filtered;
+  })();
 
   // Sort by distance when in nearby mode
-  const sortedBusinesses = [...filteredBusinesses].sort((a, b) => {
+  const sortedBusinesses = [...processedBusinesses].sort((a, b) => {
     if (nearbyMode && location) {
       const distA = a.latitude && a.longitude
         ? calculateDistance(
@@ -448,10 +460,12 @@ export default function DiscoverPage() {
         });
         requestLocation();
       }
-    })
-
-    return filtered
-  })()
+      setNearbyMode(true);
+    } else {
+      // Turning off nearby mode
+      setNearbyMode(false);
+    }
+  };
 
   const isLoading = locationLoading || businessesLoading || isLoadingZip
   const hasLocation = !!location
@@ -647,7 +661,7 @@ export default function DiscoverPage() {
             {isLoading ? (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" aria-busy="true" aria-label="Loading businesses">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <BusinessCardSkeleton key={i} index={i} />
+                  <BusinessCardSkeleton key={i} />
                 ))}
               </div>
             ) : businessesError ? (
@@ -678,7 +692,6 @@ export default function DiscoverPage() {
                     business={business}
                     index={index}
                     userLocation={location}
-                    priority={index < 3}
                   />
                 ))}
               </div>

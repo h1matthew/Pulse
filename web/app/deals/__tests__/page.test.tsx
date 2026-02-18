@@ -24,6 +24,10 @@ vi.mock("@/hooks/useDeals", () => ({
   useAvailableDeals: () => mockUseAvailableDeals(),
   useUserClaims: (userId: string) => mockUseUserClaims(userId),
   useClaimDeal: () => mockUseClaimDeal(),
+  useScrapeDeals: () => ({
+    mutateAsync: vi.fn().mockResolvedValue({ scraped: 0, dealsFound: 0 }),
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/components/providers/AuthProvider", () => ({
