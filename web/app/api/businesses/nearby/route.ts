@@ -78,6 +78,10 @@ const EDUCATIONAL_SUBTYPES = [
   'university', 'preschool', 'kindergarten', 'college',
 ]
 
+// Adult business name keywords to exclude
+const ADULT_BUSINESS_PATTERN =
+  /\b(adult\s+store|adult\s+shop|sex\s+shop|adult\s+entertainment|adult\s+novelty|adult\s+video|adult\s+bookstore|adult\s+superstore)\b/i
+
 /**
  * Map an array of business subtypes/subtype_gcids to the best-matching internal category slug.
  * Falls back to "retail" if no match is found.
@@ -112,7 +116,7 @@ function generateDescription(place: OWNBusinessResult): string {
     return place.about.summary.substring(0, 200)
   }
 
-  const name = place.displayName?.text || ''
+  const name = place.name || ''
 
   // Build description templates that incorporate the business name
   const typeTemplates: Record<string, (n: string) => string> = {
@@ -149,7 +153,7 @@ function generateDescription(place: OWNBusinessResult): string {
     'bank': (n) => `${n} provides banking, financial services, and account management`,
   }
 
-  for (const type of place.types || []) {
+  for (const type of place.subtypes || []) {
     if (typeTemplates[type]) {
       return typeTemplates[type](name)
     }
@@ -160,6 +164,12 @@ function generateDescription(place: OWNBusinessResult): string {
   }
 
   return 'A local business proudly serving the community'
+}
+
+/** Transform OWN working_hours to weekday description strings. */
+function transformHours(workingHours: Record<string, string[]> | null | undefined): string[] {
+  if (!workingHours) return []
+  return Object.entries(workingHours).map(([day, times]) => `${day}: ${times.join(', ')}`)
 }
 
 /**
@@ -221,8 +231,13 @@ async function fetchFromOpenWebNinja(
 
     const data: OWNSearchResponse = await response.json()
 
-    // Client-side filtering to exclude educational institutions
+    // Client-side filtering to exclude educational institutions and adult businesses
     const filteredPlaces = (data.data || []).filter(place => {
+      // Exclude adult businesses by name
+      if (ADULT_BUSINESS_PATTERN.test(place.name || '')) {
+        return false
+      }
+
       const allTypes = [
         ...(place.subtype_gcids || []),
         ...place.subtypes.map(s => s.toLowerCase()),
@@ -261,7 +276,7 @@ async function syncPlacesToDatabase(
     }
 
     try {
-      if (!isRealBusinessPlaceTypes(place.types || [])) {
+      if (!isRealBusinessPlaceTypes(place.subtypes || [])) {
         continue
       }
 
@@ -319,16 +334,16 @@ async function syncPlacesToDatabase(
         average_rating: place.rating || 0,
         review_count: place.review_count || 0,
         category_id: category.id,
-        place_id: place.id,
+        place_id: place.place_id,
         data_source: 'google',
-        is_verified: true,
-        photos: place.photos?.map(p => ({
-          photo_reference: p.name,
-          height: p.heightPx,
-          width: p.widthPx,
-        })) || [],
-        hours: place.regularOpeningHours?.weekdayDescriptions || [],
-        tags: place.types
+        is_verified: place.verified ?? true,
+        photos: (place.photos_sample || []).slice(0, 5).map(p => ({
+          photo_reference: p.photo_url,
+          height: 0,
+          width: 0,
+        })),
+        hours: hours,
+        tags: place.subtypes
           ?.filter((type) => type !== 'establishment' && type !== 'point_of_interest')
           .slice(0, 10) || [],
       }
@@ -510,28 +525,7 @@ export async function GET(request: Request) {
       return distA - distB
     })
 
-    // Sort by distance
-    try {
-      const sorted = validBusinesses.sort((a, b) => {
-        const distA = Math.sqrt(
-          Math.pow((a?.latitude || 0) - lat, 2) +
-          Math.pow((a?.longitude || 0) - lng, 2)
-        )
-        const distB = Math.sqrt(
-          Math.pow((b?.latitude || 0) - lat, 2) +
-          Math.pow((b?.longitude || 0) - lng, 2)
-        )
-        return distA - distB
-      })
-
-      return NextResponse.json(sorted)
-    } catch (sortError) {
-      console.error('Error sorting businesses:', sortError)
-      return NextResponse.json(
-        { error: 'Error processing businesses' },
-        { status: 500 }
-      )
-    }
+    return NextResponse.json(sorted)
   } catch (error) {
     console.error('Error in nearby businesses:', error)
     return NextResponse.json(

@@ -114,6 +114,9 @@ const BUSINESS_PLACE_TYPE_HINTS = new Set([
 const INSTITUTION_NAME_PATTERN =
   /\b(school|university|college|academy|district school|elementary|middle school|high school)\b/i;
 
+const ADULT_BUSINESS_PATTERN =
+  /\b(adult\s+store|adult\s+shop|sex\s+shop|adult\s+entertainment|adult\s+novelty|adult\s+video|adult\s+bookstore|adult\s+superstore)\b/i;
+
 function normalizeText(value?: string | null): string {
   return (value || "").trim().replace(/\s+/g, " ");
 }
@@ -201,6 +204,10 @@ export function isRealBusinessRecord(input: RealBusinessRecordInput): boolean {
   }
 
   if (INSTITUTION_NAME_PATTERN.test(normalizeText(input.name))) {
+    return false;
+  }
+
+  if (ADULT_BUSINESS_PATTERN.test(normalizeText(input.name))) {
     return false;
   }
 

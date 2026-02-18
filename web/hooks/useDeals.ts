@@ -37,7 +37,7 @@ async function fetchAvailableDeals(): Promise<AvailableDeal[]> {
   return payload.deals || []
 }
 
-async function fetchUserClaims(userId: string): Promise<DealClaimWithDeal[]> {
+async function fetchUserClaims(): Promise<DealClaimWithDeal[]> {
   const response = await fetch('/api/deals/claims')
   if (!response.ok) throw new Error('Failed to fetch claims')
   const payload = await response.json()
@@ -92,7 +92,7 @@ export function useBusinessDeals(businessId: string) {
 
 /** Fetch all currently available deals across all businesses. */
 export function useAvailableDeals() {
-  return useQuery<DealsResponse>({
+  return useQuery<AvailableDeal[]>({
     queryKey: dealKeys.available(),
     queryFn: fetchAvailableDeals,
     staleTime: 5 * 60 * 1000,
@@ -101,7 +101,7 @@ export function useAvailableDeals() {
 
 /** Fetch the current user's claimed deals (requires authentication). */
 export function useUserClaims() {
-  return useQuery<ClaimsResponse>({
+  return useQuery<DealClaimWithDeal[]>({
     queryKey: dealKeys.userClaims('current'),
     queryFn: fetchUserClaims,
     staleTime: 2 * 60 * 1000,
@@ -118,6 +118,26 @@ export function useClaimDeal() {
       queryClient.invalidateQueries({ queryKey: dealKeys.available() })
       queryClient.invalidateQueries({ queryKey: dealKeys.lists() })
       queryClient.invalidateQueries({ queryKey: ['impact'] })
+    },
+  })
+}
+
+/** Mutation to scrape business websites for real deals via API Ninjas + Gemini. */
+export function useScrapeDeals() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (businessId?: string) => {
+      const url = businessId
+        ? `/api/deals/scrape?businessId=${encodeURIComponent(businessId)}`
+        : '/api/deals/scrape'
+      const response = await fetch(url, { method: 'POST' })
+      if (!response.ok) throw new Error('Failed to scan for deals')
+      return response.json() as Promise<{ scraped: number; dealsFound: number; errors?: string[] }>
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dealKeys.available() })
+      queryClient.invalidateQueries({ queryKey: dealKeys.lists() })
     },
   })
 }
