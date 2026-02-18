@@ -41,8 +41,9 @@ import type { BusinessWithCategory } from "@/types/business";
 import type { LatLng } from "@/types/business";
 
 const RADIUS_OPTIONS = [
-  { value: 5000, label: '5 km' },
   { value: 10000, label: '10 km' },
+  { value: 15000, label: '15 km' },
+  { value: 20000, label: '20 km' },
   { value: 25000, label: '25 km' },
 ]
 
@@ -312,7 +313,7 @@ export default function DiscoverPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('distance')
   const [searchQuery, setSearchQuery] = useState('')
-  const [radius, setRadius] = useState(5000)
+  const [radius, setRadius] = useState(10000)
   const [location, setLocation] = useState<LatLng | null>(null)
   const [locationSource, setLocationSource] = useState<'gps' | 'zip' | null>(null)
   const [isLoadingZip, setIsLoadingZip] = useState(false)
@@ -354,6 +355,11 @@ export default function DiscoverPage() {
       cacheLocation(gpsLocation)
     }
   }, [gpsLocation])
+
+  // Demo default: never allow below 10 km.
+  useEffect(() => {
+    setRadius((currentRadius) => Math.max(10000, currentRadius))
+  }, [])
 
   // Handle location errors
   useEffect(() => {
@@ -617,8 +623,8 @@ export default function DiscoverPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => setRadius((r) => Math.max(5000, r - 5000))}
-                        disabled={radius <= 5000}
+                        onClick={() => setRadius((r) => Math.max(10000, r - 5000))}
+                        disabled={radius <= 10000}
                         aria-label="Decrease search radius"
                       >
                         <Minus className="h-3 w-3" aria-hidden="true" />
