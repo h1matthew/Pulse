@@ -85,7 +85,7 @@ async function fetchFeaturedBusinesses(): Promise<BusinessWithCategory[]> {
 
 async function fetchNearbyBusinesses(
   location: LatLng,
-  radius = 5000,
+  radius = 10000,
   category?: string
 ): Promise<BusinessWithCategory[]> {
   const params = new URLSearchParams()
@@ -202,10 +202,10 @@ export function useFeaturedBusinesses() {
  * the local database has insufficient results. Announces loading and results to
  * screen readers for accessibility.
  * @param location - User's coordinates (null disables the query)
- * @param radius - Search radius in meters (default 5000)
+ * @param radius - Search radius in meters (default 10000)
  * @param category - Optional category slug to filter by
  */
-export function useNearbyBusinesses(location?: LatLng | null, radius = 5000, category?: string) {
+export function useNearbyBusinesses(location?: LatLng | null, radius = 10000, category?: string) {
   const { announceLoading, announceSuccess } = useAnnouncer()
 
   return useQuery({

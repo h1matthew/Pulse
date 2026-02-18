@@ -31,7 +31,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { cn } from "@/lib/utils";
 import { CaptchaWidget } from "@/components/features/bot/CaptchaWidget";
-import { getSyncStatus } from "@/lib/reviews/sync-shared";
 import { useBusiness } from "@/hooks/useBusinesses";
 import { useClaimDeal } from "@/hooks/useDeals";
 import {
@@ -164,7 +163,7 @@ export default function BusinessDetailPage({
 
     // Client-side Zod validation
     const validation = createReviewSchema.safeParse({
-      business_id: id,
+      business_id: business?.id || id,
       rating: reviewRating,
       content: reviewText,
     });
@@ -239,7 +238,7 @@ export default function BusinessDetailPage({
 
     setIsSyncingReviews(true);
     try {
-      const response = await fetch(`/api/businesses/${id}/reviews/sync`, {
+      const response = await fetch(`/api/businesses/${canonicalBusinessId}/reviews/sync`, {
         method: "POST",
       });
 
@@ -251,11 +250,17 @@ export default function BusinessDetailPage({
       const result = await response.json();
       if (!silent) {
         toast.success("Reviews synced", {
-          description: `Synced ${result.synced} Google reviews`,
+          description:
+            result.synced > 0
+              ? `Synced ${result.synced} Google reviews`
+              : result.google_review_count > 0
+                ? "Sync complete. Review metadata refreshed."
+                : "Sync complete. No new reviews found.",
         });
       }
 
       // Refresh business data to show new reviews
+      queryClient.invalidateQueries({ queryKey: ["businesses", "detail"] });
       refetch();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to sync reviews";
@@ -279,7 +284,7 @@ export default function BusinessDetailPage({
 
     setIsCheckingIn(true);
     try {
-      const response = await fetch(`/api/businesses/${id}/checkin`, {
+      const response = await fetch(`/api/businesses/${canonicalBusinessId}/checkin`, {
         method: "POST",
       });
 
@@ -311,7 +316,7 @@ export default function BusinessDetailPage({
   const handleGenerateDescription = async (force = false, silent = false) => {
     setIsGeneratingDescription(true);
     try {
-      const url = `/api/businesses/${id}/generate-description${force ? '?force=true' : ''}`;
+      const url = `/api/businesses/${canonicalBusinessId}/generate-description${force ? '?force=true' : ''}`;
       const response = await fetch(url, { method: 'POST' });
 
       if (!response.ok) {
@@ -478,6 +483,30 @@ export default function BusinessDetailPage({
       .join(", "),
     place_id: business.place_id,
   });
+  const displaySyncStatus = {
+    canSync: false,
+    lastSyncedText: "Synced",
+    isStale: false,
+  };
+  const latitude = Number(business.latitude);
+  const longitude = Number(business.longitude);
+  const hasValidCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+  const mapQuery = hasValidCoordinates
+    ? `${latitude},${longitude}`
+    : [business.address, business.city, business.state, business.zip_code]
+        .filter(Boolean)
+        .join(", ");
+  const mapsEmbedApiKey =
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_EMBED_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY ||
+    "";
+  const mapEmbedSrc = mapQuery
+    ? mapsEmbedApiKey
+      ? hasValidCoordinates
+        ? `https://www.google.com/maps/embed/v1/view?key=${mapsEmbedApiKey}&center=${latitude},${longitude}&zoom=15`
+        : `https://www.google.com/maps/embed/v1/search?key=${mapsEmbedApiKey}&q=${encodeURIComponent(mapQuery)}`
+      : `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=15&output=embed`
+    : null;
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -866,29 +895,15 @@ export default function BusinessDetailPage({
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="font-medium">Google Reviews</p>
-                              {(() => {
-                                const syncStatus = getSyncStatus({
-                                  last_synced_at: business.last_synced_at,
-                                  sync_status: business.sync_status,
-                                });
-                                return (
-                                  <Badge
-                                    variant={syncStatus.isStale ? "secondary" : "outline"}
-                                    className="text-xs"
-                                  >
-                                    {syncStatus.isStale ? "Needs Sync" : "Up to date"}
-                                  </Badge>
-                                );
-                              })()}
+                              <Badge
+                                variant={displaySyncStatus.isStale ? "secondary" : "outline"}
+                                className="text-xs"
+                              >
+                                {displaySyncStatus.isStale ? "Needs Sync" : "Up to date"}
+                              </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              {(() => {
-                                const syncStatus = getSyncStatus({
-                                  last_synced_at: business.last_synced_at,
-                                  sync_status: business.sync_status,
-                                });
-                                return syncStatus.lastSyncedText;
-                              })()}
+                              {displaySyncStatus.lastSyncedText}
                             </p>
                           </div>
                           <Button
@@ -1090,58 +1105,67 @@ export default function BusinessDetailPage({
 
                   <TabsContent value="deals" className="mt-6 space-y-6">
                     {business.deals && business.deals.length > 0 ? (
-                      business.deals.map((deal, index: number) => (
-                        <AnimatedSection
-                          key={deal.id}
-                          animation="fade-up"
-                          delay={0.1 * index}
-                        >
-                          <Card>
-                            <CardContent className="p-6">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <Badge className="mb-2" variant="secondary">
-                                    <Tag className="h-3 w-3 mr-1" />
-                                    {deal.deal_type === "boost_mission"
-                                      ? "Mission Reward"
-                                      : "Special Offer"}
-                                  </Badge>
-                                  <h3 className="font-semibold text-lg">
-                                    {deal.title}
-                                  </h3>
-                                  <p className="text-muted-foreground mt-1">
-                                    {deal.description}
-                                  </p>
-                                  {deal.mission_requirement && (
-                                    <p className="text-sm text-chart-3 mt-2">
-                                      <TrendingUp className="h-4 w-4 inline mr-1" />
-                                      Mission: {deal.mission_requirement}
+                      business.deals.map((deal, index: number) => {
+                        const isDemoDeal = deal.id.startsWith("demo-");
+                        return (
+                          <AnimatedSection
+                            key={deal.id}
+                            animation="fade-up"
+                            delay={0.1 * index}
+                          >
+                            <Card>
+                              <CardContent className="p-6">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <Badge className="mb-2" variant="secondary">
+                                      <Tag className="h-3 w-3 mr-1" />
+                                      {deal.deal_type === "boost_mission"
+                                        ? "Mission Reward"
+                                        : "Special Offer"}
+                                    </Badge>
+                                    <h3 className="font-semibold text-lg">
+                                      {deal.title}
+                                    </h3>
+                                    <p className="text-muted-foreground mt-1">
+                                      {deal.description}
                                     </p>
-                                  )}
+                                    {deal.mission_requirement && (
+                                      <p className="text-sm text-chart-3 mt-2">
+                                        <TrendingUp className="h-4 w-4 inline mr-1" />
+                                        Mission: {deal.mission_requirement}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    {deal.discount_value && (
+                                      <div className="text-2xl font-bold text-chart-2">
+                                        {deal.discount_type === "percentage"
+                                          ? `${deal.discount_value}%`
+                                          : `$${deal.discount_value}`}
+                                      </div>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      className="mt-2"
+                                      disabled={claimDeal.isPending || isDemoDeal}
+                                      onClick={() => {
+                                        if (!isDemoDeal) handleClaimDeal(deal.id);
+                                      }}
+                                    >
+                                      <DollarSign className="h-4 w-4 mr-1" />
+                                      {isDemoDeal
+                                        ? "Demo deal"
+                                        : claimDeal.isPending
+                                          ? "Claiming..."
+                                          : "Claim"}
+                                    </Button>
+                                  </div>
                                 </div>
-                                <div className="text-right">
-                                  {deal.discount_value && (
-                                    <div className="text-2xl font-bold text-chart-2">
-                                      {deal.discount_type === "percentage"
-                                        ? `${deal.discount_value}%`
-                                        : `$${deal.discount_value}`}
-                                    </div>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    className="mt-2"
-                                    disabled={claimDeal.isPending}
-                                    onClick={() => handleClaimDeal(deal.id)}
-                                  >
-                                    <DollarSign className="h-4 w-4 mr-1" />
-                                    {claimDeal.isPending ? "Claiming..." : "Claim"}
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </AnimatedSection>
-                      ))
+                              </CardContent>
+                            </Card>
+                          </AnimatedSection>
+                        );
+                      })
                     ) : (
                       <Card>
                         <CardContent className="p-6 text-center">
@@ -1246,7 +1270,7 @@ export default function BusinessDetailPage({
               </AnimatedSection>
 
               {/* Map Card */}
-              {business.latitude && business.longitude && (
+              {mapEmbedSrc && (
                 <AnimatedSection animation="fade-up" delay={0.3}>
                   <Card className="transition-shadow hover:shadow-md">
                     <CardHeader>
@@ -1261,7 +1285,7 @@ export default function BusinessDetailPage({
                         allowFullScreen
                         referrerPolicy="no-referrer-when-downgrade"
                         title={`Map showing location of ${business.name}`}
-                        src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY}&q=${encodeURIComponent(business.name)}&center=${business.latitude},${business.longitude}&zoom=15`}
+                        src={mapEmbedSrc}
                       />
                       <div className="p-4">
                         <Button
