@@ -110,21 +110,16 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
-    // Verify CAPTCHA token
+    // CAPTCHA is optional for review submissions in demo mode.
     const { captchaToken, ...reviewData } = body
-    if (!captchaToken) {
-      return NextResponse.json(
-        { error: 'CAPTCHA verification required' },
-        { status: 400 }
-      )
-    }
-
-    const captchaResult = await verifyCaptcha(captchaToken)
-    if (!captchaResult.success) {
-      return NextResponse.json(
-        { error: captchaResult.error || 'CAPTCHA verification failed' },
-        { status: 400 }
-      )
+    if (captchaToken) {
+      const captchaResult = await verifyCaptcha(captchaToken)
+      if (!captchaResult.success) {
+        return NextResponse.json(
+          { error: captchaResult.error || 'CAPTCHA verification failed' },
+          { status: 400 }
+        )
+      }
     }
 
     const validation = createReviewSchema.safeParse(reviewData)

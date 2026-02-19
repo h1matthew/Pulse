@@ -12,10 +12,6 @@ import { SpaceBackground } from "@/components/features/home/SpaceBackground"
 import { BaanihaliPuzzleCaptcha } from "@/components/features/bot/BaanihaliPuzzleCaptcha"
 import { ArrowLeft } from "lucide-react"
 
-// Demo-only persistence: remove this block to require CAPTCHA on every fresh login.
-const LOGIN_CAPTCHA_TRUST_STORAGE_KEY = "pulse_login_captcha_verified_until"
-const LOGIN_CAPTCHA_TRUST_VALUE = "verified"
-
 export default function LoginPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("login")
@@ -30,18 +26,37 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const [resetEmail, setResetEmail] = useState("")
-  const [loginCaptchaTrusted, setLoginCaptchaTrusted] = useState(false)
-  const [showLoginCaptcha, setShowLoginCaptcha] = useState(false)
   const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null)
   const [showLoginCaptchaModal, setShowLoginCaptchaModal] = useState(false)
+  const [hasPromptedCaptcha, setHasPromptedCaptcha] = useState(false)
+  const isLoginCaptchaVerified = Boolean(loginCaptchaToken)
 
   useEffect(() => {
     setMounted(true)
-    const trustedValue = window.localStorage.getItem(LOGIN_CAPTCHA_TRUST_STORAGE_KEY)
-    if (trustedValue === LOGIN_CAPTCHA_TRUST_VALUE) {
-      setLoginCaptchaTrusted(true)
-    }
   }, [])
+
+  useEffect(() => {
+    if (
+      mounted &&
+      !checkingAuth &&
+      !showForgotPassword &&
+      activeTab === "login" &&
+      !isLoginCaptchaVerified &&
+      !showLoginCaptchaModal &&
+      !hasPromptedCaptcha
+    ) {
+      setShowLoginCaptchaModal(true)
+      setHasPromptedCaptcha(true)
+    }
+  }, [
+    mounted,
+    checkingAuth,
+    showForgotPassword,
+    activeTab,
+    isLoginCaptchaVerified,
+    showLoginCaptchaModal,
+    hasPromptedCaptcha,
+  ])
 
   // Check if user is already logged in and redirect to dashboard
   useEffect(() => {
@@ -61,9 +76,9 @@ export default function LoginPage() {
     setActiveTab(value)
     setError(null)
     setMessage(null)
-    setShowLoginCaptcha(false)
     setLoginCaptchaToken(null)
     setShowLoginCaptchaModal(false)
+    setHasPromptedCaptcha(false)
   }
 
   async function handleForgotPassword(e: React.FormEvent) {
@@ -92,23 +107,16 @@ export default function LoginPage() {
     setError(null)
     setMessage(null)
     setResetEmail("")
-    setShowLoginCaptcha(false)
     setLoginCaptchaToken(null)
     setShowLoginCaptchaModal(false)
+    setHasPromptedCaptcha(false)
   }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
 
-    if (!loginCaptchaTrusted && !showLoginCaptcha) {
-      setShowLoginCaptcha(true)
-      setError("Please complete CAPTCHA verification to continue.")
-      setShowLoginCaptchaModal(true)
-      return
-    }
-
-    if (!loginCaptchaTrusted && !loginCaptchaToken) {
+    if (!isLoginCaptchaVerified || !loginCaptchaToken) {
       setError("Please complete CAPTCHA verification to continue.")
       if (!showLoginCaptchaModal) {
         setShowLoginCaptchaModal(true)
@@ -266,6 +274,26 @@ export default function LoginPage() {
                             {error}
                           </p>
                         )}
+                        <div className="space-y-2">
+                          <Button
+                            type="button"
+                            variant={isLoginCaptchaVerified ? "secondary" : "outline"}
+                            className="w-full h-10"
+                            onClick={() => {
+                              setError(null)
+                              setShowLoginCaptchaModal(true)
+                            }}
+                          >
+                            {isLoginCaptchaVerified
+                              ? "CAPTCHA Verified"
+                              : "Verify CAPTCHA"}
+                          </Button>
+                          {!isLoginCaptchaVerified && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              Required before signing in.
+                            </p>
+                          )}
+                        </div>
                         <Button
                           type="submit"
                           className="w-full h-10 shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
@@ -370,11 +398,6 @@ export default function LoginPage() {
             <BaanihaliPuzzleCaptcha
               onVerify={(token) => {
                 setLoginCaptchaToken(token)
-                setLoginCaptchaTrusted(true)
-                window.localStorage.setItem(
-                  LOGIN_CAPTCHA_TRUST_STORAGE_KEY,
-                  LOGIN_CAPTCHA_TRUST_VALUE,
-                )
                 setShowLoginCaptchaModal(false)
                 setError(null)
               }}

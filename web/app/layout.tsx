@@ -23,7 +23,9 @@ export const metadata: Metadata = {
   title: "Pulse - Discover Local Businesses",
   description: "Find and support local businesses in your community. Every interaction strengthens your local economy.",
   icons: {
-    icon: '/logo.svg',
+    icon: '/pulse-mark.png',
+    shortcut: '/pulse-mark.png',
+    apple: '/pulse-mark.png',
   },
 };
 

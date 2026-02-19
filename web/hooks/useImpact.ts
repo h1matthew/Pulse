@@ -24,7 +24,8 @@ const impactKeys = {
     [...impactKeys.all, 'report', from ?? 'all', to] as const,
   leaderboard: (type: string, timeframe: string) =>
     [...impactKeys.all, 'leaderboard', type, timeframe] as const,
-  community: () => [...impactKeys.all, 'community'] as const,
+  community: (userId?: string) =>
+    [...impactKeys.all, 'community', userId || 'anon'] as const,
   milestones: (userId: string) => [...impactKeys.all, 'milestones', userId] as const,
 }
 
@@ -133,11 +134,12 @@ export function useLeaderboard(type = 'global', timeframe = 'all_time') {
 }
 
 /** Fetch aggregate community impact metrics (total dollars local, businesses supported, active users). */
-export function useCommunityPulse() {
+export function useCommunityPulse(userId?: string) {
   return useQuery({
-    queryKey: impactKeys.community(),
+    queryKey: impactKeys.community(userId),
     queryFn: fetchCommunityPulse,
-    staleTime: 10 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   })
 }
 

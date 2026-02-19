@@ -171,11 +171,11 @@ export function BaanihaliPuzzleCaptcha({ onVerify, onCancel }: BaanihaliPuzzleCa
         {error || "Slide the puzzle piece into the highlighted target slot."}
       </p>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <Button
           type="button"
           variant="outline"
-          className="w-full"
+          className="w-full sm:flex-1 sm:basis-0"
           onClick={refreshCaptcha}
           disabled={loading}
         >
@@ -183,7 +183,7 @@ export function BaanihaliPuzzleCaptcha({ onVerify, onCancel }: BaanihaliPuzzleCa
         </Button>
         <Button
           type="button"
-          className="w-full"
+          className="w-full sm:flex-1 sm:basis-0"
           onClick={verifyCaptcha}
           disabled={loading || !captcha}
         >

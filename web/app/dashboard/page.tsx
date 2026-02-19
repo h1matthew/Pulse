@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, DollarSign, Store, Users, Star, Zap, Target, Award, Loader2, Heart, MapPin, ArrowRight, FileText } from "lucide-react";
 import { ImpactReportDialog } from "@/components/features/dashboard/ImpactReport";
 import { Header } from "@/components/layout/Header";
@@ -16,12 +16,48 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useBusinesses } from "@/hooks/useBusinesses";
+import type { BusinessWithCategory } from "@/types/business";
+
+const DASHBOARD_SPOTLIGHT_LOCATION = { lat: 34.0286, lng: -117.8208 };
+const DASHBOARD_SPOTLIGHT_RADIUS_METERS = 10000;
 
 // Fetch recent activity
 async function fetchRecentActivity() {
   const response = await fetch('/api/activity');
   if (!response.ok) throw new Error('Failed to fetch activity');
   return response.json();
+}
+
+async function fetchSpotlightBusinesses(): Promise<BusinessWithCategory[]> {
+  const params = new URLSearchParams({
+    lat: DASHBOARD_SPOTLIGHT_LOCATION.lat.toString(),
+    lng: DASHBOARD_SPOTLIGHT_LOCATION.lng.toString(),
+    radius: DASHBOARD_SPOTLIGHT_RADIUS_METERS.toString(),
+  });
+  const response = await fetch(`/api/businesses/nearby?${params.toString()}`);
+  if (!response.ok) throw new Error("Failed to fetch spotlight businesses");
+  return response.json();
+}
+
+function isCommunityPulseMeaningful(data: {
+  pulse_score?: number | null;
+  total_dollars_kept_local?: number | null;
+  total_businesses_supported?: number | null;
+  active_users?: number | null;
+} | null | undefined): boolean {
+  if (!data) return false;
+  return (
+    Number(data.pulse_score || 0) > 0 ||
+    Number(data.total_dollars_kept_local || 0) > 0 ||
+    Number(data.total_businesses_supported || 0) > 0 ||
+    Number(data.active_users || 0) > 0
+  );
+}
+
+function formatCompactCount(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
+  return value.toLocaleString();
 }
 
 // Impact Story Card Component
@@ -78,17 +114,33 @@ export default function DashboardPage() {
   // Fetch real data
   const { data: impact, isLoading: impactLoading } = useUserImpact(userId);
   const impactDisplay = useImpactDisplay(userId);
-  const { data: communityPulse, isLoading: pulseLoading } = useCommunityPulse();
+  const { data: communityPulse, isLoading: pulseLoading } = useCommunityPulse(userId);
   const { activeMissions, isLoading: missionsLoading } = useMissionProgressDetails(userId);
   const { data: recentActivity, isLoading: activityLoading } = useQuery({
     queryKey: ['activity'],
     queryFn: fetchRecentActivity,
     enabled: !!userId,
   });
+  const { data: spotlightNearbyBusinesses } = useQuery({
+    queryKey: ['dashboard', 'spotlight', 'nearby'],
+    queryFn: fetchSpotlightBusinesses,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // Fetch featured business for spotlight
-  const { data: featuredBusinessData } = useBusinesses({}, 1, 1);
-  const featuredBusiness = featuredBusinessData?.businesses?.[0];
+  // Fallback list data if nearby spotlight query fails or returns empty.
+  const { data: featuredBusinessData } = useBusinesses({ sortBy: 'review_count' }, 1, 12);
+  const featuredBusiness = useMemo(() => {
+    const nearbyBusinesses = spotlightNearbyBusinesses || [];
+    const listBusinesses = featuredBusinessData?.businesses || [];
+    const businesses = nearbyBusinesses.length > 0 ? nearbyBusinesses : listBusinesses;
+
+    const realGoogleBusiness = businesses.find(
+      (business) => business.data_source === 'google' && !!business.place_id
+    );
+    if (realGoogleBusiness) return realGoogleBusiness;
+
+    return businesses[0];
+  }, [spotlightNearbyBusinesses, featuredBusinessData?.businesses]);
 
   // Calculate impact score
   const impactScore = impact
@@ -104,6 +156,38 @@ export default function DashboardPage() {
   const nextTierProgress = impactDisplay?.nextTierProgress != null
     ? Math.round(impactDisplay.nextTierProgress * 100)
     : 0;
+
+  const communityImpact = useMemo(() => {
+    if (isCommunityPulseMeaningful(communityPulse)) {
+      return {
+        pulseScore: Number(communityPulse?.pulse_score || 0),
+        totalDollarsKeptLocal: Number(communityPulse?.total_dollars_kept_local || 0),
+        totalBusinessesSupported: Number(communityPulse?.total_businesses_supported || 0),
+        activeUsers: Number(communityPulse?.active_users || 0),
+      };
+    }
+
+    const userDollars = Number(impact?.estimated_dollars_kept_local || 0);
+    const userBusinesses = Number(impact?.businesses_supported || 0);
+    const userReviews = Number(impact?.reviews_left || 0);
+    const userMissions = Number(impact?.missions_completed || 0);
+    const userCheckIns = Number(impact?.total_check_ins || 0);
+    const hasAnyImpact =
+      userDollars > 0 ||
+      userBusinesses > 0 ||
+      userReviews > 0 ||
+      userMissions > 0 ||
+      userCheckIns > 0;
+
+    if (!hasAnyImpact) return null;
+
+    return {
+      pulseScore: impactScore,
+      totalDollarsKeptLocal: userDollars,
+      totalBusinessesSupported: userBusinesses,
+      activeUsers: 1,
+    };
+  }, [communityPulse, impact, impactScore]);
 
   // Show loading state while auth is loading
   if (authLoading) {
@@ -458,7 +542,7 @@ export default function DashboardPage() {
                         <Skeleton className="h-10 w-24 mx-auto mb-1" />
                       ) : (
                         <div className="text-3xl font-bold gradient-text mb-1">
-                          {communityPulse?.pulse_score?.toLocaleString() || '0'}
+                          {(communityImpact?.pulseScore || 0).toLocaleString()}
                         </div>
                       )}
                       <div className="text-xs text-muted-foreground">
@@ -473,7 +557,7 @@ export default function DashboardPage() {
                         {pulseLoading ? (
                           <Skeleton className="h-4 w-16" />
                         ) : (
-                          <span>${((communityPulse?.total_dollars_kept_local || 0) / 1000000).toFixed(1)}M</span>
+                          <span>${Math.round(communityImpact?.totalDollarsKeptLocal || 0).toLocaleString()}</span>
                         )}
                       </div>
                       <div className="flex justify-between text-xs" suppressHydrationWarning>
@@ -483,7 +567,7 @@ export default function DashboardPage() {
                         {pulseLoading ? (
                           <Skeleton className="h-4 w-12" />
                         ) : (
-                          <span>{(communityPulse?.total_businesses_supported || 0).toLocaleString()}</span>
+                          <span>{(communityImpact?.totalBusinessesSupported || 0).toLocaleString()}</span>
                         )}
                       </div>
                       <div className="flex justify-between text-xs" suppressHydrationWarning>
@@ -491,7 +575,7 @@ export default function DashboardPage() {
                         {pulseLoading ? (
                           <Skeleton className="h-4 w-12" />
                         ) : (
-                          <span>{((communityPulse?.active_users || 0) / 1000).toFixed(1)}K</span>
+                          <span>{formatCompactCount(communityImpact?.activeUsers || 0)}</span>
                         )}
                       </div>
                     </div>
@@ -521,7 +605,11 @@ export default function DashboardPage() {
                         </div>
                         <h4 className="font-semibold mb-1">{featuredBusiness.name}</h4>
                         <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                          {featuredBusiness.short_description || featuredBusiness.description}
+                          {featuredBusiness.short_description ||
+                            featuredBusiness.description ||
+                            (featuredBusiness.category
+                              ? `${featuredBusiness.category.name} in your local community`
+                              : "Popular local business in your area")}
                         </p>
                         <NavLink href={`/business/${featuredBusiness.id}`}>
                           <Button variant="outline" size="sm" className="w-full">

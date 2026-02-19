@@ -55,7 +55,7 @@ export function MobileMenu() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <img src="/logo.svg" alt="Pulse" className="h-8 w-8" />
+              <img src="/pulse-mark.png" alt="Pulse" className="h-8 w-8 object-contain" />
               <span className="font-semibold">Pulse</span>
             </div>
             <Button

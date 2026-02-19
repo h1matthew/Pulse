@@ -27,6 +27,7 @@ const NAV_ITEMS_LOGGED_IN = [
 export function Header() {
   const { isLoggedIn, isAdmin } = useAuth()
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -42,6 +43,10 @@ export function Header() {
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 })
   const navRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -197,7 +202,7 @@ export function Header() {
             )}
           >
             <img
-              src="/logo.svg"
+              src={mounted ? "/pulse-mark.png" : "/logo.svg"}
               alt="Pulse logo"
               className={cn(
                 "transition-all duration-300",

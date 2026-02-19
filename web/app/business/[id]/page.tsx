@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   MapPin,
@@ -30,7 +30,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { cn } from "@/lib/utils";
-import { CaptchaWidget } from "@/components/features/bot/CaptchaWidget";
 import { useBusiness } from "@/hooks/useBusinesses";
 import { useClaimDeal } from "@/hooks/useDeals";
 import {
@@ -75,8 +74,6 @@ export default function BusinessDetailPage({
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [reviewErrors, setReviewErrors] = useState<Record<string, string>>({});
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
   const [aiDescription, setAiDescription] = useState<string | null>(null);
   const [aiDescriptionCached, setAiDescriptionCached] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
@@ -182,13 +179,6 @@ export default function BusinessDetailPage({
 
     setReviewErrors({});
 
-    if (!captchaToken) {
-      toast.error("Verification required", {
-        description: "Please complete the CAPTCHA verification",
-      });
-      return;
-    }
-
     if (!business?.id) {
       toast.error("Business unavailable", {
         description: "Could not resolve this business. Please refresh and try again.",
@@ -204,7 +194,6 @@ export default function BusinessDetailPage({
           business_id: business.id,
           rating: reviewRating,
           content: reviewText,
-          captchaToken,
         }),
       });
 
@@ -868,13 +857,9 @@ export default function BusinessDetailPage({
                                 </p>
                               </div>
                             </div>
-                            <CaptchaWidget
-                              onVerify={handleCaptchaVerify}
-                              action="review"
-                            />
                             <Button
                               onClick={handleSubmitReview}
-                              disabled={isSubmittingReview || !captchaToken}
+                              disabled={isSubmittingReview}
                             >
                               {isSubmittingReview ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
