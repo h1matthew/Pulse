@@ -67,7 +67,7 @@ describe('POST /api/reviews', () => {
     expect(response.status).toBe(401)
   })
 
-  it('returns 400 when captchaToken is missing', async () => {
+  it('allows review creation when captchaToken is missing', async () => {
     const request = new Request('http://localhost/api/reviews', {
       method: 'POST',
       body: JSON.stringify({
@@ -78,10 +78,8 @@ describe('POST /api/reviews', () => {
     })
 
     const response = await POST(request)
-    expect(response.status).toBe(400)
-
-    const data = await response.json()
-    expect(data.error).toContain('CAPTCHA')
+    expect([201, 409]).toContain(response.status)
+    expect(mockVerifyCaptcha).not.toHaveBeenCalled()
   })
 
   it('returns 400 when CAPTCHA verification fails', async () => {
@@ -107,7 +105,7 @@ describe('POST /api/reviews', () => {
     expect(data.error).toContain('CAPTCHA')
   })
 
-  it('returns 400 for invalid review data after CAPTCHA passes', async () => {
+  it('returns 400 for invalid review data', async () => {
     const request = new Request('http://localhost/api/reviews', {
       method: 'POST',
       body: JSON.stringify({

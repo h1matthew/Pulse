@@ -15,7 +15,7 @@ export function Sidebar({ email, fullName, isAdmin }: SidebarProps) {
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-border/30 px-6">
         <NavLink href="/" className="flex items-center gap-2">
-          <Image src="/logo.svg" alt="Pulse" width={32} height={32} className="h-8 w-8" />
+          <Image src="/pulse-mark.png" alt="Pulse" width={32} height={32} className="h-8 w-8 object-contain" />
           <span className="text-lg font-semibold tracking-tight text-foreground">
             Pulse
           </span>
