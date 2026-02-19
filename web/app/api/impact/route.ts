@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getDemoImpact, shouldUseDemoStatsForUser } from '@/lib/demo/demo-account-stats'
 
 export async function GET() {
   try {
@@ -13,6 +14,10 @@ export async function GET() {
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (shouldUseDemoStatsForUser(user)) {
+      return NextResponse.json(getDemoImpact(user.id))
     }
 
     // Fetch user impact data

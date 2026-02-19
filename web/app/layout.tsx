@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { CSSProperties } from "react";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -11,17 +11,13 @@ import { ChatWidget } from "@/components/features/assistant";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap", // Prevent flash of invisible text (FOIT)
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap", // Prevent flash of invisible text (FOIT)
-});
+const fallbackFontVars: CSSProperties = {
+  // Local font stack to avoid network font fetch during build/demo.
+  ["--font-geist-sans" as string]:
+    'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
+  ["--font-geist-mono" as string]:
+    'ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+};
 
 export const metadata: Metadata = {
   title: "Pulse - Discover Local Businesses",
@@ -39,7 +35,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
+        style={fallbackFontVars}
         suppressHydrationWarning
       >
         {/* Skip to main content link for keyboard/screen reader accessibility */}

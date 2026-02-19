@@ -8,6 +8,8 @@ import BusinessDetailPage from "../page";
 import type { BusinessWithDetails, ExternalReview, ReviewWithUser } from "@/types/business";
 import { toast } from "sonner";
 
+const BUSINESS_ID = "11111111-1111-4111-8111-111111111111";
+
 const mockUseBusiness = vi.fn();
 const mockUseAuth = vi.fn();
 const mockUseIsBookmarked = vi.fn();
@@ -29,6 +31,15 @@ vi.mock("@/components/layout/Header", () => ({
 
 vi.mock("@/components/features/home/AnimatedSection", () => ({
   AnimatedSection: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock("@/components/features/bot/CaptchaWidget", () => ({
+  CaptchaWidget: ({ onVerify }: { onVerify: (token: string) => void }) => {
+    React.useEffect(() => {
+      onVerify("test-captcha-token");
+    }, [onVerify]);
+    return <div data-testid="captcha-widget" />;
+  },
 }));
 
 vi.mock("@/components/ui/nav-link", () => ({
@@ -84,7 +95,7 @@ vi.mock("sonner", () => ({
 function createLocalReview(index: number): ReviewWithUser {
   return {
     id: `pulse-review-${index}`,
-    business_id: "db-biz-1",
+    business_id: BUSINESS_ID,
     user_id: `user-${index}`,
     rating: 5,
     content: `Local review ${index}`,
@@ -117,7 +128,7 @@ function createExternalReview(index: number): ExternalReview {
 
 function createBusiness(overrides: Partial<BusinessWithDetails> = {}): BusinessWithDetails {
   return {
-    id: "db-biz-1",
+    id: BUSINESS_ID,
     name: "Corner Bistro",
     slug: "corner-bistro",
     category_id: "food-drink",
@@ -270,7 +281,9 @@ describe("BusinessDetailPage reviews", () => {
       target: { value: "Great food and service." },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /submit review/i }));
+    const submitButton = screen.getByRole("button", { name: /submit review/i });
+    await waitFor(() => expect(submitButton).toBeEnabled());
+    fireEvent.click(submitButton);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -280,7 +293,7 @@ describe("BusinessDetailPage reviews", () => {
     });
 
     const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body as string);
-    expect(requestBody.business_id).toBe("db-biz-1");
+    expect(requestBody.business_id).toBe(BUSINESS_ID);
     expect(requestBody.content).toBe("Great food and service.");
 
     expect(mockInvalidateQueries).toHaveBeenCalledWith({

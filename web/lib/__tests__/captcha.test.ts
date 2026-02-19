@@ -11,6 +11,7 @@ describe("verifyCaptcha", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     process.env = { ...originalEnv };
+    process.env.NEXT_PUBLIC_CAPTCHA_PROVIDER = "turnstile";
   });
 
   afterEach(() => {
@@ -118,6 +119,7 @@ describe("withCaptchaVerification", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     process.env = { ...originalEnv };
+    process.env.NEXT_PUBLIC_CAPTCHA_PROVIDER = "turnstile";
     process.env.TURNSTILE_SECRET_KEY = "test-secret";
   });
 

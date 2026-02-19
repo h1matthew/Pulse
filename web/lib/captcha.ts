@@ -1,6 +1,6 @@
 /**
  * CAPTCHA verification utilities
- * Uses Cloudflare Turnstile for bot protection
+ * Supports local/demo mode and Turnstile verification.
  */
 
 interface TurnstileVerifyResponse {
@@ -19,6 +19,14 @@ function getTurnstileSecretKey(): string | undefined {
   return process.env.TURNSTILE_SECRET_KEY;
 }
 
+function getCaptchaProvider(): "local" | "mcaptcha" | "turnstile" {
+  const provider = process.env.NEXT_PUBLIC_CAPTCHA_PROVIDER?.toLowerCase();
+  if (provider === "local" || provider === "mcaptcha" || provider === "turnstile") {
+    return provider;
+  }
+  return process.env.NODE_ENV === "development" ? "local" : "turnstile";
+}
+
 /**
  * Verify a Turnstile CAPTCHA token
  * @param token The token from the client-side widget
@@ -27,8 +35,21 @@ function getTurnstileSecretKey(): string | undefined {
 export async function verifyCaptcha(
   token: string
 ): Promise<{ success: boolean; error?: string }> {
-  // In development, allow dev mode token
-  if (process.env.NODE_ENV === "development" && token === "dev-mode-token") {
+  const provider = getCaptchaProvider();
+  const isDemoToken =
+    token === "dev-mode-token" ||
+    token === "demo-bypass-token" ||
+    token === "demo-local-token";
+
+  if (provider !== "turnstile") {
+    if (!token || token.trim().length === 0) {
+      return { success: false, error: "Please complete the CAPTCHA" };
+    }
+    return { success: true };
+  }
+
+  // In development, allow demo/local tokens even when turnstile provider is configured.
+  if (process.env.NODE_ENV === "development" && isDemoToken) {
     return { success: true };
   }
 

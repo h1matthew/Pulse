@@ -60,7 +60,11 @@ export function getSyncStatus(business: {
   let lastSyncedText: string
   if (hoursSinceSync < 1) {
     const minutes = Math.floor(hoursSinceSync * 60)
-    lastSyncedText = `Last synced ${minutes} minute${minutes !== 1 ? 's' : ''} ago`
+    if (minutes <= 0) {
+      lastSyncedText = 'Synced just now'
+    } else {
+      lastSyncedText = `Last synced ${minutes} minute${minutes !== 1 ? 's' : ''} ago`
+    }
   } else if (hoursSinceSync < 24) {
     const hours = Math.floor(hoursSinceSync)
     lastSyncedText = `Last synced ${hours} hour${hours !== 1 ? 's' : ''} ago`

@@ -34,6 +34,7 @@ const securityHeaders = [
       "img-src 'self' https: data: blob:",
       "font-src 'self'",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://places.googleapis.com",
+      "frame-src 'self' https://www.google.com https://maps.google.com",
       "frame-ancestors 'self'",
       "base-uri 'self'",
       "form-action 'self'",

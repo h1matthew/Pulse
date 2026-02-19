@@ -7,17 +7,36 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
-  const { id: businessId } = await params
+  const { id: businessLookupId } = await params
 
   try {
-    // Get the business details including place_id
-    const { data: business, error: businessError } = await supabase
+    // Resolve either by internal business id or by Google place_id.
+    const { data: byIdBusiness, error: byIdError } = await supabase
       .from('businesses')
-      .select('place_id, name')
-      .eq('id', businessId)
-      .single()
+      .select('id, place_id, name')
+      .eq('id', businessLookupId)
+      .maybeSingle()
 
-    if (businessError || !business) {
+    if (byIdError && byIdError.code !== 'PGRST116') {
+      throw byIdError
+    }
+
+    let business = byIdBusiness
+    if (!business) {
+      const { data: byPlaceBusiness, error: byPlaceError } = await supabase
+        .from('businesses')
+        .select('id, place_id, name')
+        .eq('place_id', businessLookupId)
+        .maybeSingle()
+
+      if (byPlaceError && byPlaceError.code !== 'PGRST116') {
+        throw byPlaceError
+      }
+
+      business = byPlaceBusiness
+    }
+
+    if (!business) {
       return NextResponse.json(
         { error: 'Business not found' },
         { status: 404 }
@@ -33,7 +52,7 @@ export async function POST(
     }
 
     // Use the shared sync function
-    const result = await syncGoogleReviews(businessId, business.place_id)
+    const result = await syncGoogleReviews(business.id, business.place_id)
 
     if (result.error) {
       return NextResponse.json(

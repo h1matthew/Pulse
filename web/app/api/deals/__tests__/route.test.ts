@@ -105,4 +105,51 @@ describe("GET /api/deals", () => {
     const json = await response.json();
     expect(json.error).toBe("Failed to fetch deals");
   });
+
+  it("returns fallback demo deals when no real deals exist", async () => {
+    const dealsQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null, count: 0 }),
+    };
+
+    const businessesQuery = {
+      select: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      data: [
+        {
+          id: "biz-hmart",
+          name: "H Mart Diamond Bar",
+          category_id: "cat-food",
+          average_rating: 4.3,
+          review_count: 1956,
+          category: { name: "Food & Drink", icon: "🍽️" },
+        },
+      ],
+      error: null,
+    };
+
+    const claimsQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: [] }),
+    };
+
+    mockFrom
+      .mockReturnValueOnce(dealsQuery)
+      .mockReturnValueOnce(businessesQuery)
+      .mockReturnValueOnce(claimsQuery);
+
+    const request = new NextRequest("http://localhost/api/deals");
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.deals.length).toBeGreaterThan(0);
+    expect(json.deals[0].id).toContain("demo-");
+    expect(json.deals[0].business.id).toBe("biz-hmart");
+    expect(json.deals[0].isClaimed).toBe(false);
+  });
 });

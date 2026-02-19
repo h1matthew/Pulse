@@ -6,6 +6,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import React, { useState } from 'react'
 import LoginPage from '../page'
 
+const LOGIN_CAPTCHA_TRUST_STORAGE_KEY = 'pulse_login_captcha_verified_until'
+const LOGIN_CAPTCHA_TRUST_VALUE = 'verified'
+
 // Mock next/navigation
 const mockPush = vi.fn()
 const mockReplace = vi.fn()
@@ -39,6 +42,14 @@ vi.mock('@/lib/supabase/client', () => ({
 // Mock SpaceBackground
 vi.mock('@/components/features/home/SpaceBackground', () => ({
   SpaceBackground: () => <div data-testid="space-background" />,
+}))
+
+vi.mock('@/components/features/bot/BaanihaliPuzzleCaptcha', () => ({
+  BaanihaliPuzzleCaptcha: ({ onVerify }: { onVerify: (token: string) => void }) => (
+    <button type="button" onClick={() => onVerify('test-captcha-token')}>
+      Complete CAPTCHA
+    </button>
+  ),
 }))
 
 // Mock Radix Tabs to work properly in jsdom
@@ -81,6 +92,7 @@ vi.mock('@/components/ui/tabs', () => {
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    window.localStorage.clear()
     mockGetUser.mockResolvedValue({ data: { user: null } })
   })
 
@@ -166,7 +178,9 @@ describe('LoginPage', () => {
       target: { value: 'password123' },
     })
 
-    // Submit
+    // First click reveals CAPTCHA modal gate
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Complete CAPTCHA' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     await waitFor(() => {
@@ -192,10 +206,66 @@ describe('LoginPage', () => {
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Complete CAPTCHA' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/dashboard')
     })
+  })
+
+  it('requires captcha before submitting login', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    render(<LoginPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome')).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'test@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'password123' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    expect(
+      screen.getByText('Please complete CAPTCHA verification to continue.')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Security Check')).toBeInTheDocument()
+    expect(mockSignInWithPassword).not.toHaveBeenCalled()
+  })
+
+  it('skips captcha when trusted verification exists in localStorage', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+    mockSignInWithPassword.mockResolvedValue({ error: null })
+    window.localStorage.setItem(LOGIN_CAPTCHA_TRUST_STORAGE_KEY, LOGIN_CAPTCHA_TRUST_VALUE)
+
+    render(<LoginPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome')).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'test@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'password123' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    await waitFor(() => {
+      expect(mockSignInWithPassword).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'password123',
+      })
+    })
+    expect(screen.queryByText('Security Check')).not.toBeInTheDocument()
   })
 
   it('shows success message on signup', async () => {
@@ -271,7 +341,7 @@ describe('LoginPage', () => {
     })
   })
 
-  it('renders free lessons message', async () => {
+  it('renders business impact message', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
     render(<LoginPage />)
@@ -280,6 +350,8 @@ describe('LoginPage', () => {
       expect(screen.getByText('Welcome')).toBeInTheDocument()
     })
 
-    expect(screen.getByText(/All lessons are free/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Discover local businesses .* track your community impact/)
+    ).toBeInTheDocument()
   })
 })

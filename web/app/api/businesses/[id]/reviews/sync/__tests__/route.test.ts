@@ -8,8 +8,8 @@ vi.mock('@/lib/reviews/sync-server', () => ({
 }))
 
 // Mock Supabase client
-const mockSingle = vi.fn()
-const mockEq = vi.fn(() => ({ single: mockSingle }))
+const mockMaybeSingle = vi.fn()
+const mockEq = vi.fn(() => ({ maybeSingle: mockMaybeSingle }))
 const mockSelect = vi.fn(() => ({ eq: mockEq }))
 const mockFrom = vi.fn(() => ({ select: mockSelect }))
 
@@ -25,7 +25,9 @@ describe('POST /api/businesses/[id]/reviews/sync', () => {
   })
 
   it('returns 404 when business not found', async () => {
-    mockSingle.mockResolvedValue({ data: null, error: { code: 'PGRST116' } })
+    mockMaybeSingle
+      .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
+      .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
 
     const request = new Request('http://localhost/api/businesses/123/reviews/sync', {
       method: 'POST',
@@ -39,8 +41,8 @@ describe('POST /api/businesses/[id]/reviews/sync', () => {
   })
 
   it('returns 400 when business has no place_id', async () => {
-    mockSingle.mockResolvedValue({
-      data: { place_id: null, name: 'Test Business' },
+    mockMaybeSingle.mockResolvedValue({
+      data: { id: 'biz-123', place_id: null, name: 'Test Business' },
       error: null,
     })
 
@@ -56,8 +58,8 @@ describe('POST /api/businesses/[id]/reviews/sync', () => {
   })
 
   it('returns synced review count on success', async () => {
-    mockSingle.mockResolvedValue({
-      data: { place_id: 'ChIJ123', name: 'Test Business' },
+    mockMaybeSingle.mockResolvedValue({
+      data: { id: 'biz-123', place_id: 'ChIJ123', name: 'Test Business' },
       error: null,
     })
 
@@ -82,8 +84,8 @@ describe('POST /api/businesses/[id]/reviews/sync', () => {
   })
 
   it('returns 503 when sync is skipped due to API error', async () => {
-    mockSingle.mockResolvedValue({
-      data: { place_id: 'ChIJ123', name: 'Test Business' },
+    mockMaybeSingle.mockResolvedValue({
+      data: { id: 'biz-123', place_id: 'ChIJ123', name: 'Test Business' },
       error: null,
     })
 
@@ -105,8 +107,8 @@ describe('POST /api/businesses/[id]/reviews/sync', () => {
   })
 
   it('returns 500 when sync function returns error not skipped', async () => {
-    mockSingle.mockResolvedValue({
-      data: { place_id: 'ChIJ123', name: 'Test Business' },
+    mockMaybeSingle.mockResolvedValue({
+      data: { id: 'biz-123', place_id: 'ChIJ123', name: 'Test Business' },
       error: null,
     })
 
@@ -128,8 +130,8 @@ describe('POST /api/businesses/[id]/reviews/sync', () => {
   })
 
   it('calls syncGoogleReviews with correct parameters', async () => {
-    mockSingle.mockResolvedValue({
-      data: { place_id: 'ChIJ456', name: 'Another Business' },
+    mockMaybeSingle.mockResolvedValue({
+      data: { id: 'biz-999', place_id: 'ChIJ456', name: 'Another Business' },
       error: null,
     })
 
@@ -144,6 +146,28 @@ describe('POST /api/businesses/[id]/reviews/sync', () => {
 
     await POST(request, { params: Promise.resolve({ id: 'abc-123' }) })
 
-    expect(syncModule.syncGoogleReviews).toHaveBeenCalledWith('abc-123', 'ChIJ456')
+    expect(syncModule.syncGoogleReviews).toHaveBeenCalledWith('biz-999', 'ChIJ456')
+  })
+
+  it('falls back to lookup by place_id when id lookup misses', async () => {
+    mockMaybeSingle
+      .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
+      .mockResolvedValueOnce({
+        data: { id: 'biz-from-place', place_id: 'ChIJ456', name: 'Another Business' },
+        error: null,
+      })
+
+    vi.mocked(syncModule.syncGoogleReviews).mockResolvedValue({
+      synced: 1,
+      skipped: false,
+    })
+
+    const request = new Request('http://localhost/api/businesses/ChIJ456/reviews/sync', {
+      method: 'POST',
+    })
+
+    await POST(request, { params: Promise.resolve({ id: 'ChIJ456' }) })
+
+    expect(syncModule.syncGoogleReviews).toHaveBeenCalledWith('biz-from-place', 'ChIJ456')
   })
 })

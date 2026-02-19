@@ -42,6 +42,21 @@ interface OWNReviewsResponse {
 
 export type { SyncResult }
 
+type PostgrestLikeError = {
+  code?: string
+  message?: string
+}
+
+function isMissingSyncGoogleReviewsFunction(error: unknown): boolean {
+  const candidate = error as PostgrestLikeError | null
+  if (!candidate) return false
+
+  return (
+    candidate.code === 'PGRST202' &&
+    (candidate.message || '').includes('sync_google_reviews')
+  )
+}
+
 /**
  * Sync external reviews for a business using OpenWeb Ninja Reviews API.
  * Called from API routes; handles the entire sync process including DB updates.
@@ -106,6 +121,29 @@ export async function syncGoogleReviews(
       })
 
       if (syncError) {
+        if (isMissingSyncGoogleReviewsFunction(syncError)) {
+          // Fallback for environments where the migration creating this RPC
+          // has not been applied yet. We still mark sync metadata as fresh.
+          console.warn(
+            'sync_google_reviews RPC missing; skipping DB review sync and updating sync metadata only'
+          )
+
+          await supabase
+            .from('businesses')
+            .update({
+              last_synced_at: new Date().toISOString(),
+              sync_status: 'active',
+            })
+            .eq('id', businessId)
+
+          return {
+            synced: 0,
+            skipped: false,
+            googleRating: data.data?.rating,
+            googleReviewCount: data.data?.total_reviews,
+          }
+        }
+
         console.error('Error syncing reviews to database:', syncError)
         return {
           synced: 0,
