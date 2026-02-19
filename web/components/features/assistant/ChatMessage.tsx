@@ -6,8 +6,6 @@
 
 import { User, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 interface Message {
   id: string;
@@ -62,28 +60,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
             isUser ? "prose-invert" : ""
           )}
         >
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              p: ({ children }) => <p className="m-0 leading-relaxed">{children}</p>,
-              ul: ({ children }) => <ul className="mt-2 mb-0 pl-4">{children}</ul>,
-              ol: ({ children }) => <ol className="mt-2 mb-0 pl-4">{children}</ol>,
-              li: ({ children }) => <li className="mb-1">{children}</li>,
-              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-              a: ({ children, href }) => (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:no-underline"
-                >
-                  {children}
-                </a>
-              ),
-            }}
-          >
+          <p className="m-0 whitespace-pre-wrap leading-relaxed">
             {message.content}
-          </ReactMarkdown>
+          </p>
         </div>
 
         {/* Timestamp */}

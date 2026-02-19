@@ -9,7 +9,12 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SpaceBackground } from "@/components/features/home/SpaceBackground"
+import { BaanihaliPuzzleCaptcha } from "@/components/features/bot/BaanihaliPuzzleCaptcha"
 import { ArrowLeft } from "lucide-react"
+
+// Demo-only persistence: remove this block to require CAPTCHA on every fresh login.
+const LOGIN_CAPTCHA_TRUST_STORAGE_KEY = "pulse_login_captcha_verified_until"
+const LOGIN_CAPTCHA_TRUST_VALUE = "verified"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,9 +30,17 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const [resetEmail, setResetEmail] = useState("")
+  const [loginCaptchaTrusted, setLoginCaptchaTrusted] = useState(false)
+  const [showLoginCaptcha, setShowLoginCaptcha] = useState(false)
+  const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null)
+  const [showLoginCaptchaModal, setShowLoginCaptchaModal] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    const trustedValue = window.localStorage.getItem(LOGIN_CAPTCHA_TRUST_STORAGE_KEY)
+    if (trustedValue === LOGIN_CAPTCHA_TRUST_VALUE) {
+      setLoginCaptchaTrusted(true)
+    }
   }, [])
 
   // Check if user is already logged in and redirect to dashboard
@@ -48,6 +61,9 @@ export default function LoginPage() {
     setActiveTab(value)
     setError(null)
     setMessage(null)
+    setShowLoginCaptcha(false)
+    setLoginCaptchaToken(null)
+    setShowLoginCaptchaModal(false)
   }
 
   async function handleForgotPassword(e: React.FormEvent) {
@@ -76,11 +92,30 @@ export default function LoginPage() {
     setError(null)
     setMessage(null)
     setResetEmail("")
+    setShowLoginCaptcha(false)
+    setLoginCaptchaToken(null)
+    setShowLoginCaptchaModal(false)
   }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+
+    if (!loginCaptchaTrusted && !showLoginCaptcha) {
+      setShowLoginCaptcha(true)
+      setError("Please complete CAPTCHA verification to continue.")
+      setShowLoginCaptchaModal(true)
+      return
+    }
+
+    if (!loginCaptchaTrusted && !loginCaptchaToken) {
+      setError("Please complete CAPTCHA verification to continue.")
+      if (!showLoginCaptchaModal) {
+        setShowLoginCaptchaModal(true)
+      }
+      return
+    }
+
     setLoading(true)
 
     const supabase = createClient()
@@ -145,7 +180,7 @@ export default function LoginPage() {
               <CardDescription>
                 {showForgotPassword
                   ? "Enter your email to receive a reset link"
-                  : "Sign in to track your learning progress"}
+                  : "Sign in to discover local deals and track community impact"}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
@@ -210,6 +245,7 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
+                            onFocus={() => setError(null)}
                             className="h-10 transition-all duration-200 hover:border-primary/40 focus:shadow-md focus:shadow-primary/10 focus:border-primary"
                           />
                         </div>
@@ -221,6 +257,7 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            onFocus={() => setError(null)}
                             className="h-10 transition-all duration-200 hover:border-primary/40 focus:shadow-md focus:shadow-primary/10 focus:border-primary"
                           />
                         </div>
@@ -318,10 +355,38 @@ export default function LoginPage() {
           </Card>
 
           <p className="mt-6 text-center text-xs text-muted-foreground transition-colors duration-200 hover:text-foreground/70">
-            All lessons are free &middot; Sign in to save progress
+            Discover local businesses &middot; Sign in to track your community impact
           </p>
         </div>
       </main>
+
+      {showLoginCaptchaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-border bg-background p-4 shadow-xl space-y-3">
+            <h3 className="text-base font-semibold">Security Check</h3>
+            <p className="text-sm text-muted-foreground">
+              Complete this CAPTCHA to continue signing in.
+            </p>
+            <BaanihaliPuzzleCaptcha
+              onVerify={(token) => {
+                setLoginCaptchaToken(token)
+                setLoginCaptchaTrusted(true)
+                window.localStorage.setItem(
+                  LOGIN_CAPTCHA_TRUST_STORAGE_KEY,
+                  LOGIN_CAPTCHA_TRUST_VALUE,
+                )
+                setShowLoginCaptchaModal(false)
+                setError(null)
+              }}
+              onCancel={() => {
+                setShowLoginCaptchaModal(false)
+                setLoginCaptchaToken(null)
+                setError("Please complete CAPTCHA verification to continue.")
+              }}
+            />
+          </div>
+        </div>
+      )}
     </>
   )
 }

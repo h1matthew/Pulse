@@ -10,6 +10,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { ImpactReportData } from '@/lib/report-generator'
+import {
+  getDemoImpactReport,
+  shouldUseDemoStatsForUser,
+} from '@/lib/demo/demo-account-stats'
 
 /** Percentage of spend that stays in local economy (matches impact-calculator.ts) */
 const LOCAL_ECONOMIC_MULTIPLIER = 0.68
@@ -34,6 +38,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const from = searchParams.get('from')
     const to = searchParams.get('to')
+    const dateRange = { from, to: to || new Date().toISOString().split('T')[0] }
+
+    if (shouldUseDemoStatsForUser(user)) {
+      return NextResponse.json(getDemoImpactReport(dateRange))
+    }
 
     // Build parallel queries with date filtering
     const [checkInsResult, reviewsResult, claimsResult, bookmarksResult, missionsResult] =
@@ -109,7 +118,7 @@ export async function GET(request: Request) {
 
     // Format response
     const report: ImpactReportData = {
-      dateRange: { from, to: to || new Date().toISOString().split('T')[0] },
+      dateRange,
       metrics: {
         dollarsKeptLocal,
         businessesSupported: uniqueBusinesses,

@@ -109,6 +109,16 @@ describe('Review Sync Utilities', () => {
       expect(status.lastSyncedText).toBe('Last synced 1 minute ago')
     })
 
+    it('shows synced just now for very recent sync', () => {
+      const tenSecondsAgo = new Date(Date.now() - 10 * 1000).toISOString()
+      const business = {
+        last_synced_at: tenSecondsAgo,
+        sync_status: 'active',
+      }
+      const status = getSyncStatus(business)
+      expect(status.lastSyncedText).toBe('Synced just now')
+    })
+
     it('handles single hour correctly', () => {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
       const business = {

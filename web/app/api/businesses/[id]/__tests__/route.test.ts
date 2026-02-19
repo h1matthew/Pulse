@@ -147,6 +147,45 @@ describe("GET /api/businesses/[id]", () => {
     );
   });
 
+  it("returns demo deals for configured businesses when no active deals exist", async () => {
+    const mockBusiness = {
+      id: "biz-demo-1",
+      name: "H Mart Diamond Bar",
+      review_count: 0,
+      data_source: "user_added",
+      place_id: null,
+    };
+
+    const businessQuery = createLookupQuery({ data: mockBusiness, error: null });
+    const reviewsQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+    const dealsQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    };
+
+    mockFrom
+      .mockReturnValueOnce(businessQuery)
+      .mockReturnValueOnce(reviewsQuery)
+      .mockReturnValueOnce(dealsQuery);
+
+    const request = new NextRequest("http://localhost/api/businesses/biz-demo-1");
+    const response = await GET(request, createParams("biz-demo-1"));
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+
+    expect(json.deals).toHaveLength(1);
+    expect(json.deals[0].id).toContain("demo-biz-demo-1");
+    expect(json.deals[0].title).toBe("Weeknight Bento Bundle");
+    expect(json.deals[0].is_active).toBe(true);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when business is missing by id and place_id", async () => {
     const missingByIdQuery = createLookupQuery({
       data: null,

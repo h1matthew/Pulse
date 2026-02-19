@@ -12,6 +12,7 @@ import {
   Check,
   Copy,
 } from "lucide-react";
+import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -269,6 +270,8 @@ export default function DealsPage() {
                   )}
 
                   {availableDeals.map((deal, index) => {
+                    const businessHref = deal.business?.id ? `/business/${deal.business.id}` : null;
+                    const isDemoDeal = deal.id.startsWith("demo-");
                     const actionLabel = deal.isClaimed
                       ? "Claimed"
                       : deal.deal_type === "boost_mission"
@@ -291,7 +294,15 @@ export default function DealsPage() {
 
                               <div className="flex-1">
                                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  <h3 className="text-lg font-semibold">{deal.title}</h3>
+                                  <h3 className="text-lg font-semibold">
+                                    {businessHref ? (
+                                      <Link href={businessHref} className="text-primary hover:underline">
+                                        {deal.title}
+                                      </Link>
+                                    ) : (
+                                      deal.title
+                                    )}
+                                  </h3>
                                   {deal.deal_type === "boost_mission" && (
                                     <Badge className="bg-chart-3 text-white">Boost Mission</Badge>
                                   )}
@@ -315,7 +326,13 @@ export default function DealsPage() {
                                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                                   <span className="flex items-center gap-1">
                                     <MapPin className="h-3 w-3" />
-                                    {deal.business?.name || "Local business"}
+                                    {businessHref ? (
+                                      <Link href={businessHref} className="text-primary hover:underline">
+                                        {deal.business?.name || "Local business"}
+                                      </Link>
+                                    ) : (
+                                      deal.business?.name || "Local business"
+                                    )}
                                   </span>
                                   <span className="flex items-center gap-1">
                                     <Star className="h-3 w-3 fill-chart-5 text-chart-5" />
@@ -333,15 +350,24 @@ export default function DealsPage() {
                                 <div className="text-2xl font-bold text-chart-2">
                                   {formatDiscount(deal.discount_type, deal.discount_value)}
                                 </div>
-                                <Button
-                                  className="group"
-                                  size="sm"
-                                  disabled={deal.isClaimed || isClaiming}
-                                  onClick={() => handleClaim(deal.id, deal.isClaimed)}
-                                >
-                                  {isClaiming ? "Claiming..." : actionLabel}
-                                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                </Button>
+                                {isDemoDeal && businessHref ? (
+                                  <Link href={businessHref} className="inline-block">
+                                    <Button className="group" size="sm">
+                                      View Business
+                                      <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                    </Button>
+                                  </Link>
+                                ) : (
+                                  <Button
+                                    className="group"
+                                    size="sm"
+                                    disabled={deal.isClaimed || isClaiming}
+                                    onClick={() => handleClaim(deal.id, deal.isClaimed)}
+                                  >
+                                    {isClaiming ? "Claiming..." : actionLabel}
+                                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                  </Button>
+                                )}
                                 {deal.code && (
                                   <div className="text-xs text-muted-foreground">
                                     Code:{" "}
@@ -382,7 +408,15 @@ export default function DealsPage() {
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-lg font-semibold">{claim.deal.title}</h3>
+                                <h3 className="text-lg font-semibold">
+                                  {claim.deal.business?.id ? (
+                                    <Link href={`/business/${claim.deal.business.id}`} className="text-primary hover:underline">
+                                      {claim.deal.title}
+                                    </Link>
+                                  ) : (
+                                    claim.deal.title
+                                  )}
+                                </h3>
                                 <Badge variant="outline">
                                   {claim.redeemed_at ? "Used" : "Claimed"}
                                 </Badge>
@@ -391,7 +425,15 @@ export default function DealsPage() {
                                 {claim.deal.description}
                               </p>
                               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                <span>{claim.deal.business?.name || "Local business"}</span>
+                                <span>
+                                  {claim.deal.business?.id ? (
+                                    <Link href={`/business/${claim.deal.business.id}`} className="text-primary hover:underline">
+                                      {claim.deal.business?.name || "Local business"}
+                                    </Link>
+                                  ) : (
+                                    claim.deal.business?.name || "Local business"
+                                  )}
+                                </span>
                                 <span>Claimed {formatClaimedAt(claim.claimed_at)}</span>
                                 {claim.redeemed_code && (
                                   <span className="font-mono">{claim.redeemed_code}</span>
