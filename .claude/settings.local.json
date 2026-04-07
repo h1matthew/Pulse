@@ -28,7 +28,12 @@
       "WebFetch(domain:platform.sulu.sh)",
       "WebFetch(domain:www.allthingsdev.co)",
       "WebFetch(domain:api.market)",
-      "WebFetch(domain:www.apyflux.com)"
+      "WebFetch(domain:www.apyflux.com)",
+      "Bash(git show:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:rapidapi.com)",
+      "Bash(nslookup:*)",
+      "Bash(NODE_OPTIONS=\"--dns-result-order=verbatim\" npm run db:migrate:*)"
     ]
   }
 }

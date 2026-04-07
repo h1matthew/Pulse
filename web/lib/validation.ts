@@ -31,8 +31,40 @@ export {
 };
 
 /**
- * Shared validation patterns and utilities.
- * Consolidates regex patterns used across the codebase.
+ * ============================================================================
+ * Shared Validation — Syntactical & Semantic Rules
+ * ============================================================================
+ *
+ * USER JOURNEY:
+ *   Every user-submitted form (review, bookmark, deal claim, login, contact)
+ *   passes through these schemas on both the client (instant feedback) and the
+ *   server (authoritative gate) before touching the database.
+ *
+ * SYNTACTICAL VALIDATION (structure / format):
+ *   - String length bounds (min/max) for every text field
+ *   - UUID format for all entity IDs (business_id, review_id, deal_id)
+ *   - Email format (RFC-ish regex) and URL protocol whitelist (http/https only)
+ *   - Integer range constraints (rating 1-5, price_range 1-4, coordinates ±90/±180)
+ *   - Array cardinality limits (photos max 5, tags max 20)
+ *
+ * SEMANTIC VALIDATION (meaning / business rules):
+ *   - Duplicate review guard (checked server-side via DB unique constraint)
+ *   - CAPTCHA verification (bot prevention — checked server-side)
+ *   - verified_purchase derived from check-in history (not user-supplied)
+ *   - Honeypot field on contact form must be empty (spam trap)
+ *   - Report reason must be a known enum value
+ *
+ * SANITIZATION (see ./validation/sanitization.ts):
+ *   - HTML entity escaping on all string inputs (XSS prevention)
+ *   - SQL injection pattern detection (defense-in-depth; parameterized queries are primary)
+ *   - Script tag / event handler detection
+ *   - Filename path-traversal stripping
+ *   - Search query length capping + angle-bracket removal
+ *
+ * ACCESSIBILITY:
+ *   - Zod error messages are human-readable, suitable for aria-live announcements
+ *   - formatZodError() flattens nested errors into a single string for toast display
+ * ============================================================================
  */
 
 // ============================================================================

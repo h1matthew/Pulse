@@ -1,5 +1,34 @@
 'use client'
 
+/**
+ * ============================================================================
+ * HOOKS: Deals (Special Offers & Promotions)
+ * ============================================================================
+ *
+ * USER JOURNEY:
+ *   1. User navigates to /deals → useAvailableDeals fetches all active offers
+ *   2. Deal cards show discount type, amount, expiration, and a "Claim" CTA
+ *   3. User clicks Claim → useClaimDeal fires POST /api/deals/[id]/claim
+ *   4. Server generates a unique redemption code; client shows it in a dialog
+ *   5. "My Deals" tab (useUserClaims) lists claimed deals with redeem status
+ *
+ * DESIGN RATIONALE:
+ *   - Deal types (standard, boost_mission, flash, loyalty) drive badge color/label
+ *   - Discount types (percentage, fixed_amount, free_item, bogo) format dynamically
+ *   - Flash deals surface urgency via expiration countdown
+ *   - Stale time of 5 min balances freshness vs request volume
+ *
+ * ACCESSIBILITY:
+ *   - Claim button is disabled while mutation is pending (prevents double-claim)
+ *   - Redemption code dialog is focus-trapped with close on Escape
+ *   - Success/error states announced via toast (aria-live region)
+ *
+ * INPUT VALIDATION:
+ *   - deal_id validated as UUID by claimDealSchema (Zod) server-side
+ *   - Server checks: deal exists, not expired, usage limit not reached, user not already claimed
+ * ============================================================================
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Deal, DealWithBusiness, DealClaimWithDeal } from '@/types/business'
 
