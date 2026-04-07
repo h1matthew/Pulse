@@ -1,3 +1,34 @@
+/**
+ * ============================================================================
+ * API: Reviews (/api/reviews)
+ * ============================================================================
+ *
+ * USER JOURNEY:
+ *   GET  — Fetch paginated reviews for a business or user, with sort options
+ *   POST — Submit a new review (auth required)
+ *
+ * INPUT VALIDATION (POST):
+ *   Syntactical (Zod via createReviewSchema):
+ *     • business_id — must be a valid UUID v4
+ *     • rating — integer in [1, 5]
+ *     • content — string, 10–2000 characters
+ *     • photos — optional array of valid URLs, max 5
+ *   Semantic:
+ *     • Auth check — 401 if no session
+ *     • Duplicate guard — 409 if user already reviewed this business
+ *     • CAPTCHA verification — 400 if token provided but fails server check
+ *     • verified_purchase — auto-set from check-in history (not user-supplied)
+ *
+ * ACCESSIBILITY:
+ *   API returns structured JSON errors with human-readable messages suitable
+ *   for display in aria-live regions on the client.
+ *
+ * BOT PREVENTION:
+ *   CAPTCHA token (Cloudflare Turnstile / mCaptcha) verified server-side;
+ *   demo-mode bypass tokens accepted in development.
+ * ============================================================================
+ */
+
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { createReviewSchema, formatZodError } from '@/lib/validation'

@@ -55,6 +55,40 @@ import {
 } from "@/lib/business/review-feed";
 import { createReviewSchema } from "@/lib/validation";
 
+/**
+ * ============================================================================
+ * UX DESIGN: Business Detail Page
+ * ============================================================================
+ *
+ * USER JOURNEY:
+ *   1. User arrives from Discover card or direct link → hero loads with photo/fallback
+ *   2. Tabs (About · Reviews · Deals) let the user explore without page navigation
+ *   3. "Leave a Review" form validates client-side (Zod) before POST; CAPTCHA on submit
+ *   4. Bookmark heart and Share button in the hero enable quick engagement
+ *   5. Check-in CTA records a visit, which later grants "Verified" badge on reviews
+ *   6. Deals tab shows claimable offers with one-click claim + redemption code copy
+ *
+ * DESIGN RATIONALE:
+ *   - Hero section uses a gradient overlay so white text is always readable on photos
+ *   - Review form shows inline field errors (not just toasts) for immediate correction
+ *   - Star rating uses interactive star buttons with aria-label per star for a11y
+ *   - Tab-based layout prevents long scroll and keeps context tight
+ *
+ * ACCESSIBILITY FEATURES:
+ *   - Interactive star rating buttons each have aria-label ("Rate N stars")
+ *   - Review textarea has aria-describedby linking to validation error messages
+ *   - Tab triggers use Radix TabsList with built-in keyboard nav (arrow keys)
+ *   - Bookmark/share icon buttons carry descriptive aria-labels
+ *   - Loading skeleton uses aria-busy for screen reader announcement
+ *
+ * INPUT VALIDATION (reviews):
+ *   - Syntactical: Zod schema enforces rating 1-5 (int), content 10-2000 chars,
+ *     business_id as UUID, photos as URL array (max 5)
+ *   - Semantic: duplicate review check (409), verified_purchase from check-in history,
+ *     CAPTCHA token verified server-side, content sanitized against XSS
+ * ============================================================================
+ */
+
 interface BusinessDetailPageProps {
   params: Promise<{ id: string }>;
 }
@@ -151,6 +185,7 @@ export default function BusinessDetailPage({
   };
 
   const handleSubmitReview = async () => {
+    // ACCESSIBILITY: Auth gate — screen readers will hear the toast error message
     if (!user) {
       toast.error("Sign in required", {
         description: "Please sign in to leave a review",
@@ -158,7 +193,15 @@ export default function BusinessDetailPage({
       return;
     }
 
-    // Client-side Zod validation
+    // INPUT VALIDATION — Syntactical (Zod schema):
+    //   • business_id must be a valid UUID
+    //   • rating must be an integer between 1 and 5
+    //   • content must be 10–2000 characters
+    //   • photos (optional) must be valid URL strings, max 5
+    // INPUT VALIDATION — Semantic:
+    //   • Server rejects duplicate reviews for the same business (409)
+    //   • Server checks CAPTCHA token if provided (bot prevention)
+    //   • Server determines verified_purchase from check-in history
     const validation = createReviewSchema.safeParse({
       business_id: business?.id || id,
       rating: reviewRating,

@@ -1,5 +1,35 @@
 'use client'
 
+/**
+ * ============================================================================
+ * HOOKS: Business Data (Discover, Detail, Search, Category, Nearby)
+ * ============================================================================
+ *
+ * USER JOURNEY:
+ *   - useNearbyBusinesses → Discover page loads businesses around user location
+ *   - useBusiness → Business detail page fetches full profile (reviews, deals, etc.)
+ *   - useBusinessSearch → Instant search with 2-char minimum debounce
+ *   - useBusinessesByCategory → Category page lists all businesses in a category
+ *   - useFeaturedBusinesses → Homepage spotlight section
+ *
+ * DESIGN RATIONALE:
+ *   - React Query key factory (businessKeys) enables granular cache invalidation
+ *   - 5-minute staleTime on most queries balances freshness vs network cost
+ *   - Search requires ≥ 2 characters to avoid sending single-letter queries
+ *   - useAnnouncer hook announces loading/results to screen readers
+ *
+ * ACCESSIBILITY:
+ *   - useBusinessSearch and useNearbyBusinesses call announceLoading/announceSuccess
+ *     which updates an aria-live="polite" region for screen reader users
+ *   - Loading states (isLoading) drive aria-busy on skeleton grids
+ *
+ * INPUT VALIDATION:
+ *   - location param is null-guarded (enabled: !!location) to prevent NaN queries
+ *   - search query length ≥ 2 prevents frivolous requests
+ *   - All fetch functions throw on non-ok responses for React Query error handling
+ * ============================================================================
+ */
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAnnouncer } from '@/hooks/useAnnouncer'
 import type { Business, BusinessWithCategory, BusinessWithDetails, BusinessSearchFilters, LatLng } from '@/types/business'

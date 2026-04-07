@@ -1,6 +1,30 @@
 /**
- * CAPTCHA verification utilities
- * Supports local/demo mode and Turnstile verification.
+ * ============================================================================
+ * CAPTCHA Verification — Bot Prevention
+ * ============================================================================
+ *
+ * USER JOURNEY:
+ *   1. User fills out a review form → CaptchaWidget renders an invisible
+ *      challenge (Cloudflare Turnstile in production, auto-pass in dev)
+ *   2. On form submit, the CAPTCHA token is sent alongside the review payload
+ *   3. Server calls verifyCaptcha() → validates token with Turnstile API
+ *   4. If verification fails → 400 response; client shows "CAPTCHA failed" toast
+ *   5. If verification passes → review creation continues normally
+ *
+ * DESIGN RATIONALE:
+ *   - Invisible challenge (Turnstile managed mode) avoids friction for real users
+ *   - Demo bypass tokens allow local development without a Turnstile site key
+ *   - Provider auto-detection: "local" in NODE_ENV=development, "turnstile" in prod
+ *   - withCaptchaVerification() HOF allows any API route to add CAPTCHA in one line
+ *
+ * ACCESSIBILITY:
+ *   - Turnstile widget is accessible by default (keyboard-navigable, screen-reader labels)
+ *   - Error messages are descriptive ("CAPTCHA verification failed") for aria-live regions
+ *
+ * INPUT VALIDATION:
+ *   - Token must be a non-empty string (captchaTokenSchema in validation.ts)
+ *   - Server-side only — token is never trusted from the client without verification
+ * ============================================================================
  */
 
 interface TurnstileVerifyResponse {

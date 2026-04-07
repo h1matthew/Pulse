@@ -50,6 +50,36 @@ const RADIUS_OPTIONS = [
 // Default location: Diamond Bar, CA
 const DIAMOND_BAR_DEFAULT: LatLng = { lat: 34.0286, lng: -117.8208 };
 
+/**
+ * ============================================================================
+ * UX DESIGN: Discover Page — Business Discovery Feed
+ * ============================================================================
+ *
+ * USER JOURNEY:
+ *   1. User lands on Discover → sees hero stats + location prompt (if no cached location)
+ *   2. Location resolves (GPS or zip) → businesses load in a responsive card grid
+ *   3. User filters by category buttons or searches by keyword
+ *   4. User sorts results by distance, rating, review count, or name
+ *   5. User clicks a card → navigates to /business/[id] detail page
+ *   6. User bookmarks directly from the card via heart icon (auth required)
+ *
+ * DESIGN RATIONALE:
+ *   - Category filter pills use toggle (aria-pressed) for clear active state
+ *   - Sort dropdown defaults to "Nearest" to surface the most relevant results
+ *   - Skeleton loading grid (6 cards) matches final layout to prevent CLS
+ *   - Frosted-glass hero card anchors the page and provides at-a-glance stats
+ *   - Staggered fade-up animations add perceived polish without blocking interaction
+ *
+ * ACCESSIBILITY FEATURES:
+ *   - role="search" on the search bar with aria-label
+ *   - role="group" on category filters with aria-label + aria-pressed per button
+ *   - aria-live="polite" on the results grid so screen readers announce updates
+ *   - aria-busy="true" on loading skeleton for assistive tech
+ *   - role="alert" on error states
+ *   - All icon-only buttons have aria-label; decorative icons use aria-hidden
+ * ============================================================================
+ */
+
 function BusinessCard({
   business,
   index,
@@ -407,8 +437,10 @@ export default function DiscoverPage() {
     let filtered = [...businesses]
 
     // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+    // INPUT VALIDATION (syntactical): trim + strip angle brackets + cap at 100 chars
+    // INPUT VALIDATION (semantic): only filter when there's at least 1 visible char
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().replace(/[<>]/g, '').slice(0, 100).toLowerCase()
       filtered = filtered.filter(
         (b) =>
           b.name.toLowerCase().includes(query) ||
@@ -426,24 +458,46 @@ export default function DiscoverPage() {
     return filtered;
   })();
 
-  // Sort by distance when in nearby mode
+  // INPUT VALIDATION: Sanitize search query — strip angle brackets and cap length
+  // to prevent XSS in reflected output and limit payload size (syntactical).
+  // Semantic: query must be at least 1 visible character after trimming to trigger a search.
+  const sanitizedSearch = searchQuery.trim().replace(/[<>]/g, '').slice(0, 100)
+
+  // Sort businesses by the user-selected criterion.
+  // DESIGN RATIONALE: Sort is applied client-side after filtering so the user
+  // sees instant reordering without an extra network round-trip.
   const sortedBusinesses = [...processedBusinesses].sort((a, b) => {
-    if (nearbyMode && location) {
-      const distA = a.latitude && a.longitude
-        ? calculateDistance(
-            { lat: location.lat, lng: location.lng },
-            { lat: a.latitude, lng: a.longitude }
-          )
-        : Infinity;
-      const distB = b.latitude && b.longitude
-        ? calculateDistance(
-            { lat: location.lat, lng: location.lng },
-            { lat: b.latitude, lng: b.longitude }
-          )
-        : Infinity;
-      return distA - distB;
+    switch (sortBy) {
+      case 'rating':
+        // Highest rated first; ties broken by review count for credibility
+        return (b.average_rating || 0) - (a.average_rating || 0)
+          || (b.review_count || 0) - (a.review_count || 0)
+      case 'review_count':
+        // Most reviewed first; ties broken by rating so quality still surfaces
+        return (b.review_count || 0) - (a.review_count || 0)
+          || (b.average_rating || 0) - (a.average_rating || 0)
+      case 'name':
+        return a.name.localeCompare(b.name)
+      case 'distance':
+      default:
+        // Distance sort: nearest first; businesses without coords sink to bottom
+        if (location) {
+          const distA = a.latitude && a.longitude
+            ? calculateDistance(
+                { lat: location.lat, lng: location.lng },
+                { lat: a.latitude, lng: a.longitude }
+              )
+            : Infinity
+          const distB = b.latitude && b.longitude
+            ? calculateDistance(
+                { lat: location.lat, lng: location.lng },
+                { lat: b.latitude, lng: b.longitude }
+              )
+            : Infinity
+          return distA - distB
+        }
+        return 0
     }
-    return 0;
   });
   const averageVisibleRating =
     sortedBusinesses.length > 0

@@ -1,3 +1,37 @@
+/**
+ * ============================================================================
+ * API: Nearby Businesses (/api/businesses/nearby)
+ * ============================================================================
+ *
+ * USER JOURNEY:
+ *   1. Discover page resolves user location (GPS or zip code geocode)
+ *   2. Client calls GET /api/businesses/nearby?lat=…&lng=…&radius=…&category=…
+ *   3. Server queries local DB within a bounding box for cached businesses
+ *   4. If < 10 results, backfills from OpenWeb Ninja (Google Places) API,
+ *      syncs new places into DB, then re-queries and returns the merged set
+ *   5. Results are sorted by Euclidean distance (server-side default)
+ *
+ * DESIGN RATIONALE:
+ *   - Bounding-box query is fast and avoids PostGIS dependency for MVP
+ *   - Automatic backfill means the DB self-populates as users explore new areas
+ *   - Category filter is applied at both API-fetch and DB-query level
+ *   - Educational & adult businesses are excluded client-side after API fetch
+ *
+ * INPUT VALIDATION:
+ *   Syntactical:
+ *     • lat/lng must be valid numbers (NaN → 400)
+ *     • radius defaults to 5000m if missing or non-numeric
+ *     • category is an optional slug string
+ *   Semantic:
+ *     • lat=0 && lng=0 would return ocean — rejected by the isNaN/falsy check
+ *     • Category slug must match a row in the categories table (no match → unfiltered)
+ *
+ * ACCESSIBILITY:
+ *   Returns structured JSON consumed by useNearbyBusinesses hook, which
+ *   announces "Found N businesses nearby" to screen readers via useAnnouncer.
+ * ============================================================================
+ */
+
 import { createClient } from '@/lib/supabase/server'
 import { isRealBusinessPlaceTypes, isRealBusinessRecord } from '@/lib/business/display'
 import { NextResponse } from 'next/server'
