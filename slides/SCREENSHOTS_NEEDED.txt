@@ -1,0 +1,176 @@
+SCREENSHOTS NEEDED FOR PULSE PRESENTATION SLIDES
+=================================================
+
+Save each screenshot in this folder (slides/) with the filename listed.
+Use your browser or VS Code to capture each one.
+Crop tightly — no extra whitespace or taskbar.
+
+Tip: On Windows use Win+Shift+S to snip a region.
+     On Mac use Cmd+Shift+4 to snip a region.
+
+
+--------------------------------------------------------------------------------
+SLIDE 3 — CODE LANGUAGE + COMMENTS
+--------------------------------------------------------------------------------
+
+SCREENSHOT 1: tsconfig.png
+What to capture: Open web/tsconfig.json in VS Code
+Show: The full file with line numbers visible
+Highlight: Line 7 where "strict": true is set
+Crop: Just the editor pane, no sidebar needed
+Why: Proves TypeScript Strict Mode is enabled (Row 1, 5 pts)
+
+
+--------------------------------------------------------------------------------
+
+SCREENSHOT 2: comments.png
+What to capture: Open web/app/api/reviews/route.ts in VS Code
+Show: Lines 1 through 30 (the comment header block)
+Make sure visible: The four labeled sections —
+  - USER JOURNEY
+  - INPUT VALIDATION (Syntactical + Semantic subsections)
+  - ACCESSIBILITY
+  - BOT PREVENTION
+Crop: Just the editor pane with line numbers
+Why: Proves structured commenting standard (Row 2, 5 pts)
+
+
+--------------------------------------------------------------------------------
+SLIDE 4 — MODULAR PROGRAM
+--------------------------------------------------------------------------------
+
+SCREENSHOT 3: folder-structure.png
+What to capture: VS Code sidebar (Explorer) with web/ folder expanded
+Show these folders expanded:
+  - web/app/ (show a few subfolders like discover/, dashboard/, business/)
+  - web/components/ (show features/ subfolder)
+  - web/hooks/
+  - web/lib/
+  - web/types/
+Crop: Just the sidebar, not the editor
+Why: Proves modular organization (Row 3, 10 pts)
+
+
+--------------------------------------------------------------------------------
+
+SCREENSHOT 4: providers.png
+What to capture: Open web/app/layout.tsx in VS Code
+Show: Lines ~48 through 66 where the providers nest:
+  <ThemeProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <AccessibilityProvider>
+          ...
+Crop: Just the editor pane with line numbers
+Why: Proves advanced provider architecture pattern (Row 3, 10 pts)
+
+
+--------------------------------------------------------------------------------
+SLIDE 5 — UX DESIGN + VALIDATION
+--------------------------------------------------------------------------------
+
+SCREENSHOT 5: discover-dark.png
+What to capture: The Discover page in the browser (dark mode)
+Show: The category filter pills, search bar, sort dropdown, and
+      at least 3 business cards with photos visible
+Make sure: Dark mode is active (should be default)
+Crop: Full browser viewport without the address bar
+Why: Proves mobile-first design and dark mode support (Row 4, 10 pts)
+
+
+--------------------------------------------------------------------------------
+
+SCREENSHOT 6: discover-light.png
+What to capture: Same Discover page but in LIGHT mode
+How: Click the sun/moon toggle in the header to switch to light mode
+Show: Same view — category pills, business cards
+Crop: Full browser viewport without the address bar
+Why: Proves light mode support alongside dark mode (Row 4, 10 pts)
+
+
+--------------------------------------------------------------------------------
+
+SCREENSHOT 7: ai-assistant.png
+What to capture: The AI Assistant chat widget (bottom-right bubble)
+How: Click the chat bubble, type "What are the best restaurants near Diamond Bar?"
+     Wait for the response to stream in
+Show: The chat window with your question and the AI response visible
+Crop: Just the chat widget panel (not the whole page)
+Why: Proves intelligent feature / interactive Q&A (Row 6, 5 pts)
+
+
+--------------------------------------------------------------------------------
+
+SCREENSHOT 8: validation-code.png
+What to capture: Open web/app/api/reviews/route.ts in VS Code
+Show: The section where Zod validation happens — around lines 155-180
+      where createReviewSchema.safeParse() is called
+      AND the duplicate review check (around line 170-180)
+Crop: Just the editor pane with line numbers
+Why: Proves syntactical + semantic input validation in code (Row 7, 5 pts)
+
+
+--------------------------------------------------------------------------------
+SLIDE 7 — DOCUMENTATION
+--------------------------------------------------------------------------------
+
+SCREENSHOT 9: readme-features.png
+What to capture: Open README.md in VS Code or view on GitHub
+Show: The "Core Features (FBLA Required)" section listing all 6 features:
+  - Sort by Category
+  - Reviews & Ratings
+  - Sort by Reviews/Ratings
+  - Bookmark Favorites
+  - Deals & Coupons
+  - Bot Verification
+Also show: The "Beyond the Prompt" section below it
+Crop: Just this section of the README
+Why: Proves all 6 prompt features are documented (Row 8, 10 pts)
+
+
+--------------------------------------------------------------------------------
+
+SCREENSHOT 10: readme-techstack.png
+What to capture: Open README.md in VS Code or view on GitHub
+Show: The "Tech Stack" table with columns: Layer, Technology, Purpose
+      Should show entries like Next.js, TypeScript, Supabase, Google Gemini,
+      Zod, Recharts, etc.
+Crop: Just the tech stack table
+Why: Proves documented dependencies and selection rationale (Row 1 + Row 3)
+
+
+--------------------------------------------------------------------------------
+ALREADY IN THIS FOLDER
+--------------------------------------------------------------------------------
+
+logo.svg — Pulse logo (teal heartbeat + heart icon)
+           Use this in the corner of every slide
+           It is teal colored (#0d9488) so it works on both dark and light backgrounds
+
+SLIDE_CONTENT.txt — Full slide content with speaker notes for each slide
+
+PRESENTATION_SCRIPT.txt — In the project root (Pulse/PRESENTATION_SCRIPT.txt)
+                          Full word-for-word script with timing
+
+
+--------------------------------------------------------------------------------
+CHECKLIST BEFORE UPLOADING TO CLAUDE
+--------------------------------------------------------------------------------
+
+[ ] tsconfig.png
+[ ] comments.png
+[ ] folder-structure.png
+[ ] providers.png
+[ ] discover-dark.png
+[ ] discover-light.png
+[ ] ai-assistant.png
+[ ] validation-code.png
+[ ] readme-features.png
+[ ] readme-techstack.png
+[ ] logo.svg (already here)
+[ ] SLIDE_CONTENT.txt (already here)
+
+Upload this entire slides/ folder to Claude and say:
+"Build me a Google Slides presentation using SLIDE_CONTENT.txt for the
+structure and speaker notes, and these screenshots for the visuals.
+Dark theme, teal accent color #0d9488, clean sans-serif font."

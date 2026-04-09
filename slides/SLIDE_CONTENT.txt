@@ -1,0 +1,231 @@
+PULSE — FBLA CODING & PROGRAMMING 2025-2026
+SLIDE DECK CONTENT + SPEAKER NOTES
+================================================================================
+
+DESIGN GUIDELINES:
+- Dark theme (match the app: background #0a0c10 or very dark gray)
+- Accent color: teal (#2dd4bf or similar)
+- Font: clean sans-serif (Inter, SF Pro, or system default)
+- Minimal text on slides — most content is SPOKEN, not read
+- Use the Pulse logo (web/public/logo.svg) on every slide corner
+- Screenshots should have rounded corners with a subtle border
+
+
+================================================================================
+SLIDE 1 — TITLE
+================================================================================
+
+VISUAL:
+- Pulse logo (large, centered)
+- Title: "Pulse"
+- Subtitle: "Local Business Discovery Platform"
+- Bottom: "FBLA Coding & Programming 2025-2026"
+- Bottom: "Felix Yin · Matthew Heng · Oscar Gao"
+- Bottom: "Diamond Bar FBLA"
+
+SPEAKER NOTES (Felix):
+Good morning, judges. My name is Felix Yin, and joining me are Matthew Heng and Oscar Gao, representing the Diamond Bar FBLA chapter. Today we are presenting our submission for the 2025-2026 Coding and Programming event: Pulse, a local business discovery platform built for the "Byte-Sized Business Boost" prompt.
+
+
+================================================================================
+SLIDE 2 — THE PROBLEM
+================================================================================
+
+VISUAL:
+- Left side: Large quote or stat "68¢ of every local dollar recirculates"
+- Right side: "vs 43¢ at a chain" (smaller, dimmer)
+- Optional: simple icon of a storefront vs a chain logo
+- Keep it minimal — Oscar is talking, not reading
+
+SPEAKER NOTES (Oscar):
+Take a look at the candles and soaps in front of you — these were all handmade by a small business run by Felix's mom. But here is the reality most small businesses face: consumers default to national chains like Bath and Body Works because local shops lack a unified platform for discovery and engagement. Research shows 68 cents of every dollar spent locally recirculates in the community, compared to just 43 cents at a chain — yet most consumers never see that impact. Pulse solves this by letting users discover, support, and track their impact on local businesses — all from a web browser, zero installation required.
+
+
+================================================================================
+SLIDE 3 — CODE LANGUAGE SELECTION + COMMENTS
+Rubric: Row 1 (5 pts) + Row 2 (5 pts)
+================================================================================
+
+VISUAL:
+- Left side: Screenshot of tsconfig.json with "strict": true highlighted (line 7)
+- Right side: Screenshot of web/app/api/reviews/route.ts showing the comment header block (first 30 lines with USER JOURNEY, INPUT VALIDATION, ACCESSIBILITY, BOT PREVENTION sections visible)
+- Small label on each screenshot: "tsconfig.json" and "reviews/route.ts"
+
+SCREENSHOTS NEEDED:
+1. web/tsconfig.json — highlight line 7 "strict": true
+2. web/app/api/reviews/route.ts — top ~30 lines showing the 4-section comment block
+
+SPEAKER NOTES (Felix):
+We selected TypeScript with Strict Mode — this enforces explicit types on every variable and function, catching errors like null references at compile time rather than crashing in production. As you can see in our tsconfig, strict is enabled on line 7. For our commenting standard, every file follows a four-section format: User Journey, Input Validation, Accessibility, and Design Rationale — as shown here at the top of this API route.
+
+
+================================================================================
+SLIDE 4 — MODULAR PROGRAM
+Rubric: Row 3 (10 pts)
+================================================================================
+
+VISUAL:
+- Left side: Screenshot of VS Code file explorer showing the web/ folder structure (app/, components/features/, hooks/, lib/, types/)
+- Right side: Screenshot of web/app/layout.tsx showing the provider nesting (ThemeProvider > QueryProvider > AuthProvider > AccessibilityProvider)
+- Small labels: "Folder Structure" and "Provider Architecture"
+
+SCREENSHOTS NEEDED:
+3. VS Code sidebar with web/ folder expanded (app, components, hooks, lib, types visible)
+4. web/app/layout.tsx — lines ~48-66 showing the provider nesting
+
+SPEAKER NOTES (Matthew):
+Our codebase is organized by concern — app for pages and API routes, components split by feature, hooks for data fetching, lib for utilities, and types for shared interfaces. Here in layout.tsx you can see our provider nesting — Theme, Query, Auth, and Accessibility — each with a single responsibility. Our database is Supabase PostgreSQL with normalized tables and row-level security, deployed to Vercel for automatic CI/CD.
+
+
+================================================================================
+SLIDE 5 — UX DESIGN + INPUT VALIDATION
+Rubric: Row 4 (10 pts) + Row 5 (5 pts) + Row 6 (5 pts) + Row 7 (5 pts)
+================================================================================
+
+VISUAL:
+- Top half: Two side-by-side screenshots:
+  - Left: The app in dark mode (Discover page with businesses)
+  - Right: The app in light mode (same page or homepage)
+  - Label: "Dark Mode + Light Mode"
+- Bottom half: Two items:
+  - Left: Screenshot of the AI Assistant chat showing a question and streaming response
+    - Label: "Gemini AI Assistant (Intelligent Feature)"
+  - Right: Screenshot of web/lib/validation.ts or the Zod schema showing createReviewSchema
+    - Label: "Zod Schema Validation"
+- Small bullet points visible on slide:
+  - "WCAG contrast thresholds"
+  - "Keyboard navigable (Tab + Enter)"
+  - "aria-live screen reader announcements"
+  - "Syntactical + Semantic validation"
+
+SCREENSHOTS NEEDED:
+5. Discover page in dark mode (showing business cards with photos)
+6. Same or similar page in light mode
+7. AI Assistant chat with a question answered
+8. web/lib/validation.ts or the Zod schema code (createReviewSchema)
+
+SPEAKER NOTES (Oscar then Felix):
+
+Oscar: Pulse is mobile-first with fluid breakpoints from 375 to 1440 pixels. All elements meet WCAG contrast thresholds. We support dark and light mode. The app is fully keyboard navigable — every action reachable via Tab and Enter. Screen readers receive live announcements through aria-live regions.
+
+Felix: For the intelligent feature, we built a Gemini-powered AI assistant — watch, I type a question and it streams a real-time response using our business data. For input validation, we check on two levels: syntactical — our Zod schemas enforce that ratings are integers 1 through 5, content is 10 to 2000 characters, and IDs are valid UUIDs. Semantic — the server rejects duplicate reviews, verifies CAPTCHA tokens, and auto-computes verified purchase status. Matthew will show both in the demo.
+
+
+================================================================================
+SLIDE 6 — LIVE DEMO
+Rubric: Row 8 (10 pts) + Row 9 (10 pts) + Row 10 (5 pts)
+================================================================================
+
+VISUAL:
+- Simple slide with text: "Live Demo" (large, centered)
+- Below: checklist of features to demo:
+  ✓ Sort by Category
+  ✓ Leave Reviews & Ratings
+  ✓ Sort by Reviews
+  ✓ Bookmark Favorites
+  ✓ Deals & Coupons
+  ✓ Bot Verification (CAPTCHA)
+  ✓ Customizable Impact Report
+  ✓ Data Storage (localStorage + PostgreSQL)
+- This slide stays up briefly then Matthew switches to the live app
+
+NO SCREENSHOTS — this is the live demo on the actual app
+
+SPEAKER NOTES (Matthew):
+Now I will demonstrate all six required features, our customizable report, and our data storage.
+
+SORT BY CATEGORY — On the Discover page, these category pills filter instantly. Food and Drink, Retail, Services — all client-side, no loading delay. We also have a Bookmarks filter here.
+
+LEAVE REVIEWS — On this business page, I write a review, select 4 stars, type my feedback. Notice the Verify CAPTCHA button — I must solve this puzzle before submitting. That is bot verification and input validation working together. The review appears immediately.
+
+SORT BY REVIEWS — The sort dropdown has Highest Rated, Most Reviewed, Nearest, and A to Z. Our default uses a weighted algorithm — rating times the log of review count — so credible businesses rank above single-review outliers.
+
+BOOKMARK FAVORITES — Tapping the heart bookmarks a business. The icon fills instantly with an optimistic update. My Bookmarks page shows all saved businesses.
+
+DEALS AND COUPONS — The Deals page shows active promotions. I claim this deal — it appears in my Claimed tab with a unique redemption code.
+
+BOT VERIFICATION — You already saw the CAPTCHA on the review form. On the login page, users also verify before signing in. The token is checked server-side.
+
+CUSTOMIZABLE REPORT — On the Dashboard, I open the Impact Report. I filter by date range and category. The report has a pie chart, sortable business table, review list, and timeline. I can Download CSV for a spreadsheet or Print Report — notice it switches to a clean white layout with proper formatting.
+
+DATA STORAGE — In DevTools, Application, Local Storage — here is our query cache with a 24-hour TTL. The app loads instantly on return visits. Server-side, Supabase PostgreSQL stores all data in normalized tables with foreign keys.
+
+
+================================================================================
+SLIDE 7 — DOCUMENTATION + SUMMARY
+Rubric: Row 8 continued (correlation in instructions)
+================================================================================
+
+VISUAL:
+- Screenshot of README.md in VS Code or GitHub showing:
+  - The "Core Features (FBLA Required)" section listing all 6 features
+  - The "Tech Stack" table with dependencies
+- Or split view:
+  - Left: README features section
+  - Right: README tech stack table
+- Bottom: key stats in large text:
+  "200+ businesses · 6 categories · $1,800+ local impact"
+
+SCREENSHOTS NEEDED:
+9. README.md showing the "Core Features (FBLA Required)" section
+10. README.md showing the Tech Stack table
+
+SPEAKER NOTES (Felix):
+Our README maps all six prompt requirements and lists 25 production dependencies with versions and purpose. It includes complete setup instructions and our database schema. Pulse currently indexes over 200 businesses across 6 categories with active deals, verified reviews, and an estimated local economic impact of over $1,800.
+
+
+================================================================================
+SLIDE 8 — CONCLUSION
+================================================================================
+
+VISUAL:
+- Pulse logo (centered, large)
+- Text: "Byte-Sized Business Boost"
+- Below: "Thank you"
+- Bottom: team names again
+
+SPEAKER NOTES (Oscar):
+Pulse delivers a true Byte-Sized Business Boost — type-safe architecture, accessible design, and real community engagement beyond the six required features. It is a fully functional platform ready to support local businesses today. Thank you, judges.
+
+
+================================================================================
+SCREENSHOT LIST — FILES TO CAPTURE
+================================================================================
+
+Take these screenshots and save them in the slides/ folder:
+
+1. tsconfig.png — web/tsconfig.json with line 7 "strict": true visible
+2. comments.png — web/app/api/reviews/route.ts top ~30 lines (comment block)
+3. folder-structure.png — VS Code sidebar with web/ folder expanded
+4. providers.png — web/app/layout.tsx lines ~48-66 (provider nesting)
+5. discover-dark.png — Discover page in dark mode with business cards
+6. discover-light.png — Same page in light mode (use theme toggle)
+7. ai-assistant.png — AI Assistant chat with a question and response
+8. validation.png — Zod schema code (createReviewSchema) from web/lib/validation.ts
+9. readme-features.png — README "Core Features (FBLA Required)" section
+10. readme-techstack.png — README Tech Stack table
+11. logo.svg — Copy from web/public/logo.svg
+
+ALSO INCLUDE:
+- PRESENTATION_SCRIPT.txt (already in project root)
+
+
+================================================================================
+RUBRIC COVERAGE MAP
+================================================================================
+
+Row  1 ( 5 pts) Language selection      → Slide 3 (tsconfig screenshot + Felix speaks)
+Row  2 ( 5 pts) Comments/naming         → Slide 3 (route.ts screenshot + Felix speaks)
+Row  3 (10 pts) Modular program         → Slide 4 (folder structure + providers screenshot + Matthew speaks)
+Row  4 (10 pts) UX Design               → Slide 5 (dark/light screenshots + Oscar speaks)
+Row  5 ( 5 pts) Intuitive UI            → Slide 5 (Oscar mentions labeled buttons, persistent nav)
+Row  6 ( 5 pts) Navigation + intelligent → Slide 5 (AI assistant screenshot + Felix speaks)
+Row  7 ( 5 pts) Input validation        → Slide 5 (Zod screenshot + Felix speaks)
+Row  8 (10 pts) All 6 features          → Slide 6 (Matthew live demo)
+Row  9 (10 pts) Customizable report     → Slide 6 (Matthew demos report with filters, CSV, print)
+Row 10 ( 5 pts) Data storage            → Slide 6 (Matthew shows DevTools localStorage)
+Row 11 (10 pts) Organized presentation  → Script flow: intro > problem > code > arch > UX > demo > docs > conclusion
+Row 12 (10 pts) Confidence/delivery     → Practice
+Row 14 (10 pts) Protocol adherence      → Follow rules on competition day
+
+TOTAL: 100 pts (Row 13 Q&A not scored this round)
