@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { sanitizeForPrompt } from '@/lib/gemini-business'
-import type { StreamChunk } from '@/lib/gemini'
+
+export interface StreamChunk {
+  type: 'chunk' | 'suggestions'
+  data: string | string[]
+}
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
@@ -77,7 +81,7 @@ export async function generateAssistantResponse(
   message: string,
   options: AssistantOptions = {}
 ): Promise<{ text: string; suggestions?: string[] }> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
   const sanitizedMessage = sanitizeForPrompt(message, 2000)
   const { history = [], userContext } = options
 
@@ -147,7 +151,7 @@ export async function* generateAssistantResponseStream(
   message: string,
   options: AssistantOptions = {}
 ): AsyncGenerator<StreamChunk> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
   const sanitizedMessage = sanitizeForPrompt(message, 2000)
   const { history = [], userContext } = options
 

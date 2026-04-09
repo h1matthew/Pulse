@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/button'
 import { NavLink } from '@/components/ui/nav-link'
 import { AnimatedSection } from '@/components/features/home/AnimatedSection'
 import { calculateDistance, formatDistance } from '@/lib/location'
+import { formatTagLabel } from '@/lib/business/display'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -327,8 +328,8 @@ export function BusinessCard({
               {business.tags && Array.isArray(business.tags) && business.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-3">
                   {(business.tags as string[]).slice(0, 3).map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 h-5 capitalize">
-                      {tag.replace(/_/g, ' ')}
+                    <Badge key={tag} variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                      {formatTagLabel(tag)}
                     </Badge>
                   ))}
                   {business.tags.length > 3 && (

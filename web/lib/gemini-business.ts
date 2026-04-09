@@ -1,3 +1,16 @@
+/**
+ * Gemini AI Business Description Generator
+ *
+ * Uses Google Gemini to produce engaging, localized business descriptions
+ * from structured data (name, category, reviews, scraped website content).
+ *
+ * DESIGN RATIONALE: Many businesses synced from Google Places have sparse or
+ * no descriptions. Gemini fills this gap by synthesizing a natural-language
+ * summary from available signals, giving every listing a polished feel.
+ *
+ * SAFETY: All user-controlled inputs are sanitized via `sanitizeForPrompt()`
+ * before being embedded in the AI prompt to defend against prompt injection.
+ */
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
@@ -212,7 +225,7 @@ export async function generateBusinessDescription(
   websiteContent: ScrapedContent | null,
   reviewSummary: ReviewSummary
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
 
   const sanitizedName = sanitizeForPrompt(business.name, 200)
   const sanitizedCategory = sanitizeForPrompt(business.category || 'local business', 100)
@@ -292,7 +305,7 @@ export async function generateFallbackDescription(
   business: BusinessInfo,
   reviewSummary: ReviewSummary
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
 
   const sanitizedName = sanitizeForPrompt(business.name, 200)
   const sanitizedCategory = sanitizeForPrompt(business.category || 'local business', 100)
