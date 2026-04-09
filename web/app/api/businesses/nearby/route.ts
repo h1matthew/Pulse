@@ -7,7 +7,7 @@
  *   1. Discover page resolves user location (GPS or zip code geocode)
  *   2. Client calls GET /api/businesses/nearby?lat=…&lng=…&radius=…&category=…
  *   3. Server queries local DB within a bounding box for cached businesses
- *   4. If < 10 results, backfills from OpenWeb Ninja (Google Places) API,
+ *   4. If < 10 results, backfills from Google Places API v2 (Nearby Search),
  *      syncs new places into DB, then re-queries and returns the merged set
  *   5. Results are sorted by Euclidean distance (server-side default)
  *
@@ -37,73 +37,50 @@ import { isRealBusinessPlaceTypes, isRealBusinessRecord } from '@/lib/business/d
 import { NextResponse } from 'next/server'
 import type { LatLng } from '@/types/business'
 
-const OPENWEBNINJA_API_KEY = process.env.OPENWEBNINJA_API_KEY || ''
-const API_BASE_URL = 'https://api.openwebninja.com/local-business-data'
+// ============================================================================
+// Google Places API v2 (New) types
+// ============================================================================
 
-// OpenWeb Ninja response types
-interface OWNPhotoSample {
-  photo_id: string
-  photo_url: string
-  photo_url_large: string
-  video_thumbnail_url: string | null
-  latitude: number
-  longitude: number
-  type: string
-  photo_datetime_utc: string
-  photo_timestamp: number
-}
-
-interface OWNBusinessResult {
-  business_id: string
-  google_id: string
-  place_id: string
-  phone_number: string | null
+interface GooglePlacePhoto {
   name: string
-  latitude: number
-  longitude: number
-  full_address: string
-  review_count: number
-  rating: number
-  timezone: string
-  opening_status: string | null
-  working_hours: Record<string, string[]>
-  website: string | null
-  verified: boolean
-  business_status: string
-  type: string
-  subtypes: string[]
-  subtype_gcids?: string[]
-  photos_sample: OWNPhotoSample[]
-  photo_count: number
-  about: {
-    summary: string | null
-    details: Record<string, Record<string, boolean>> | null
-  } | null
-  address: string
-  price_level: string | null
-  district: string | null
-  street_address: string
-  city: string
-  zipcode: string
-  state: string
-  country: string
+  widthPx?: number
+  heightPx?: number
 }
 
-interface OWNSearchResponse {
-  status?: string
-  request_id: string
-  parameters: Record<string, unknown>
-  data: OWNBusinessResult[]
+interface GooglePlaceResult {
+  id: string
+  displayName?: { text: string; languageCode?: string }
+  formattedAddress?: string
+  shortFormattedAddress?: string
+  location?: { latitude: number; longitude: number }
+  rating?: number
+  userRatingCount?: number
+  photos?: GooglePlacePhoto[]
+  types?: string[]
+  primaryType?: string
+  nationalPhoneNumber?: string
+  websiteUri?: string
+  priceLevel?: string
+  businessStatus?: string
+  regularOpeningHours?: {
+    openNow?: boolean
+    weekdayDescriptions?: string[]
+  }
+  googleMapsUri?: string
 }
 
-// Map category slugs to business subtypes for filtering
+interface GoogleNearbyResponse {
+  places?: GooglePlaceResult[]
+}
+
+// Map category slugs to keywords for type matching (lowercase for comparison)
 const CATEGORY_SUBTYPE_MAP: Record<string, string[]> = {
-  'food-drink': ['Restaurant', 'Cafe', 'Bakery', 'Bar', 'Coffee shop', 'Fast food restaurant', 'Pizza restaurant', 'Sushi restaurant', 'Ice cream shop'],
-  'retail': ['Store', 'Shopping mall', 'Clothing store', 'Book store', 'Electronics store', 'Grocery store', 'Convenience store', 'Department store', 'Shoe store', 'Gift shop'],
-  'services': ['Hair salon', 'Beauty salon', 'Spa', 'Gym', 'Doctor', 'Dentist', 'Bank', 'Car repair', 'Car wash', 'Gas station', 'Laundry', 'Dry cleaner', 'Plumber', 'Electrician'],
-  'entertainment': ['Movie theater', 'Museum', 'Park', 'Tourist attraction', 'Art gallery', 'Night club', 'Amusement park', 'Bowling alley', 'Zoo', 'Aquarium'],
-  'health-wellness': ['Gym', 'Spa', 'Doctor', 'Dentist', 'Hospital', 'Physiotherapist', 'Pharmacy', 'Veterinarian', 'Yoga studio'],
-  'arts-culture': ['Art gallery', 'Museum', 'Library', 'Book store', 'Theater'],
+  'food-drink': ['restaurant', 'cafe', 'bakery', 'bar', 'coffee_shop', 'coffee shop', 'fast_food', 'pizza', 'sushi', 'ice_cream', 'food', 'meal_delivery', 'meal_takeaway'],
+  'retail': ['store', 'shopping', 'clothing', 'book_store', 'book store', 'electronics', 'grocery', 'convenience', 'department', 'shoe', 'gift', 'supermarket', 'market'],
+  'services': ['hair_salon', 'hair salon', 'beauty_salon', 'beauty salon', 'spa', 'gym', 'doctor', 'dentist', 'bank', 'car_repair', 'car repair', 'car_wash', 'car wash', 'gas_station', 'laundry', 'plumber', 'electrician'],
+  'entertainment': ['movie_theater', 'movie theater', 'museum', 'park', 'tourist_attraction', 'art_gallery', 'night_club', 'amusement', 'bowling', 'zoo', 'aquarium'],
+  'health-wellness': ['gym', 'spa', 'doctor', 'dentist', 'hospital', 'physiotherapist', 'pharmacy', 'veterinary', 'yoga'],
+  'arts-culture': ['art_gallery', 'art gallery', 'museum', 'library', 'book_store', 'book store', 'performing_arts', 'theater'],
 }
 
 // Educational subtypes to exclude
@@ -133,9 +110,15 @@ function mapSubtypeToCategory(subtypes: string[], subtype_gcids?: string[]): str
   return 'retail'
 }
 
-/** Convert price_level string ("$", "$$", etc.) to numeric 1-4 scale. */
+/** Convert Google v2 priceLevel enum to numeric 1-4 scale. */
 function convertPriceLevel(priceLevel?: string | null): number | null {
   switch (priceLevel) {
+    case 'PRICE_LEVEL_INEXPENSIVE': return 1
+    case 'PRICE_LEVEL_MODERATE': return 2
+    case 'PRICE_LEVEL_EXPENSIVE': return 3
+    case 'PRICE_LEVEL_VERY_EXPENSIVE': return 4
+    case 'PRICE_LEVEL_FREE': return 0
+    // Legacy OWN format
     case '$': return 1
     case '$$': return 2
     case '$$$': return 3
@@ -144,13 +127,10 @@ function convertPriceLevel(priceLevel?: string | null): number | null {
   }
 }
 
-/** Generate a description from an OpenWeb Ninja business result. */
-function generateDescription(place: OWNBusinessResult): string {
-  if (place.about?.summary) {
-    return place.about.summary.substring(0, 200)
-  }
-
-  const name = place.name || ''
+/** Generate a short description from a Google Place result. */
+function generateDescription(place: GooglePlaceResult): string {
+  const name = place.displayName?.text || 'This business'
+  const primaryType = place.primaryType?.replace(/_/g, ' ') || ''
 
   // Build description templates that incorporate the business name
   const typeTemplates: Record<string, (n: string) => string> = {
@@ -187,112 +167,240 @@ function generateDescription(place: OWNBusinessResult): string {
     'bank': (n) => `${n} provides banking, financial services, and account management`,
   }
 
-  for (const type of place.subtypes || []) {
-    if (typeTemplates[type]) {
-      return typeTemplates[type](name)
+  for (const type of (place.types || [])) {
+    const key = type.replace(/_/g, ' ')
+    for (const [templateKey, fn] of Object.entries(typeTemplates)) {
+      if (key.includes(templateKey) || type === templateKey) {
+        return fn(name)
+      }
     }
   }
 
-  if (name) {
-    return `${name} is a local business proudly serving the community`
+  if (primaryType) {
+    return `${name} is a local ${primaryType} proudly serving the community`
   }
-
-  return 'A local business proudly serving the community'
+  return `${name} is a local business proudly serving the community`
 }
 
-/** Transform OWN working_hours to weekday description strings. */
-function transformHours(workingHours: Record<string, string[]> | null | undefined): string[] {
-  if (!workingHours) return []
-  return Object.entries(workingHours).map(([day, times]) => `${day}: ${times.join(', ')}`)
+/** Parse address components from a formatted address string. */
+function parseAddress(formatted: string): { city: string; state: string; zip: string } {
+  // "123 Main St, Diamond Bar, CA 91765, USA"
+  const parts = formatted.split(',').map(s => s.trim())
+  const city = parts[1] || ''
+  const stateZip = parts[2] || ''
+  const stateMatch = stateZip.match(/^([A-Z]{2})\s*(\d{5})?/)
+  return {
+    city,
+    state: stateMatch?.[1] || '',
+    zip: stateMatch?.[2] || '',
+  }
+}
+
+// ============================================================================
+// Google Places types to include for each category
+// ============================================================================
+
+const CATEGORY_GOOGLE_TYPES: Record<string, string[]> = {
+  'food-drink': ['restaurant', 'cafe', 'bakery', 'bar', 'coffee_shop', 'fast_food_restaurant', 'pizza_restaurant', 'ice_cream_shop'],
+  'retail': ['store', 'shopping_mall', 'clothing_store', 'book_store', 'electronics_store', 'grocery_store', 'convenience_store', 'gift_shop', 'shoe_store'],
+  'services': ['hair_salon', 'beauty_salon', 'spa', 'gym', 'car_repair', 'car_wash', 'laundry', 'dry_cleaner', 'bank'],
+  'entertainment': ['movie_theater', 'museum', 'tourist_attraction', 'art_gallery', 'night_club', 'amusement_park', 'bowling_alley'],
+  'health-wellness': ['gym', 'spa', 'doctor', 'dentist', 'hospital', 'pharmacy', 'physiotherapist', 'veterinary_care'],
+  'arts-culture': ['art_gallery', 'museum', 'library', 'book_store', 'performing_arts_theater'],
 }
 
 /**
- * Build URL with query parameters for OpenWeb Ninja API
+ * Call Google Places API v2 Nearby Search and return filtered results.
  */
-function buildUrl(endpoint: string, params: Record<string, string | number | boolean>): string {
-  const url = new URL(`${API_BASE_URL}${endpoint}`)
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== null && value !== '') {
-      url.searchParams.set(key, String(value))
-    }
-  }
-  return url.toString()
-}
-
-/**
- * Call the OpenWeb Ninja Search Nearby API and return filtered results.
- * Excludes educational institutions via client-side filtering.
- */
-async function fetchFromOpenWebNinja(
+async function fetchFromGooglePlaces(
   location: LatLng,
-  _radius: number,
+  radius: number,
   categorySlug?: string
-): Promise<OWNBusinessResult[]> {
-  if (!OPENWEBNINJA_API_KEY) {
-    console.error('OpenWeb Ninja API key not configured')
+): Promise<GooglePlaceResult[]> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || ''
+  if (!apiKey) {
+    console.error('Google Places API key not configured')
     return []
   }
 
   try {
-    const params: Record<string, string | number | boolean> = {
-      query: categorySlug
-        ? CATEGORY_SUBTYPE_MAP[categorySlug]?.[0] || 'business'
-        : 'business',
-      lat: location.lat,
-      lng: location.lng,
-      limit: 20,
-      language: 'en',
-      region: 'us',
-    }
-
-    // Add subtypes filter if category provided
-    if (categorySlug && CATEGORY_SUBTYPE_MAP[categorySlug]) {
-      params.subtypes = CATEGORY_SUBTYPE_MAP[categorySlug].join(',')
-    }
-
-    const url = buildUrl('/search-nearby', params)
-    const response = await fetch(url, {
-      headers: {
-        'x-api-key': OPENWEBNINJA_API_KEY,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body: any = {
+      maxResultCount: 20,
+      rankPreference: 'DISTANCE',
+      languageCode: 'en',
+      locationRestriction: {
+        circle: {
+          center: { latitude: location.lat, longitude: location.lng },
+          radius: Math.min(radius, 50000),
+        },
       },
+    }
+
+    // Add type filter if category provided
+    if (categorySlug && CATEGORY_GOOGLE_TYPES[categorySlug]) {
+      body.includedTypes = CATEGORY_GOOGLE_TYPES[categorySlug]
+    }
+
+    const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': apiKey,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.photos,places.types,places.primaryType,places.nationalPhoneNumber,places.websiteUri,places.priceLevel,places.businessStatus,places.regularOpeningHours',
+      },
+      body: JSON.stringify(body),
     })
 
     if (!response.ok) {
       const error = await response.text()
-      console.error('OpenWeb Ninja API error:', error)
+      console.error('Google Places API error:', error)
       return []
     }
 
-    const data: OWNSearchResponse = await response.json()
+    const data: GoogleNearbyResponse = await response.json()
+    const places = data.places || []
 
-    // Client-side filtering to exclude educational institutions and adult businesses
-    const filteredPlaces = (data.data || []).filter(place => {
-      // Exclude adult businesses by name
-      if (ADULT_BUSINESS_PATTERN.test(place.name || '')) {
-        return false
-      }
+    // Filter out educational institutions and adult businesses
+    return places.filter(place => {
+      const name = place.displayName?.text || ''
+      if (ADULT_BUSINESS_PATTERN.test(name)) return false
 
-      const allTypes = [
-        ...(place.subtype_gcids || []),
-        ...place.subtypes.map(s => s.toLowerCase()),
-      ]
-      return !allTypes.some(type =>
-        EDUCATIONAL_SUBTYPES.some(edu => type.includes(edu))
-      )
+      const types = place.types || []
+      if (types.some(t => EDUCATIONAL_SUBTYPES.some(edu => t.includes(edu)))) return false
+
+      return place.businessStatus !== 'CLOSED_PERMANENTLY'
     })
-
-    return filteredPlaces
   } catch (error) {
-    console.error('Failed to fetch from OpenWeb Ninja:', error)
+    console.error('Failed to fetch from Google Places:', error)
     return []
   }
 }
 
 /**
- * Upsert OpenWeb Ninja results into the Supabase businesses table.
+ * Supplementary fetch from OpenWeb Ninja for broader coverage.
+ * Returns results as GooglePlaceResult-compatible objects so they can
+ * be merged with Google Places results and synced the same way.
+ */
+async function fetchFromOpenWebNinja(
+  location: LatLng,
+  radius: number,
+  categorySlug?: string
+): Promise<GooglePlaceResult[]> {
+  const apiKey = process.env.OPENWEBNINJA_API_KEY || ''
+  if (!apiKey) return []
+
+  try {
+    const query = categorySlug && CATEGORY_GOOGLE_TYPES[categorySlug]
+      ? CATEGORY_GOOGLE_TYPES[categorySlug][0]?.replace(/_/g, ' ') || 'business'
+      : 'business'
+
+    const url = new URL('https://api.openwebninja.com/local-business-data/search-nearby')
+    url.searchParams.set('query', query)
+    url.searchParams.set('lat', String(location.lat))
+    url.searchParams.set('lng', String(location.lng))
+    url.searchParams.set('limit', '20')
+    url.searchParams.set('language', 'en')
+    url.searchParams.set('region', 'us')
+
+    const res = await fetch(url.toString(), {
+      headers: { 'x-api-key': apiKey },
+    })
+    if (!res.ok) return []
+
+    const data = await res.json()
+    // Convert OWN format to GooglePlaceResult-compatible shape
+    return ((data.data || []) as Array<{
+      place_id: string; name: string; latitude: number; longitude: number;
+      rating: number; review_count: number; phone_number: string | null;
+      website: string | null; full_address: string; subtypes: string[];
+      photos_sample: Array<{ photo_url: string; photo_url_large: string }>;
+      working_hours: Record<string, string[]> | null;
+      price_level: string | null; verified: boolean; business_status: string;
+    }>)
+      .filter(p => p.business_status !== 'CLOSED_PERMANENTLY')
+      .map(p => ({
+        id: p.place_id,
+        displayName: { text: p.name },
+        formattedAddress: p.full_address,
+        location: { latitude: p.latitude, longitude: p.longitude },
+        rating: p.rating,
+        userRatingCount: p.review_count,
+        nationalPhoneNumber: p.phone_number || undefined,
+        websiteUri: p.website || undefined,
+        types: p.subtypes?.map(s => s.toLowerCase().replace(/\s+/g, '_')) || [],
+        primaryType: p.subtypes?.[0]?.toLowerCase().replace(/\s+/g, '_'),
+        priceLevel: p.price_level === '$' ? 'PRICE_LEVEL_INEXPENSIVE'
+          : p.price_level === '$$' ? 'PRICE_LEVEL_MODERATE'
+          : p.price_level === '$$$' ? 'PRICE_LEVEL_EXPENSIVE'
+          : undefined,
+        // OWN provides direct CDN photo URLs — no resolution needed
+        photos: (p.photos_sample || []).slice(0, 3).map(ph => ({
+          name: ph.photo_url_large || ph.photo_url,
+          widthPx: 0,
+          heightPx: 0,
+        })),
+        regularOpeningHours: p.working_hours ? {
+          weekdayDescriptions: Object.entries(p.working_hours).map(
+            ([day, times]) => `${day}: ${times.join(', ')}`
+          ),
+        } : undefined,
+      } as GooglePlaceResult))
+  } catch (error) {
+    console.error('OpenWeb Ninja fetch failed:', error)
+    return []
+  }
+}
+
+/**
+ * Resolve a Google Places v2 photo resource name to a direct CDN URL.
+ * This is done at sync time so display-time photo loading is instant (no API call).
+ */
+async function resolvePhotoUrl(photoName: string, apiKey: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&maxHeightPx=600&skipHttpRedirect=true`,
+      { headers: { 'X-Goog-Api-Key': apiKey } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.photoUri || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Resolve photo CDN URLs for a batch of photo references in parallel.
+ */
+async function resolvePhotos(
+  googlePhotos: GooglePlacePhoto[],
+  apiKey: string
+): Promise<{ photo_reference: string; height: number; width: number }[]> {
+  const photos = googlePhotos.slice(0, 3)
+  const resolved = await Promise.all(
+    photos.map(async (p) => {
+      // If the photo name is already a direct URL (from OpenWeb Ninja), use it as-is
+      if (p.name.startsWith('http')) {
+        return { photo_reference: p.name, height: p.heightPx || 0, width: p.widthPx || 0 }
+      }
+      // Otherwise resolve Google Places resource name to CDN URL
+      const cdnUrl = await resolvePhotoUrl(p.name, apiKey)
+      return {
+        photo_reference: cdnUrl || p.name,
+        height: p.heightPx || 0,
+        width: p.widthPx || 0,
+      }
+    })
+  )
+  return resolved
+}
+
+/**
+ * Upsert Google Places results into the Supabase businesses table.
  */
 async function syncPlacesToDatabase(
-  places: OWNBusinessResult[],
+  places: GooglePlaceResult[],
   supabase: Awaited<ReturnType<typeof createClient>>
 ): Promise<void> {
   if (places.length === 0) return
@@ -300,106 +408,81 @@ async function syncPlacesToDatabase(
   const db = supabase
 
   for (const place of places) {
-    // Skip educational institutions
-    const allTypes = [
-      ...(place.subtype_gcids || []),
-      ...place.subtypes.map(s => s.toLowerCase()),
-    ]
-    if (allTypes.some(type => EDUCATIONAL_SUBTYPES.some(edu => type.includes(edu)))) {
-      continue
-    }
-
     try {
-      if (!isRealBusinessPlaceTypes(place.subtypes || [])) {
-        continue
-      }
+      const types = place.types || []
+      if (!isRealBusinessPlaceTypes(types)) continue
 
-      // Get category ID
-      const categorySlug = mapSubtypeToCategory(place.subtypes, place.subtype_gcids)
+      // Map types to internal category
+      const categorySlug = mapSubtypeToCategory(types)
       const { data: category } = await db
         .from('categories')
         .select('id')
         .eq('slug', categorySlug)
         .single()
 
-      if (!category) {
-        console.warn(`Category not found for slug: ${categorySlug}`)
-        continue
-      }
+      if (!category) continue
 
-      // Check if business already exists (by place_id or business_id)
-      const placeIdentifier = place.place_id || place.business_id
+      const placeId = place.id
+      if (!placeId) continue
+
       const { data: existing } = await db
         .from('businesses')
         .select('id')
-        .eq('place_id', placeIdentifier)
+        .eq('place_id', placeId)
         .single()
 
-      // Photo URLs — OpenWeb Ninja provides direct CDN URLs (no API key needed)
-      const photoUrls = (place.photos_sample || [])
-        .slice(0, 3)
-        .map(p => p.photo_url_large || p.photo_url)
-
-      // Transform hours to our format
-      const hours = transformHours(place.working_hours)
-
-      // Clean up tags from subtypes
-      const tags = place.subtypes
-        ?.filter(t => t !== 'Establishment' && t !== 'Point of interest')
-        .slice(0, 5) || []
-
+      const name = place.displayName?.text || 'Unknown Business'
+      const addr = parseAddress(place.formattedAddress || '')
       const desc = generateDescription(place)
+
+      // Resolve photo CDN URLs at sync time — this makes display-time loading instant.
+      // Stores direct URLs like "https://lh3.googleusercontent.com/places/..."
+      // which buildBusinessPhotoUrl() returns as-is (no proxy needed).
+      const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || ''
+      const photos = await resolvePhotos(place.photos || [], apiKey)
+
+      const hours = place.regularOpeningHours?.weekdayDescriptions || []
+      const tags = types
+        .filter(t => t !== 'establishment' && t !== 'point_of_interest')
+        .slice(0, 10)
+
       const businessData = {
-        name: place.name || 'Unknown Business',
-        slug: `${place.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50)}-${placeIdentifier.substring(0, 8)}`,
+        name,
+        slug: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50)}-${placeId.substring(0, 8)}`,
         description: desc,
         short_description: desc.substring(0, 100),
-        editorial_summary: place.about?.summary || null,
-        // Use pre-parsed address fields from OpenWeb Ninja
-        address: place.full_address || place.address || '',
-        city: place.city || '',
-        state: place.state || '',
-        zip_code: place.zipcode || '',
-        latitude: place.latitude,
-        longitude: place.longitude,
-        phone: place.phone_number,
-        website: place.website,
-        price_range: convertPriceLevel(place.price_level),
+        address: place.formattedAddress || '',
+        city: addr.city,
+        state: addr.state,
+        zip_code: addr.zip,
+        latitude: place.location?.latitude || 0,
+        longitude: place.location?.longitude || 0,
+        phone: place.nationalPhoneNumber || null,
+        website: place.websiteUri || null,
+        price_range: convertPriceLevel(place.priceLevel),
         average_rating: place.rating || 0,
-        review_count: place.review_count || 0,
+        review_count: place.userRatingCount || 0,
         category_id: category.id,
-        place_id: place.place_id,
+        place_id: placeId,
         data_source: 'google',
-        is_verified: place.verified ?? true,
-        photos: (place.photos_sample || []).slice(0, 5).map(p => ({
-          photo_reference: p.photo_url,
-          height: 0,
-          width: 0,
-        })),
-        hours: hours,
-        tags: place.subtypes
-          ?.filter((type) => type !== 'establishment' && type !== 'point_of_interest')
-          .slice(0, 10) || [],
+        is_verified: true,
+        photos,
+        hours,
+        tags,
       }
 
       if (existing) {
-        // Update existing business — don't overwrite editorial_summary with null
-        const updateData: Record<string, unknown> = { ...businessData }
-        if (!updateData.editorial_summary) {
-          delete updateData.editorial_summary
-        }
         await db
           .from('businesses')
-          .update(updateData)
+          .update(businessData)
           .eq('id', existing.id)
       } else {
-        // Insert new business
         await db
           .from('businesses')
           .insert(businessData)
       }
     } catch (error) {
-      console.error('Failed to sync place:', place.place_id || place.business_id, error)
+      console.error('Failed to sync place:', place.id, error)
     }
   }
 }
@@ -420,6 +503,7 @@ export async function GET(request: Request) {
   const lngParam = searchParams.get('lng')
   const radius = Number(searchParams.get('radius')) || 5000
   const category = searchParams.get('category') || undefined
+  const forceRefresh = searchParams.get('refresh') === 'true'
 
   const lat = Number(latParam)
   const lng = Number(lngParam)
@@ -465,7 +549,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const { data: existingBusinesses, error: dbError } = await query.limit(50)
+    const { data: existingBusinesses, error: dbError } = await query.limit(250)
 
     if (dbError) {
       console.error('Database error:', dbError)
@@ -479,25 +563,27 @@ export async function GET(request: Request) {
       })
     )
 
-    // If we have enough businesses from the database, return them
-    if (filteredExistingBusinesses.length >= 10) {
-      // Sort by distance
-      const sorted = filteredExistingBusinesses.sort((a, b) => {
-        const distA = Math.sqrt(
-          Math.pow((a?.latitude || 0) - lat, 2) +
-          Math.pow((a?.longitude || 0) - lng, 2)
-        )
-        const distB = Math.sqrt(
-          Math.pow((b?.latitude || 0) - lat, 2) +
-          Math.pow((b?.longitude || 0) - lng, 2)
-        )
-        return distA - distB
-      })
-      return NextResponse.json(sorted)
+    // Fetch from Google Places if we don't have many results for this area,
+    // or if the user explicitly requests a refresh.
+    // Scale threshold by radius — larger area should have more businesses.
+    const expectedForRadius = Math.max(20, Math.round(radius / 500))
+    const shouldFetch = forceRefresh || filteredExistingBusinesses.length < expectedForRadius
+    let places: GooglePlaceResult[] = []
+    if (shouldFetch) {
+      // Fetch from both Google Places and OpenWeb Ninja in parallel for broader coverage
+      const [googleResults, ownResults] = await Promise.all([
+        fetchFromGooglePlaces(location, radius, category),
+        fetchFromOpenWebNinja(location, radius, category),
+      ])
+      // Merge and deduplicate by place_id
+      const seen = new Set<string>()
+      for (const p of [...googleResults, ...ownResults]) {
+        if (p.id && !seen.has(p.id)) {
+          seen.add(p.id)
+          places.push(p)
+        }
+      }
     }
-
-    // Otherwise, fetch from OpenWeb Ninja and sync to database
-    const places = await fetchFromOpenWebNinja(location, radius, category)
 
     if (places.length > 0) {
       await syncPlacesToDatabase(places, supabase)
@@ -528,7 +614,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const { data: syncedBusinesses, error: syncError } = await syncedQuery.limit(50)
+    const { data: syncedBusinesses, error: syncError } = await syncedQuery.limit(250)
 
     if (syncError) {
       console.error('Error fetching synced businesses:', syncError)

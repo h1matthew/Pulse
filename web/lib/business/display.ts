@@ -157,6 +157,11 @@ function extractPlacesPhotoReference(pathname: string): string | null {
   return match[1];
 }
 
+/** Format a snake_case tag like "fast_food_restaurant" to "Fast Food Restaurant" */
+export function formatTagLabel(tag: string): string {
+  return tag.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
 function normalizePlaceTypes(types?: string[] | null): string[] {
   return (types || [])
     .map((type) => type.trim().toLowerCase())
@@ -236,26 +241,35 @@ export function buildBusinessPhotoUrl(
   photo: BusinessPhotoReference,
   options: BusinessPhotoOptions = {}
 ): string | null {
-  const maxWidth = options.maxWidth ?? 400;
-  const maxHeight = options.maxHeight ?? 300;
-
   const rawReference =
     typeof photo === "string"
       ? normalizeText(photo)
       : normalizeText(photo?.photo_reference || undefined);
 
-  const photoReference = normalizeBusinessPhotoReference(rawReference);
+  if (!rawReference) return null;
 
-  if (!photoReference) {
-    return null;
+  // Direct CDN URLs (e.g. from OpenWeb Ninja) — use as-is, no proxy needed.
+  // Only Google Places URLs need to go through our proxy for API key injection.
+  if (rawReference.startsWith("http://") || rawReference.startsWith("https://")) {
+    const isGooglePlacesUrl =
+      rawReference.includes("places.googleapis.com") ||
+      rawReference.includes("maps.googleapis.com");
+    if (!isGooglePlacesUrl) {
+      return rawReference;
+    }
   }
 
+  // Google Places reference — route through our proxy
+  const photoReference = normalizeBusinessPhotoReference(rawReference);
+  if (!photoReference) return null;
+
+  const maxWidth = options.maxWidth ?? 400;
+  const maxHeight = options.maxHeight ?? 300;
   const params = new URLSearchParams({
     reference: photoReference,
     maxWidth: String(maxWidth),
     maxHeight: String(maxHeight),
   });
-
   return `/api/businesses/photo?${params.toString()}`;
 }
 

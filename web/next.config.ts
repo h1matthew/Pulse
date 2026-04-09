@@ -45,7 +45,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   transpilePackages: ['three'],
   // Allow ngrok and other dev origins
-  allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.io'],
+  allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.io', '192.168.*.*'],
   images: {
     remotePatterns: [
       {
@@ -57,6 +57,16 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'places.googleapis.com',
         pathname: '/v1/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh5.googleusercontent.com',
+        pathname: '/**',
       },
     ],
   },
