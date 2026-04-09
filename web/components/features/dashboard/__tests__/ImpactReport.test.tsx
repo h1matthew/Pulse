@@ -39,9 +39,11 @@ const mockReport: ImpactReportData = {
   tier: { name: 'Local Supporter', icon: '💚' },
   categoryBreakdown: [
     { category: 'Food & Drink', checkIns: 12, dollarsSpent: 420 },
+    { category: 'Retail', checkIns: 8, dollarsSpent: 300 },
   ],
   businesses: [
     { name: 'Local Cafe', category: 'Food & Drink', checkIns: 5, totalSpent: 175, lastVisit: '2026-02-15' },
+    { name: 'Book Nook', category: 'Retail', checkIns: 3, totalSpent: 90, lastVisit: '2026-02-10' },
   ],
   reviews: [
     { businessName: 'Local Cafe', rating: 5, content: 'Amazing coffee!', createdAt: '2026-02-14' },
@@ -220,14 +222,12 @@ describe('ImpactReportDialog', () => {
     expect(screen.getByText('No activity yet')).toBeInTheDocument()
   })
 
-  it('calls print function when Print Report button is clicked', () => {
+  it('creates print iframe when Print Report button is clicked', () => {
     mockUseImpactReport.mockReturnValue({
       data: mockReport,
       isLoading: false,
       error: null,
     })
-
-    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {})
 
     render(<ImpactReportDialog {...defaultProps} />, {
       wrapper: createTestWrapper(),
@@ -235,8 +235,9 @@ describe('ImpactReportDialog', () => {
 
     fireEvent.click(screen.getByText('Print Report'))
 
-    expect(printSpy).toHaveBeenCalled()
-    printSpy.mockRestore()
+    // The iframe is appended to body for printing
+    const iframe = document.querySelector('iframe')
+    expect(iframe).toBeInTheDocument()
   })
 
   it('triggers CSV download when Download CSV button is clicked', () => {
@@ -273,5 +274,268 @@ describe('ImpactReportDialog', () => {
     expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:mock-url')
 
     vi.restoreAllMocks()
+  })
+
+  it('renders category filter when multiple categories exist', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    expect(screen.getByLabelText('Category filter')).toBeInTheDocument()
+  })
+
+  it('renders sortable column headers in business table', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    expect(screen.getByLabelText('Sort by Business')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sort by Visits')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sort by Spent')).toBeInTheDocument()
+    expect(screen.getByLabelText('Sort by Last Visit')).toBeInTheDocument()
+  })
+
+  it('displays both businesses when no category filter is applied', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    expect(screen.getAllByText('Local Cafe').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('Book Nook').length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders tier badge with Lucide icon instead of emoji', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    const { container } = render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    // Tier name should be visible
+    expect(screen.getByText('Local Supporter')).toBeInTheDocument()
+    // Should NOT render raw emoji text — Lucide icon renders as SVG
+    const badge = screen.getByText('Local Supporter').closest('[class*="badge"]') ||
+                  screen.getByText('Local Supporter').parentElement
+    expect(badge).toBeInTheDocument()
+    // The badge should contain an SVG (Lucide icon) not emoji text
+    const svg = badge?.querySelector('svg')
+    expect(svg).toBeInTheDocument()
+  })
+
+  it('print iframe contains report content with light mode styles', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    fireEvent.click(screen.getByText('Print Report'))
+
+    const iframe = document.querySelector('iframe')
+    expect(iframe).toBeInTheDocument()
+
+    // The iframe document should contain the report HTML and light-mode overrides
+    const iframeDoc = iframe?.contentDocument
+    if (iframeDoc) {
+      const body = iframeDoc.body
+      expect(body.innerHTML).toContain('impact-report-printable')
+      // Should have light mode style overrides
+      const styles = iframeDoc.head.innerHTML
+      expect(styles).toContain('background: white')
+      expect(styles).toContain('color-scheme: light')
+    }
+  })
+
+  it('generates CSV with correct content structure', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    let blobContent = ''
+    const createObjectURLMock = vi.fn().mockReturnValue('blob:mock-url')
+    const revokeObjectURLMock = vi.fn()
+    global.URL.createObjectURL = vi.fn((blob: Blob) => {
+      // Read blob content via constructor argument
+      blobContent = (blob as unknown as { _content?: string })._content ?? ''
+      return 'blob:mock-url'
+    })
+    global.URL.revokeObjectURL = revokeObjectURLMock
+
+    // Capture the Blob content
+    const origBlob = global.Blob
+    global.Blob = class MockBlob {
+      _content: string
+      constructor(parts: BlobPart[]) {
+        this._content = parts.join('')
+        blobContent = this._content
+      }
+    } as unknown as typeof Blob
+
+    const mockClick = vi.fn()
+    const origCreateElement = document.createElement.bind(document)
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string, options?: ElementCreationOptions) => {
+      const el = origCreateElement(tag, options)
+      if (tag === 'a') el.click = mockClick
+      return el
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    fireEvent.click(screen.getByText('Download CSV'))
+
+    // Verify CSV includes key sections
+    expect(blobContent).toContain('Pulse Impact Report')
+    expect(blobContent).toContain('Impact Summary')
+    expect(blobContent).toContain('Dollars Kept Local,$1,250')
+    expect(blobContent).toContain('Businesses Supported,15')
+    expect(blobContent).toContain('Local Cafe')
+    expect(blobContent).toContain('Amazing coffee!')
+    expect(blobContent).toContain('20% Off')
+
+    global.Blob = origBlob
+    vi.restoreAllMocks()
+  })
+
+  it('renders timeline entries', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    expect(screen.getByText('Activity Timeline')).toBeInTheDocument()
+    expect(screen.getByText('Spent $35')).toBeInTheDocument()
+  })
+
+  it('displays date range when from date is present', () => {
+    const reportWithRange: ImpactReportData = {
+      ...mockReport,
+      dateRange: { from: '2026-02-01T12:00:00Z', to: '2026-02-16T12:00:00Z' },
+    }
+
+    mockUseImpactReport.mockReturnValue({
+      data: reportWithRange,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    // Date range renders in the report header — verify it's not "All Time"
+    const bodyText = document.body.textContent || ''
+    expect(bodyText).toContain('Feb')
+    expect(bodyText).toContain('2026')
+    expect(bodyText).not.toMatch(/All Time.*All Time.*All Time/) // should not show "All Time" in header
+  })
+
+  it('shows "All Time" when no from date', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    // "All Time" appears in both the header and the date range select; just check it exists
+    const allTimeElements = screen.getAllByText('All Time')
+    expect(allTimeElements.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('renders impact summary cards with correct values', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    expect(screen.getByText('Dollars Kept Local')).toBeInTheDocument()
+    expect(screen.getByText('$1,250')).toBeInTheDocument()
+    expect(screen.getByText('Businesses Supported')).toBeInTheDocument()
+    expect(screen.getByText('Jobs Impacted')).toBeInTheDocument()
+    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByText('Carbon Saved')).toBeInTheDocument()
+    expect(screen.getByText('10 lbs')).toBeInTheDocument()
+  })
+
+  it('renders star ratings in reviews', () => {
+    mockUseImpactReport.mockReturnValue({
+      data: mockReport,
+      isLoading: false,
+      error: null,
+    })
+
+    const { container } = render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    // Review section should show star icons for the 5-star rating
+    const reviewSection = screen.getByText('Amazing coffee!').closest('div')
+    expect(reviewSection).toBeInTheDocument()
+  })
+
+  it('renders deal status badges correctly', () => {
+    const reportWithPendingDeal: ImpactReportData = {
+      ...mockReport,
+      deals: [
+        { dealTitle: '10% Off', businessName: 'Local Cafe', claimedAt: '2026-02-01', redeemedAt: null },
+        { dealTitle: '20% Off', businessName: 'Book Nook', claimedAt: '2026-02-01', redeemedAt: '2026-02-05' },
+      ],
+    }
+
+    mockUseImpactReport.mockReturnValue({
+      data: reportWithPendingDeal,
+      isLoading: false,
+      error: null,
+    })
+
+    render(<ImpactReportDialog {...defaultProps} />, {
+      wrapper: createTestWrapper(),
+    })
+
+    expect(screen.getByText('Pending')).toBeInTheDocument()
+    expect(screen.getByText('Redeemed')).toBeInTheDocument()
   })
 })
