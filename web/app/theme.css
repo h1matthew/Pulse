@@ -509,3 +509,33 @@
   background-size: 200% 100%;
   animation: shimmer 2s linear infinite;
 }
+
+/* ─── Reduced Motion ─── */
+/* Respect the user's OS-level preference for reduced motion (WCAG 2.3.3).
+   Instantly complete entrance animations so content still appears, but
+   remove continuous/looping motion entirely. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animate-float,
+  .animate-glow,
+  .animate-drift,
+  .animate-scale-pulse,
+  .animate-bounce-subtle,
+  .animate-pulse-soft,
+  .animate-pulse-beat,
+  .animate-deal-flash,
+  .deal-shimmer {
+    animation: none !important;
+  }
+
+  .card-lift:hover {
+    transform: none;
+  }
+}

@@ -3,7 +3,6 @@ import type { CSSProperties } from "react";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
-import { AchievementWrapper } from "@/components/providers/AchievementWrapper";
 import { AccessibilityProvider } from "@/components/providers/AccessibilityProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next"
@@ -23,9 +22,7 @@ export const metadata: Metadata = {
   title: "Pulse - Discover Local Businesses",
   description: "Find and support local businesses in your community. Every interaction strengthens your local economy.",
   icons: {
-    icon: '/pulse-mark.png',
-    shortcut: '/pulse-mark.png',
-    apple: '/pulse-mark.png',
+    icon: '/logo.svg',
   },
 };
 
@@ -50,18 +47,16 @@ export default function RootLayout({
         </a>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
           <QueryProvider>
             <AuthProvider>
               <AccessibilityProvider>
-                <AchievementWrapper>
                   <main id="main-content" role="main">
                     {children}
                   </main>
-                </AchievementWrapper>
                 <Toaster />
                 <Analytics />
                 <ChatWidget />

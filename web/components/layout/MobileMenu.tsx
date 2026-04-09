@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+import { PulseLogo } from '@/components/ui/PulseLogo'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 const NAV_ITEMS_PUBLIC = [
@@ -55,17 +57,20 @@ export function MobileMenu() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <img src="/pulse-mark.png" alt="Pulse" className="h-8 w-8 object-contain" />
+              <PulseLogo className="h-8 w-8 text-foreground" />
               <span className="font-semibold">Pulse</span>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setOpen(false)}
-            >
-              <X className="h-5 w-5" />
-              <span className="sr-only">Close menu</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpen(false)}
+              >
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close menu</span>
+              </Button>
+            </div>
           </div>
 
           <div className="mt-6 flow-root">

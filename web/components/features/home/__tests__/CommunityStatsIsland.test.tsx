@@ -59,7 +59,7 @@ describe('HeroStats', () => {
 
     render(<HeroStats />, { wrapper: createTestWrapper() })
 
-    expect(screen.getByText('$2.4M')).toBeInTheDocument()
+    expect(screen.getByText('$2.4M+')).toBeInTheDocument()
     expect(screen.getByText('Kept Local')).toBeInTheDocument()
   })
 
@@ -77,7 +77,7 @@ describe('HeroStats', () => {
 
     render(<HeroStats />, { wrapper: createTestWrapper() })
 
-    expect(screen.getByText('12.5K')).toBeInTheDocument()
+    expect(screen.getByText('12.5K+')).toBeInTheDocument()
     expect(screen.getByText('Reviews')).toBeInTheDocument()
   })
 
@@ -90,14 +90,16 @@ describe('HeroStats', () => {
     expect(screen.getByText('Community Members')).toBeInTheDocument()
   })
 
-  it('shows zero values when data is undefined', () => {
+  it('shows fallback values when data is undefined', () => {
     mockUseCommunityPulse.mockReturnValue({ data: undefined, isLoading: false })
 
     render(<HeroStats />, { wrapper: createTestWrapper() })
 
-    expect(screen.getByText('$0')).toBeInTheDocument()
-    // Businesses, Reviews, and Community Members all show "0"
-    expect(screen.getAllByText('0')).toHaveLength(3)
+    // Fallback stats are shown when no real data exists
+    expect(screen.getByText('$284.6K+')).toBeInTheDocument()
+    expect(screen.getByText('312')).toBeInTheDocument()
+    expect(screen.getByText('1.8K+')).toBeInTheDocument()
+    expect(screen.getByText('2.3K')).toBeInTheDocument()
   })
 })
 
@@ -152,14 +154,15 @@ describe('CommunityPulseCard', () => {
     expect(screen.getByText('160')).toBeInTheDocument()
   })
 
-  it('renders zero values when data is undefined', () => {
+  it('renders fallback values when data is undefined', () => {
     mockUseCommunityPulse.mockReturnValue({ data: undefined, isLoading: false })
 
     render(<CommunityPulseCard />, { wrapper: createTestWrapper() })
 
-    // Pulse score, businesses, and jobs all show "0"; dollars shows "$0"
-    expect(screen.getAllByText('0')).toHaveLength(3)
-    expect(screen.getByText('$0')).toBeInTheDocument()
+    // Fallback stats: pulseScore=7420, dollars=284600, businesses=312
+    expect(screen.getByText('7,420')).toBeInTheDocument()
     expect(screen.getByText('Community Pulse Score')).toBeInTheDocument()
+    expect(screen.getByText('$284.6K')).toBeInTheDocument()
+    expect(screen.getByText('312')).toBeInTheDocument()
   })
 })
