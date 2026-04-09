@@ -48,10 +48,11 @@ describe('Header', () => {
   })
 
   it('renders logo', () => {
-    render(<Header />)
+    const { container } = render(<Header />)
 
-    const logo = screen.getByAltText('Pulse logo')
-    expect(logo).toBeInTheDocument()
+    // PulseLogo renders as an inline SVG with aria-hidden="true"
+    const svg = container.querySelector('svg[aria-hidden="true"]')
+    expect(svg).toBeInTheDocument()
   })
 
   it('renders brand name', () => {

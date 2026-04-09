@@ -1,22 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 160 160" fill="none" role="img" aria-label="Max Apogee mark">
-  <defs>
-    <linearGradient id="ma2_blue" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#60A5FA"></stop>
-      <stop offset="1" stop-color="#1D4ED8"></stop>
-    </linearGradient>
-
-    <!-- Mask punches a transparent hole where the former white triangle was -->
-    <mask id="ma2_a_cutout" maskUnits="userSpaceOnUse" x="0" y="0" width="160" height="160">
-      <rect x="0" y="0" width="160" height="160" fill="white"></rect>
-      <path d="M86 102H98L92 82L86 102Z" fill="black"></path>
-    </mask>
-  </defs>
-
-  <rect x="14" y="14" width="132" height="132" rx="34" fill="black" opacity="0.03"></rect>
-
-  <path d="M34 102C48 68 78 50 112 50" stroke="url(#ma2_blue)" stroke-width="7" stroke-linecap="round" opacity="0.92"></path>
-
-  <path d="M118 36l5 10 11 1-8 7 2 11-10-5-10 5 2-11-8-7 11-1 5-10z" fill="url(#ma2_blue)"></path>
-
-  <path d="M62 120L84 54C85 50 89 48 92 48C95 48 99 50 100 54L122 120C124 126 120 132 114 132H108C104 132 101 129 100 125L96 110H88L84 125C83 129 80 132 76 132H70C64 132 60 126 62 120Z" fill="url(#ma2_blue)" mask="url(#ma2_a_cutout)"></path>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 34" fill="none">
+  <path d="M1 13 L7 13 L9.5 4 L13 23 L16 6 L18.5 13 L22 13" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M22 13 A8 8 0 0 1 38 13 Q38 22 30 32 Q22 22 22 13" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="30" cy="11" r="2.5" fill="#0d9488"/>
 </svg>

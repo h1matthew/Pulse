@@ -2,40 +2,76 @@
 
 Pulse is a local business discovery platform that shows users exactly how their spending and engagement strengthens their local economy. Every interaction feeds into a live economic impact dashboard, creating a powerful narrative around community empowerment.
 
+**Built for FBLA Coding & Programming 2025-2026** — Topic: "Byte-Sized Business Boost"
+
 ## Features
 
-### Core Features
-- **Business Discovery**: Browse local businesses by category (Food & Drink, Retail, Services, Health & Wellness, Arts & Culture, Entertainment)
-- **AI-Matched "For You" Feed**: Personalized recommendations based on ratings, bookmarks, and preferences
-- **Verified Reviews**: 5-star rating system with bot prevention via CAPTCHA
-- **Bookmarks**: Save favorite businesses to support later
-- **Deals & Boost Missions**: Special offers and challenge-based rewards from local businesses
+### Core Features (FBLA Required)
+- **Sort by Category**: Browse businesses by Food & Drink, Retail, Services, Health & Wellness, Arts & Culture, Entertainment
+- **Reviews & Ratings**: 5-star rating system with text reviews and inline validation
+- **Sort by Reviews/Ratings**: Sort businesses by highest rated, most reviewed, distance, or alphabetically
+- **Bookmark Favorites**: Save businesses to a personal bookmarks page
+- **Deals & Coupons**: Claim special offers with redemption codes; Available and Claimed tabs
+- **Bot Verification**: Cloudflare Turnstile CAPTCHA on review submission to prevent automated abuse
 
-### Economic Impact Dashboard
-- **Personal Impact Metrics**: Track dollars kept local, businesses supported, and jobs impacted
+### Beyond the Prompt
+- **AI-Matched "For You" Feed**: Personalized recommendations via Google Gemini based on ratings, bookmarks, and preferences
+- **AI Assistant**: Interactive Q&A chatbot for business recommendations and feature help
+- **Economic Impact Dashboard**: Track dollars kept local, businesses supported, jobs impacted, and carbon saved
+- **Impact Report Export**: Customizable reports with category filtering, sortable tables, CSV download, and print layout
 - **Community Pulse**: Aggregate impact across all users with real-time metrics
-- **Impact Leaderboard**: Compete with other community members
-- **Visual Analytics**: Charts and progress indicators showing your economic footprint
+- **Impact Leaderboard**: Tiered ranking system (Pulse Newcomer through Economic Hero)
+- **Boost Missions**: Challenge-based gamification (e.g., "Try 3 new coffee shops this month")
+- **Help System**: Interactive help menu with keyboard shortcuts and onboarding tour
 
-### Boost Missions
-- Challenge-based system (e.g., "Try 3 new coffee shops this month")
-- Progress tracking with unlockable perks
-- Gamified engagement that drives real business visits
+### Accessibility
+- Skip-to-content link for keyboard users
+- ARIA live regions (polite and assertive) via AccessibilityProvider
+- Focus trap management for modals (useFocusTrap hook)
+- Enhanced focus-visible outlines on all interactive elements
+- Semantic landmarks with aria-labels (nav, main, footer, sections)
+- Screen-reader-only content via sr-only / VisuallyHidden
+- Respects `prefers-reduced-motion` OS setting (WCAG 2.3.3)
+- Dedicated accessibility test suite
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v4 with custom OKLCH color palette
-- **UI Components**: shadcn/ui + Radix UI
-- **Database**: Supabase (PostgreSQL + Auth)
-- **State Management**: TanStack React Query
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Framework | [Next.js](https://nextjs.org/) 16 | React framework with App Router, SSR, API routes |
+| Language | [TypeScript](https://www.typescriptlang.org/) 5 | Type-safe JavaScript for reliability and maintainability |
+| Runtime | [React](https://react.dev/) 19 | UI component library |
+| Styling | [Tailwind CSS](https://tailwindcss.com/) v4 | Utility-first CSS framework |
+| UI Components | [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/) | Accessible, unstyled component primitives |
+| Database | [Supabase](https://supabase.com/) (PostgreSQL + PostGIS) | Auth, database, real-time, and storage |
+| AI | [Google Gemini API](https://ai.google.dev/) | Business descriptions and AI assistant responses |
+| Business Data | [Google Places API](https://developers.google.com/maps/documentation/places/web-service) | Real local business listings and reviews |
+| State Management | [TanStack React Query](https://tanstack.com/query) v5 | Server-state caching, deduplication, and sync |
+| Charts | [Recharts](https://recharts.org/) 3 | Data visualization for impact reports and dashboards |
+| Validation | [Zod](https://zod.dev/) 4 | Schema-based input validation (syntactical and semantic) |
+| Bot Prevention | [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) | Invisible CAPTCHA challenge on sensitive actions |
+| Rate Limiting | [Upstash Redis](https://upstash.com/) + [@upstash/ratelimit](https://github.com/upstash/ratelimit) | API rate limiting to prevent abuse |
+| Icons | [Lucide React](https://lucide.dev/) | Open-source SVG icon set |
+| Dates | [date-fns](https://date-fns.org/) | Lightweight date formatting and manipulation |
+| Animations | [Framer Motion](https://www.framer.com/motion/) | Declarative React animations |
+| Toasts | [Sonner](https://sonner.emilkowal.dev/) | Toast notification system |
+| CSS Utilities | [clsx](https://github.com/lukeed/clsx), [tailwind-merge](https://github.com/dcastil/tailwind-merge), [class-variance-authority](https://cva.style/) | Conditional class merging |
+| Testing | [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) | Unit and component testing |
+| Theming | [next-themes](https://github.com/pacocoursey/next-themes) | Dark/light mode switching |
+| Markdown | [react-markdown](https://github.com/remarkjs/react-markdown) + [remark-gfm](https://github.com/remarkjs/remark-gfm) | Render markdown in AI assistant responses |
+| Rich Text | [Tiptap](https://tiptap.dev/) | Rich text editor for review content |
+| Drag & Drop | [dnd-kit](https://dndkit.com/) | Accessible drag-and-drop interactions |
+| Analytics | [Vercel Analytics](https://vercel.com/analytics) | Privacy-friendly usage analytics |
+
+### Why TypeScript + Next.js?
+
+TypeScript was selected for its **static type system**, which catches bugs at compile time rather than runtime — critical for a data-driven application where business records, reviews, and impact metrics flow between client and server. Next.js provides **server-side rendering** for SEO and fast initial loads, **API routes** that eliminate the need for a separate backend server, and the **App Router** for nested layouts and streaming. Together, they represent an industry-standard production stack used by companies like Vercel, Netflix, and TikTok.
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- npm or yarn
+- npm
 - Supabase account
 
 ### Installation
@@ -56,11 +92,16 @@ npm install
 cp .env.example .env.local
 ```
 
-Fill in your Supabase credentials:
+Required variables:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
 SUPABASE_SECRET_KEY=your_supabase_secret
+GEMINI_API_KEY=your_gemini_api_key
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_key
+TURNSTILE_SECRET_KEY=your_turnstile_secret
+UPSTASH_REDIS_REST_URL=your_upstash_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_token
 ```
 
 4. Set up the database:
@@ -75,78 +116,123 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
+### Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start development server (webpack) |
+| `npm run build` | Production build |
+| `npm run start` | Serve production build |
+| `npm run lint` | Run ESLint |
+| `npm test` | Run tests in watch mode |
+| `npm run test:run` | Run tests once |
+| `npm run db:setup` | Reset, seed, type-gen, and validate database |
+
 ## Database Schema
 
-The platform uses a comprehensive PostgreSQL schema including:
+PostgreSQL via Supabase with PostGIS extension for geolocation queries.
 
-- **Businesses**: Store listings with categories, ratings, and verification
-- **Reviews**: User ratings and reviews with verification
-- **Bookmarks**: User-saved businesses
-- **Deals**: Special offers and Boost Missions
-- **User Impact**: Economic impact tracking per user
-- **Community Pulse**: Aggregate community metrics
+| Table | Purpose |
+|-------|---------|
+| `businesses` | Local business listings with location, contact, hours, ratings |
+| `categories` | Business categories (Food & Drink, Retail, Services, etc.) |
+| `reviews` | User reviews with ratings, content, and verification status |
+| `business_bookmarks` | User-saved/bookmarked businesses |
+| `deals` | Special offers and promotions |
+| `deal_claims` | User deal redemptions with codes |
+| `boost_missions` | Gamification challenges |
+| `mission_completions` | User mission progress tracking |
+| `business_check_ins` | User visit tracking with spend amounts |
+| `user_impact` | Economic impact metrics per user |
+| `user_preferences` | AI matching preferences |
+| `profiles` | User profile data (name, avatar, admin flag) |
 
-See `web/supabase/pulse_schema.sql` for the complete schema.
+See `web/supabase/pulse_schema.sql` for the complete schema with indexes, RLS policies, and PostGIS functions.
 
 ## Project Structure
 
 ```
-web/
-├── app/                    # Next.js App Router
-│   ├── (app)/             # Authenticated routes
-│   ├── (public)/          # Public pages
-│   ├── discover/          # Business discovery
-│   ├── dashboard/         # Impact dashboard
-│   ├── missions/          # Boost Missions
-│   ├── deals/             # Deals page
-│   ├── bookmarks/         # User bookmarks
-│   └── categories/        # Category browsing
-├── components/
-│   ├── ui/                # shadcn components
-│   ├── layout/            # Layout components
-│   └── features/          # Feature components
-├── lib/
-│   ├── constants/         # Navigation, categories
-│   └── supabase/          # Database helpers
-└── supabase/
-    └── pulse_schema.sql   # Database schema
+pulse/
+├── web/                        # Next.js application
+│   ├── app/                    # App Router (pages, layouts, API routes)
+│   │   ├── api/                # REST API endpoints
+│   │   ├── dashboard/          # Impact dashboard
+│   │   ├── discover/           # Business discovery feed
+│   │   ├── business/[id]/      # Business detail pages
+│   │   ├── deals/              # Deals and coupons
+│   │   ├── missions/           # Boost missions
+│   │   ├── bookmarks/          # Saved businesses
+│   │   ├── leaderboard/        # Community rankings
+│   │   ├── assistant/          # AI assistant
+│   │   └── theme.css           # Design tokens (single source of truth)
+│   ├── components/
+│   │   ├── ui/                 # shadcn/Radix primitives
+│   │   ├── features/           # Feature-specific components
+│   │   ├── layout/             # Header, Footer, Sidebar
+│   │   └── providers/          # Auth, Query, Accessibility providers
+│   ├── hooks/                  # React Query hooks (useBusinesses, useImpact, etc.)
+│   ├── lib/                    # Utilities (validation, Supabase clients, Gemini)
+│   ├── types/                  # TypeScript type definitions
+│   ├── __tests__/              # Shared test mocks and utilities
+│   └── supabase/               # Database schema, migrations, scripts
+├── 25-26 Coding and Programming.pdf  # FBLA competition guidelines
+└── README.md                   # This file
 ```
 
-## Key Features Implementation
+## Key Implementation Details
 
 ### Economic Impact Calculation
-The platform calculates impact using:
-- Estimated dollars kept local (68% of spending stays local for small businesses)
-- Jobs impacted (roughly 1 job per $100k in local spending)
-- Review and engagement multipliers
+The platform estimates local economic impact using established economic research:
+- **68% multiplier**: For every dollar spent at a local business, approximately 68 cents recirculates locally (vs. 43 cents for non-local chains) — based on the American Independent Business Alliance
+- **Jobs estimate**: Roughly 1 job per $15,000 in local spending
+- **Carbon savings**: 0.5 lbs CO2 saved per local purchase (reduced shipping/logistics)
 
-### AI Recommendation Engine
-- Collaborative filtering based on similar users
-- Category preference weighting
-- Rating history analysis
-- Location proximity scoring
+### Data Storage & Scope
+- **Arrays and lists**: Business listings, reviews, deals, and timeline entries are stored as typed arrays via React Query and rendered from Supabase table queries
+- **Variable scope**: React Query hooks encapsulate fetch logic with proper cache keys; component-level state uses `useState` for UI-only concerns (filters, sort order); module-level constants for static data (categories, tiers)
+- **Type safety**: All data flows through TypeScript interfaces defined in `web/types/` — no `any` types in production code
 
-### Boost Missions System
-- Mission templates with configurable targets
-- Progress tracking with visual indicators
-- Reward unlock system
-- Time-limited challenges
+### Input Validation Strategy
+- **Syntactical**: Zod schemas validate format (email regex, rating 1-5 range, content length 10-2000 chars, UUID format)
+- **Semantic**: Server-side checks for duplicates (409), ownership verification, CAPTCHA token validation
+- **Sanitization**: HTML stripping on search inputs, prompt injection filtering on AI inputs
 
-## Contributing
+## Third-Party Services & APIs
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+| Service | Usage | License/Terms |
+|---------|-------|---------------|
+| [Supabase](https://supabase.com/) | Authentication, PostgreSQL database, PostGIS | Apache 2.0 (open-source) |
+| [Google Gemini API](https://ai.google.dev/) | AI-generated business descriptions and assistant Q&A | Google AI Terms of Service |
+| [Google Places API](https://developers.google.com/maps/documentation/places/web-service) | Real business data (names, addresses, ratings, reviews, photos) | Google Maps Platform Terms |
+| [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) | Bot prevention CAPTCHA widget | Cloudflare Terms of Service |
+| [Upstash Redis](https://upstash.com/) | Rate limiting on API routes | Upstash Terms of Service |
+| [Vercel](https://vercel.com/) | Hosting and deployment | Vercel Terms of Service |
+
+## Open-Source Libraries
+
+All dependencies are listed in `web/package.json`. Key open-source licenses:
+
+| Library | License |
+|---------|---------|
+| Next.js, React | MIT |
+| Tailwind CSS | MIT |
+| Radix UI (all packages) | MIT |
+| shadcn/ui | MIT |
+| TanStack React Query | MIT |
+| Recharts | MIT |
+| Zod | MIT |
+| Lucide React | ISC |
+| date-fns | MIT |
+| Framer Motion | MIT |
+| Sonner | MIT |
+| Vitest | MIT |
+| React Testing Library | MIT |
+
+All copyrighted material (Google Places business data, Google reviews) is attributed to its respective owners and displayed with proper sourcing.
 
 ## License
 
-This project is licensed under the MIT License.
-
-## Acknowledgments
-
-Built for the FBLA competition with the goal of empowering communities through technology.
+This project was created for the FBLA Coding & Programming 2025-2026 competition.
 
 ---
 

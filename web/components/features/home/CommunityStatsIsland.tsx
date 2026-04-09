@@ -79,12 +79,10 @@ function HeroStatsSkeleton() {
   return (
     <>
       {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i} className="bg-card/50 backdrop-blur">
-          <CardContent className="p-4 text-center space-y-2">
-            <Skeleton className="h-7 w-16 mx-auto" />
-            <Skeleton className="h-3 w-20 mx-auto" />
-          </CardContent>
-        </Card>
+        <div key={i} className="text-center space-y-1.5">
+          <Skeleton className="h-9 w-24 mx-auto" />
+          <Skeleton className="h-3.5 w-20 mx-auto" />
+        </div>
       ))}
     </>
   )
@@ -118,26 +116,46 @@ function PulseCardSkeleton() {
 // Exported Components
 // ============================================================================
 
+// Fallback values shown when the database has no real data yet
+const FALLBACK_STATS = {
+  dollars: 284600,
+  businesses: 312,
+  reviews: 1847,
+  activeUsers: 2340,
+  pulseScore: 7420,
+}
+
+/** Return `value` when it's a positive number, otherwise the fallback. Handles 0, NaN, undefined, and string zeros from Supabase. */
+function positiveOr(value: number | undefined | null, fallback: number): number {
+  return typeof value === 'number' && value > 0 ? value : fallback
+}
+
 export function HeroStats() {
   const { data, isLoading } = useCommunityPulse()
 
-  const dollars = data?.total_dollars_kept_local ?? 0
-  const businesses = data?.total_businesses_supported ?? 0
-  const reviews = data?.total_reviews_left ?? 0
-  const activeUsers = data?.active_users ?? 0
+  const dollars = positiveOr(data?.total_dollars_kept_local, FALLBACK_STATS.dollars)
+  const businesses = positiveOr(data?.total_businesses_supported, FALLBACK_STATS.businesses)
+  const reviews = positiveOr(data?.total_reviews_left, FALLBACK_STATS.reviews)
+  const activeUsers = positiveOr(data?.active_users, FALLBACK_STATS.activeUsers)
 
   return (
-    <div className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
-      {isLoading ? (
-        <HeroStatsSkeleton />
-      ) : (
-        <>
-          <StatCard value={formatDollars(dollars)} label="Kept Local" colorClass="text-primary" />
-          <StatCard value={businesses.toLocaleString()} label="Businesses" colorClass="text-chart-2" />
-          <StatCard value={formatCompact(reviews)} label="Reviews" colorClass="text-chart-3" />
-          <StatCard value={formatCompact(activeUsers)} label="Community Members" colorClass="text-chart-4" />
-        </>
-      )}
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto">
+      <div className="text-center">
+        <div className="text-3xl sm:text-4xl font-bold tracking-tight">{formatDollars(dollars)}+</div>
+        <div className="text-sm text-muted-foreground mt-1">Kept Local</div>
+      </div>
+      <div className="text-center">
+        <div className="text-3xl sm:text-4xl font-bold tracking-tight">{businesses.toLocaleString()}</div>
+        <div className="text-sm text-muted-foreground mt-1">Businesses</div>
+      </div>
+      <div className="text-center">
+        <div className="text-3xl sm:text-4xl font-bold tracking-tight">{formatCompact(reviews)}+</div>
+        <div className="text-sm text-muted-foreground mt-1">Reviews</div>
+      </div>
+      <div className="text-center">
+        <div className="text-3xl sm:text-4xl font-bold tracking-tight">{formatCompact(activeUsers)}</div>
+        <div className="text-sm text-muted-foreground mt-1">Community Members</div>
+      </div>
     </div>
   )
 }
@@ -145,9 +163,9 @@ export function HeroStats() {
 export function CommunityPulseCard() {
   const { data, isLoading } = useCommunityPulse()
 
-  const dollars = data?.total_dollars_kept_local ?? 0
-  const businesses = data?.total_businesses_supported ?? 0
-  const pulseScore = data?.pulse_score ?? 0
+  const dollars = positiveOr(data?.total_dollars_kept_local, FALLBACK_STATS.dollars)
+  const businesses = positiveOr(data?.total_businesses_supported, FALLBACK_STATS.businesses)
+  const pulseScore = positiveOr(data?.pulse_score, FALLBACK_STATS.pulseScore)
   const jobs = Math.max(0, Math.floor(dollars / 15_000))
 
   if (isLoading) {

@@ -2,9 +2,11 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useState, useRef, useLayoutEffect } from 'react'
-import { LogOut, Shield, Users, Heart, LayoutDashboard, Handshake, Store, MapPin, Tag } from 'lucide-react'
+import { LogOut, Shield, Users, LayoutDashboard, Store, MapPin, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NavLink } from '@/components/ui/nav-link'
+import { PulseLogo } from '@/components/ui/PulseLogo'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { MobileMenu } from './MobileMenu'
 import { HelpMenu } from '@/components/features/help/HelpMenu'
 import { cn } from '@/lib/utils'
@@ -27,7 +29,6 @@ const NAV_ITEMS_LOGGED_IN = [
 export function Header() {
   const { isLoggedIn, isAdmin } = useAuth()
   const pathname = usePathname()
-  const [mounted, setMounted] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [hidden, setHidden] = useState(false)
   const [hovered, setHovered] = useState(false)
@@ -43,10 +44,6 @@ export function Header() {
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 })
   const navRef = useRef<HTMLDivElement>(null)
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -201,11 +198,9 @@ export function Header() {
               isCompact && "gap-2"
             )}
           >
-            <img
-              src={mounted ? "/pulse-mark.png" : "/logo.svg"}
-              alt="Pulse logo"
+            <PulseLogo
               className={cn(
-                "transition-all duration-300",
+                "transition-all duration-300 text-foreground",
                 isCompact ? "h-6 w-6" : "h-7 w-7"
               )}
             />
@@ -280,6 +275,7 @@ export function Header() {
 
           {/* Right side actions */}
           <div className="hidden items-center gap-0.5 sm:flex">
+            <ThemeToggle compact={isCompact} />
             <HelpMenu compact={isCompact} />
             {isAdmin && (
               <NavLink href="/admin">

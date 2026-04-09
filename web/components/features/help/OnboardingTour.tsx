@@ -186,7 +186,7 @@ export function OnboardingTour() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-md" aria-describedby="tour-description">
+      <DialogContent className="dark sm:max-w-md bg-background text-foreground" aria-describedby="tour-description">
         <DialogHeader className="text-center">
           <div className="mx-auto mb-4">
             <div

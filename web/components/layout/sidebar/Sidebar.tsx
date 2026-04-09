@@ -1,5 +1,5 @@
-import Image from 'next/image'
 import { NavLink } from '@/components/ui/nav-link'
+import { PulseLogo } from '@/components/ui/PulseLogo'
 import { SidebarNav } from './SidebarNav'
 import { SidebarUserSection } from './SidebarUserSection'
 
@@ -15,7 +15,7 @@ export function Sidebar({ email, fullName, isAdmin }: SidebarProps) {
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-border/30 px-6">
         <NavLink href="/" className="flex items-center gap-2">
-          <Image src="/pulse-mark.png" alt="Pulse" width={32} height={32} className="h-8 w-8 object-contain" />
+          <PulseLogo className="h-8 w-8 text-foreground" />
           <span className="text-lg font-semibold tracking-tight text-foreground">
             Pulse
           </span>
