@@ -5,6 +5,7 @@
  */
 
 import { User, Bot } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -60,9 +61,24 @@ export function ChatMessage({ message }: ChatMessageProps) {
             isUser ? "prose-invert" : ""
           )}
         >
-          <p className="m-0 whitespace-pre-wrap leading-relaxed">
-            {message.content}
-          </p>
+          {isUser ? (
+            <p className="m-0 whitespace-pre-wrap leading-relaxed">
+              {message.content}
+            </p>
+          ) : (
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="m-0 mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                ul: ({ children }) => <ul className="m-0 mb-2 pl-4 list-disc">{children}</ul>,
+                ol: ({ children }) => <ol className="m-0 mb-2 pl-4 list-decimal">{children}</ol>,
+                li: ({ children }) => <li className="mb-0.5">{children}</li>,
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                a: ({ href, children }) => <a href={href} className="text-primary underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          )}
         </div>
 
         {/* Timestamp */}

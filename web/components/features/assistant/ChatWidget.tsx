@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useLocation } from "@/hooks/useLocation";
 import { SuggestedQuestions } from "./SuggestedQuestions";
@@ -34,16 +33,14 @@ export function ChatWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { location } = useLocation();
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    scrollEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   // Focus input when chat opens
   useEffect(() => {
@@ -202,7 +199,7 @@ export function ChatWidget() {
               </div>
 
               {/* Messages */}
-              <ScrollArea className="flex-1 max-h-[400px]" ref={scrollRef}>
+              <div className="flex-1 overflow-y-auto max-h-[420px]">
                 <div className="p-4 space-y-4">
                   {messages.map((message) => (
                     <ChatMessage key={message.id} message={message} />
@@ -215,12 +212,13 @@ export function ChatWidget() {
                     </div>
                   )}
 
-                  {/* Suggested Questions */}
                   {showSuggestions && messages.length <= 1 && (
                     <SuggestedQuestions onSelect={handleSuggestionClick} />
                   )}
+
+                  <div ref={scrollEndRef} />
                 </div>
-              </ScrollArea>
+              </div>
 
               {/* Input */}
               <div className="p-4 border-t bg-muted/30">

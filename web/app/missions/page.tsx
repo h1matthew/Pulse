@@ -115,7 +115,7 @@ function ActiveMissionCard({ mission, progressDetail, index }: ActiveMissionCard
 
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h3 className="text-lg font-semibold">{mission.title}</h3>
+                <h2 className="text-lg font-semibold">{mission.title}</h2>
                 <Badge variant="secondary">{categoryName}</Badge>
                 <Badge variant="outline">{difficulty}</Badge>
               </div>
@@ -280,7 +280,7 @@ export default function MissionsPage() {
                     <Card>
                       <CardContent className="p-12 text-center">
                         <Zap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No Active Missions</h3>
+                        <h2 className="text-lg font-semibold mb-2">No Active Missions</h2>
                         <p className="text-muted-foreground text-sm">
                           New missions are added regularly. Check back soon for new challenges!
                         </p>
@@ -294,7 +294,7 @@ export default function MissionsPage() {
                     <Card>
                       <CardContent className="p-12 text-center">
                         <LogIn className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">Sign In to Track Progress</h3>
+                        <h2 className="text-lg font-semibold mb-2">Sign In to Track Progress</h2>
                         <p className="text-muted-foreground text-sm mb-4">
                           Sign in to start completing missions and earning rewards.
                         </p>
@@ -319,7 +319,7 @@ export default function MissionsPage() {
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="text-lg font-semibold">{detail.progress.mission.title}</h3>
+                                  <h2 className="text-lg font-semibold">{detail.progress.mission.title}</h2>
                                   <Badge className="bg-chart-5 text-white">Completed</Badge>
                                   {detail.progress.reward_claimed && (
                                     <Badge variant="outline">Claimed</Badge>
@@ -345,7 +345,7 @@ export default function MissionsPage() {
                     <Card>
                       <CardContent className="p-12 text-center">
                         <Trophy className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No Completed Missions Yet</h3>
+                        <h2 className="text-lg font-semibold mb-2">No Completed Missions Yet</h2>
                         <p className="text-muted-foreground text-sm">
                           Start an active mission above and complete it to see your achievements here.
                         </p>

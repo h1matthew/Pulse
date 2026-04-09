@@ -53,6 +53,7 @@ function BookmarkCard({
             <Button
               variant="ghost"
               size="icon"
+              aria-label={`Remove ${business.name} from bookmarks`}
               className="absolute top-3 right-3 bg-background/80 hover:bg-destructive hover:text-destructive-foreground"
               onClick={() => onDelete(bookmark.id)}
             >
