@@ -39,6 +39,13 @@ import {
   Bookmark,
   Tag,
   Trophy,
+  ArrowUpDown,
+  Filter,
+  Crown,
+  Shield,
+  Sparkles,
+  Heart,
+  Sprout,
 } from "lucide-react"
 import {
   Dialog,
@@ -85,14 +92,24 @@ import {
 // Chart Colors (match theme.css --chart-1 through --chart-5)
 // ============================================================================
 
-/** Color palette for charts - uses CSS variables to match theme */
-const CHART_COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-] as const
+/** Fallback hex colors for SSR / environments without CSS variable access */
+const FALLBACK_CHART_COLORS = [
+  "#0d9488", // teal
+  "#e07a5f", // coral
+  "#4ade80", // green
+  "#a78bfa", // purple
+  "#facc15", // yellow
+]
+
+/** Reads resolved chart colors from the current theme's CSS variables */
+function getResolvedChartColors(): string[] {
+  if (typeof window === "undefined") return FALLBACK_CHART_COLORS
+  const style = getComputedStyle(document.documentElement)
+  return FALLBACK_CHART_COLORS.map((fallback, i) => {
+    const value = style.getPropertyValue(`--chart-${i + 1}`).trim()
+    return value || fallback
+  })
+}
 
 // ============================================================================
 // Main Dialog
@@ -117,22 +134,220 @@ export function ImpactReportDialog({
   userName,
 }: ImpactReportDialogProps) {
   const [dateRange, setDateRange] = useState<DateRangeOption>("all_time")
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const printRef = useRef<HTMLDivElement>(null)
 
   const params = useMemo(() => getDateRangeParams(dateRange), [dateRange])
   const { data: report, isLoading, error } = useImpactReport(params)
 
+  // Derive available categories from report data
+  const availableCategories = useMemo(() => {
+    if (!report) return []
+    const cats = new Set<string>()
+    for (const b of report.businesses) cats.add(b.category)
+    for (const c of report.categoryBreakdown) cats.add(c.category)
+    return Array.from(cats).sort()
+  }, [report])
+
+  // Apply category filter to produce the displayed report
+  const filteredReport = useMemo(() => {
+    if (!report || categoryFilter === "all") return report
+    return {
+      ...report,
+      businesses: report.businesses.filter((b) => b.category === categoryFilter),
+      categoryBreakdown: report.categoryBreakdown.filter((c) => c.category === categoryFilter),
+      reviews: report.reviews.filter((r) =>
+        report.businesses.some((b) => b.category === categoryFilter && b.name === r.businessName)
+      ),
+      deals: report.deals.filter((d) =>
+        report.businesses.some((b) => b.category === categoryFilter && b.name === d.businessName)
+      ),
+      timeline: report.timeline.filter((t) =>
+        !t.businessName || report.businesses.some((b) => b.category === categoryFilter && b.name === t.businessName)
+      ),
+    }
+  }, [report, categoryFilter])
+
   function handlePrint() {
-    document.body.classList.add("printing-report")
-    window.print()
-    document.body.classList.remove("printing-report")
+    if (!printRef.current) return
+
+    // Build a standalone print document in a hidden iframe.
+    // This completely avoids dark-mode, dialog CSS, and Tailwind class issues.
+    const iframe = document.createElement("iframe")
+    iframe.style.position = "fixed"
+    iframe.style.top = "-10000px"
+    iframe.style.left = "-10000px"
+    iframe.style.width = "8.5in"
+    iframe.style.height = "11in"
+    document.body.appendChild(iframe)
+
+    const doc = iframe.contentDocument || iframe.contentWindow?.document
+    if (!doc) {
+      document.body.removeChild(iframe)
+      return
+    }
+
+    // Collect all stylesheets from the parent page for chart/badge/icon colors
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map((el) => el.outerHTML)
+      .join("\n")
+
+    // Build HTML: light mode, white background, with all parent styles
+    doc.open()
+    doc.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  ${styles}
+  <style>
+    /* Force light mode — override any dark theme */
+    :root {
+      --background: oklch(0.98 0.005 250);
+      --foreground: oklch(0.2 0.02 250);
+      --card: oklch(1 0 0);
+      --card-foreground: oklch(0.2 0.02 250);
+      --muted: oklch(0.95 0.01 250);
+      --muted-foreground: oklch(0.55 0.02 250);
+      --border: oklch(0.9 0.01 250);
+      --primary: oklch(0.6 0.18 175);
+      --secondary: oklch(0.92 0.05 45);
+      --secondary-foreground: oklch(0.3 0.08 45);
+      --chart-1: oklch(0.6 0.18 175);
+      --chart-2: oklch(0.7 0.16 45);
+      --chart-3: oklch(0.65 0.14 145);
+      --chart-4: oklch(0.6 0.15 280);
+      --chart-5: oklch(0.75 0.18 85);
+      color-scheme: light;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: white !important;
+      color: #1f2937 !important;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 10pt;
+      line-height: 1.5;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    @page { margin: 0.5in 0.6in; size: letter; }
+
+    /* Report layout */
+    .impact-report-printable { padding: 0; }
+    .impact-report-printable > * { margin-bottom: 14px; }
+
+    /* Section headings */
+    h3, h4 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      color: #111;
+      border-bottom: 1.5px solid #d1d5db;
+      padding-bottom: 3px;
+      margin-bottom: 6px;
+      break-after: avoid;
+    }
+
+    /* Cards: flat */
+    [class*="card"] {
+      box-shadow: none !important;
+      border: 1px solid #e5e7eb !important;
+      border-radius: 2px !important;
+      background: white !important;
+    }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    th {
+      border: 1px solid #d1d5db;
+      padding: 4px 8px;
+      background: #f3f4f6 !important;
+      font-weight: 600;
+      text-align: left;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #374151;
+    }
+    td {
+      border: 1px solid #e5e7eb;
+      padding: 4px 8px;
+      color: #1f2937;
+    }
+    tr:nth-child(even) td { background: #f9fafb !important; }
+
+    /* Grid: force 4 columns */
+    .grid {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 8px !important;
+    }
+
+    /* Chart: compact */
+    .report-chart-container { height: 170px !important; }
+    .recharts-responsive-container { height: 170px !important; }
+
+    /* Badges */
+    [class*="badge"] {
+      border: 1px solid #d1d5db !important;
+      background: #f3f4f6 !important;
+      color: #1f2937 !important;
+      box-shadow: none !important;
+      font-size: 8pt;
+      padding: 1px 5px !important;
+      border-radius: 2px !important;
+    }
+
+    /* Sort arrows: hide */
+    button[aria-label^="Sort by"] svg { display: none !important; }
+
+    /* Stars */
+    svg.lucide-star { width: 9px !important; height: 9px !important; }
+
+    /* Footer */
+    .print-footer {
+      display: block !important;
+      margin-top: 20px;
+      padding-top: 8px;
+      border-top: 1px solid #d1d5db;
+      text-align: center;
+      font-size: 8pt;
+      color: #9ca3af;
+    }
+
+    /* Page breaks */
+    .impact-report-printable > div { break-inside: avoid; }
+    table { break-inside: auto; }
+    tr { break-inside: avoid; }
+  </style>
+</head>
+<body>${printRef.current.outerHTML}</body>
+</html>`)
+    doc.close()
+
+    // Wait for styles to load, then print. Clean up after dialog closes.
+    const win = iframe.contentWindow
+    if (!win) { document.body.removeChild(iframe); return }
+
+    win.addEventListener("afterprint", () => {
+      document.body.removeChild(iframe)
+    })
+
+    // Poll for document ready before triggering print
+    const waitForReady = setInterval(() => {
+      if (iframe.contentDocument?.readyState === "complete") {
+        clearInterval(waitForReady)
+        win.focus()
+        win.print()
+      }
+    }, 50)
   }
 
   function handleDownloadCSV() {
-    if (!report) return
-    const csv = generateCSV(report)
+    if (!filteredReport) return
+    const csv = generateCSV(filteredReport)
     const rangeLabel = dateRange.replace("_", "-")
-    downloadCSV(csv, `pulse-impact-report-${rangeLabel}.csv`)
+    const catLabel = categoryFilter !== "all" ? `-${categoryFilter.toLowerCase().replace(/\s+/g, "-")}` : ""
+    downloadCSV(csv, `pulse-impact-report-${rangeLabel}${catLabel}.csv`)
   }
 
   return (
@@ -149,7 +364,26 @@ export function ImpactReportDialog({
                 See how your engagement strengthens the local economy
               </DialogDescription>
             </div>
-            <div className="no-print">
+            <div className="no-print flex items-center gap-2">
+              {availableCategories.length > 1 && (
+                <Select
+                  value={categoryFilter}
+                  onValueChange={setCategoryFilter}
+                >
+                  <SelectTrigger className="w-[150px]" aria-label="Category filter">
+                    <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {availableCategories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <Select
                 value={dateRange}
                 onValueChange={(v) => setDateRange(v as DateRangeOption)}
@@ -183,36 +417,40 @@ export function ImpactReportDialog({
               className="overflow-y-auto max-h-[60vh] pr-2"
             >
               <div ref={printRef} className="impact-report-printable space-y-6">
-                {isLoading || !report ? (
+                {isLoading || !filteredReport ? (
                   <ReportSkeleton />
                 ) : (
                   <>
                     <ReportHeader
                       userName={userName}
-                      tier={report.tier}
-                      dateRange={report.dateRange}
+                      tier={filteredReport.tier}
+                      dateRange={filteredReport.dateRange}
+                      categoryFilter={categoryFilter !== "all" ? categoryFilter : undefined}
                     />
-                    <ReportImpactSummary metrics={report.metrics} />
-                    {report.categoryBreakdown.length > 0 && (
-                      <ReportCategoryChart data={report.categoryBreakdown} />
+                    <ReportImpactSummary metrics={filteredReport.metrics} />
+                    {filteredReport.categoryBreakdown.length > 0 && (
+                      <ReportCategoryChart data={filteredReport.categoryBreakdown} />
                     )}
-                    {report.businesses.length > 0 && (
-                      <ReportBusinessTable businesses={report.businesses} />
+                    {filteredReport.businesses.length > 0 && (
+                      <ReportBusinessTable businesses={filteredReport.businesses} />
                     )}
-                    {report.reviews.length > 0 && (
-                      <ReportReviewList reviews={report.reviews} />
+                    {filteredReport.reviews.length > 0 && (
+                      <ReportReviewList reviews={filteredReport.reviews} />
                     )}
-                    {report.deals.length > 0 && (
-                      <ReportDealsList deals={report.deals} />
+                    {filteredReport.deals.length > 0 && (
+                      <ReportDealsList deals={filteredReport.deals} />
                     )}
-                    {report.timeline.length > 0 && (
-                      <ReportTimeline timeline={report.timeline} />
+                    {filteredReport.timeline.length > 0 && (
+                      <ReportTimeline timeline={filteredReport.timeline} />
                     )}
-                    {report.metrics.totalCheckIns === 0 &&
-                      report.reviews.length === 0 &&
-                      report.deals.length === 0 && (
+                    {filteredReport.metrics.totalCheckIns === 0 &&
+                      filteredReport.reviews.length === 0 &&
+                      filteredReport.deals.length === 0 && (
                         <EmptyState dateRange={dateRange} />
                       )}
+                    <div className="print-footer">
+                      Generated by Pulse · {format(new Date(), "MMMM d, yyyy")}
+                    </div>
                   </>
                 )}
               </div>
@@ -222,21 +460,21 @@ export function ImpactReportDialog({
               value="data"
               className="overflow-y-auto max-h-[60vh] pr-2"
             >
-              {isLoading || !report ? (
+              {isLoading || !filteredReport ? (
                 <ReportSkeleton />
               ) : (
-                <ReportDataTable report={report} />
+                <ReportDataTable report={filteredReport} />
               )}
             </TabsContent>
           </Tabs>
         )}
 
         <DialogFooter className="no-print">
-          <Button variant="outline" onClick={handlePrint} disabled={!report}>
+          <Button variant="outline" onClick={handlePrint} disabled={!filteredReport}>
             <Printer className="h-4 w-4 mr-2" />
             Print Report
           </Button>
-          <Button onClick={handleDownloadCSV} disabled={!report}>
+          <Button onClick={handleDownloadCSV} disabled={!filteredReport}>
             <Download className="h-4 w-4 mr-2" />
             Download CSV
           </Button>
@@ -250,14 +488,26 @@ export function ImpactReportDialog({
 // Sub-components
 // ============================================================================
 
+/** Map tier emoji strings from the API to reliable Lucide icons */
+const TIER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  "🦸": Shield,     // Economic Hero
+  "👑": Crown,      // Local Legend
+  "🏆": Trophy,     // Pulse Champion
+  "🌟": Sparkles,   // Community Advocate
+  "💚": Heart,      // Local Supporter
+  "🌱": Sprout,     // Pulse Newcomer
+}
+
 function ReportHeader({
   userName,
   tier,
   dateRange,
+  categoryFilter,
 }: {
   userName: string
   tier: { name: string; icon: string }
   dateRange: { from: string | null; to: string }
+  categoryFilter?: string
 }) {
   const fromLabel = dateRange.from
     ? format(new Date(dateRange.from), "MMM d, yyyy")
@@ -265,14 +515,23 @@ function ReportHeader({
   const toLabel = format(new Date(dateRange.to), "MMM d, yyyy")
   const rangeText = dateRange.from ? `${fromLabel} — ${toLabel}` : "All Time"
 
+  const TierIcon = TIER_ICONS[tier.icon] ?? Trophy
+
   return (
     <div className="flex items-center justify-between">
       <div>
         <h3 className="text-xl font-bold">{userName}&apos;s Impact Report</h3>
-        <p className="text-sm text-muted-foreground">{rangeText}</p>
+        <p className="text-sm text-muted-foreground">
+          {rangeText}
+          {categoryFilter && (
+            <span className="ml-2 inline-flex items-center">
+              · <Filter className="h-3 w-3 mx-1" /> {categoryFilter}
+            </span>
+          )}
+        </p>
       </div>
       <Badge variant="secondary" className="text-sm gap-1.5 py-1 px-3">
-        <span>{tier.icon}</span>
+        <TierIcon className="h-4 w-4" />
         {tier.name}
       </Badge>
     </div>
@@ -339,10 +598,13 @@ function ReportCategoryChart({
 }: {
   data: ImpactReportData["categoryBreakdown"]
 }) {
+  const colors = useMemo(() => getResolvedChartColors(), [])
+
   const chartData = data.map((item, i) => ({
     name: item.category,
     value: item.checkIns,
-    fill: CHART_COLORS[i % CHART_COLORS.length],
+    dollars: item.dollarsSpent,
+    fill: colors[i % colors.length],
   }))
 
   return (
@@ -350,32 +612,43 @@ function ReportCategoryChart({
       <h4 className="text-sm font-semibold mb-3">Category Breakdown</h4>
       <Card>
         <CardContent className="p-4">
-          <div className="h-[250px]">
+          <div className="h-[280px] report-chart-container">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={chartData}
-                  cx="50%"
+                  cx="40%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
+                  innerRadius={55}
+                  outerRadius={85}
                   paddingAngle={2}
                   dataKey="value"
                   nameKey="name"
-                  label={(props: PieLabelRenderProps) =>
-                    // Format: "Category 25%" - show category name and percentage
-                    `${props.name ?? ''} ${(((props.percent as number) ?? 0) * 100).toFixed(0)}%`
+                  label={({ percent }: PieLabelRenderProps) =>
+                    `${(((percent as number) ?? 0) * 100).toFixed(0)}%`
                   }
-                  labelLine={false}
+                  labelLine
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value) => [`${value} check-ins`, "Visits"]}
+                  formatter={(value, _name, props) => {
+                    const entry = props.payload
+                    return [
+                      `${value} check-ins · $${(entry.dollars ?? 0).toLocaleString()} spent`,
+                      entry.name,
+                    ]
+                  }}
                 />
-                <Legend />
+                <Legend
+                  layout="vertical"
+                  align="right"
+                  verticalAlign="middle"
+                  iconType="circle"
+                  iconSize={10}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -385,11 +658,65 @@ function ReportCategoryChart({
   )
 }
 
+type BusinessSortKey = "name" | "checkIns" | "totalSpent" | "lastVisit"
+type SortDir = "asc" | "desc"
+
 function ReportBusinessTable({
   businesses,
 }: {
   businesses: ImpactReportData["businesses"]
 }) {
+  const [sortKey, setSortKey] = useState<BusinessSortKey>("totalSpent")
+  const [sortDir, setSortDir] = useState<SortDir>("desc")
+
+  const sorted = useMemo(() => {
+    const copy = [...businesses]
+    copy.sort((a, b) => {
+      let cmp = 0
+      switch (sortKey) {
+        case "name":
+          cmp = a.name.localeCompare(b.name)
+          break
+        case "checkIns":
+          cmp = a.checkIns - b.checkIns
+          break
+        case "totalSpent":
+          cmp = a.totalSpent - b.totalSpent
+          break
+        case "lastVisit":
+          cmp = new Date(a.lastVisit).getTime() - new Date(b.lastVisit).getTime()
+          break
+      }
+      return sortDir === "asc" ? cmp : -cmp
+    })
+    return copy
+  }, [businesses, sortKey, sortDir])
+
+  function toggleSort(key: BusinessSortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+    } else {
+      setSortKey(key)
+      setSortDir(key === "name" ? "asc" : "desc")
+    }
+  }
+
+  function SortHeader({ label, field, align }: { label: string; field: BusinessSortKey; align?: "right" }) {
+    const active = sortKey === field
+    return (
+      <th className={`${align === "right" ? "text-right" : "text-left"} p-3 font-medium`}>
+        <button
+          onClick={() => toggleSort(field)}
+          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          aria-label={`Sort by ${label}`}
+        >
+          {label}
+          <ArrowUpDown className={`h-3 w-3 ${active ? "text-primary" : "text-muted-foreground/50"}`} />
+        </button>
+      </th>
+    )
+  }
+
   return (
     <div>
       <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
@@ -402,15 +729,15 @@ function ReportBusinessTable({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left p-3 font-medium">Business</th>
+                  <SortHeader label="Business" field="name" />
                   <th className="text-left p-3 font-medium">Category</th>
-                  <th className="text-right p-3 font-medium">Visits</th>
-                  <th className="text-right p-3 font-medium">Spent</th>
-                  <th className="text-right p-3 font-medium">Last Visit</th>
+                  <SortHeader label="Visits" field="checkIns" align="right" />
+                  <SortHeader label="Spent" field="totalSpent" align="right" />
+                  <SortHeader label="Last Visit" field="lastVisit" align="right" />
                 </tr>
               </thead>
               <tbody>
-                {businesses.map((b, i) => (
+                {sorted.map((b, i) => (
                   <tr key={i} className="border-b last:border-0">
                     <td className="p-3 font-medium">{b.name}</td>
                     <td className="p-3 text-muted-foreground">{b.category}</td>

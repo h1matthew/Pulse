@@ -1,3 +1,18 @@
+/**
+ * Dashboard — Personal Economic Impact
+ *
+ * Shows the authenticated user how their engagement (check-ins, reviews,
+ * deal claims) translates into measurable local economic benefit.
+ *
+ * KEY METRICS:
+ *   - Dollars Kept Local: 68% of local spending recirculates (AIBA research)
+ *   - Jobs Impacted: ~1 job per $15,000 in local spending
+ *   - Carbon Saved: 0.5 lbs CO2 per local purchase (reduced logistics)
+ *
+ * FEATURES: Impact score card, tier progression, activity feed, community
+ * comparison, and downloadable impact report (CSV/print with date range
+ * and category filters).
+ */
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -134,10 +149,19 @@ export default function DashboardPage() {
     const listBusinesses = featuredBusinessData?.businesses || [];
     const businesses = nearbyBusinesses.length > 0 ? nearbyBusinesses : listBusinesses;
 
-    const realGoogleBusiness = businesses.find(
-      (business) => business.data_source === 'google' && !!business.place_id
-    );
-    if (realGoogleBusiness) return realGoogleBusiness;
+    // Pick a well-rated business with a photo for the best spotlight presentation
+    const bestBusiness = [...businesses]
+      .filter((b) => {
+        const photo = Array.isArray(b.photos) ? b.photos[0] : null
+        const hasPhoto = typeof photo === 'string' && photo.startsWith('http')
+        return b.data_source === 'google' && !!b.place_id && hasPhoto && (b.review_count || 0) >= 10
+      })
+      .sort((a, b) => {
+        const scoreA = (a.average_rating || 0) * Math.log10(Math.max(a.review_count || 1, 1))
+        const scoreB = (b.average_rating || 0) * Math.log10(Math.max(b.review_count || 1, 1))
+        return scoreB - scoreA
+      })[0]
+    if (bestBusiness) return bestBusiness;
 
     return businesses[0];
   }, [spotlightNearbyBusinesses, featuredBusinessData?.businesses]);
@@ -600,9 +624,19 @@ export default function DashboardPage() {
                   <CardContent>
                     {featuredBusiness ? (
                       <>
-                        <div className="h-24 bg-gradient-to-br from-primary/10 to-chart-2/10 rounded-lg flex items-center justify-center text-4xl mb-3">
-                          {featuredBusiness.category?.icon || "🏪"}
-                        </div>
+                        {(() => {
+                          const photo = Array.isArray(featuredBusiness.photos) ? featuredBusiness.photos[0] : null
+                          const photoUrl = typeof photo === 'string' && photo.startsWith('http') ? photo : null
+                          return photoUrl ? (
+                            <div className="h-40 rounded-lg overflow-hidden mb-3">
+                              <img src={photoUrl} alt={featuredBusiness.name} className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <div className="h-24 bg-gradient-to-br from-primary/10 to-chart-2/10 rounded-lg flex items-center justify-center text-4xl mb-3">
+                              {featuredBusiness.category?.icon || "🏪"}
+                            </div>
+                          )
+                        })()}
                         <h4 className="font-semibold mb-1">{featuredBusiness.name}</h4>
                         <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
                           {featuredBusiness.short_description ||

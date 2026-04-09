@@ -1,3 +1,16 @@
+/**
+ * Mission Data Hooks
+ *
+ * React Query hooks for Boost Missions — gamified challenges that encourage
+ * users to explore diverse local businesses (e.g., "Try 3 new coffee shops").
+ *
+ * MISSION LIFECYCLE: active → user completes required actions → progress
+ * reaches target → mission marked complete → user claims reward.
+ *
+ * DESIGN RATIONALE: Mission progress is computed client-side from the raw
+ * progress rows via `calculateProgressDetails()`, keeping the API simple
+ * while supporting rich UI (progress bars, completion percentage).
+ */
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'

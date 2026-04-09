@@ -1,3 +1,15 @@
+/**
+ * Review Data Hooks
+ *
+ * React Query hooks for fetching, creating, and managing business reviews.
+ *
+ * USER JOURNEY: Business detail page → read reviews → write a review
+ * (with CAPTCHA verification) → see it appear in the list.
+ *
+ * DESIGN RATIONALE: Reviews are fetched per-business and cached for 2 min.
+ * After a successful create/delete mutation, the business's review list
+ * AND the user's review list are both invalidated to stay in sync.
+ */
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'

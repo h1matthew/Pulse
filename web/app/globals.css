@@ -83,24 +83,8 @@
   background: oklch(0.5 0 0 / 0.3);
 }
 
-/* ─── Impact Report Print Styles ─── */
-@media print {
-  body.printing-report * {
-    visibility: hidden;
-  }
-  body.printing-report .impact-report-printable,
-  body.printing-report .impact-report-printable * {
-    visibility: visible;
-  }
-  body.printing-report .impact-report-printable {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-  }
-  body.printing-report [data-slot="dialog-overlay"],
-  body.printing-report [data-slot="dialog-close"],
-  body.printing-report .no-print {
-    display: none !important;
-  }
-}
+/* ─── Impact Report Print ─── */
+/* Print is handled via iframe in handlePrint() — see ImpactReport.tsx.
+   All print formatting lives in the inline <style> of the iframe document.
+   This class just hides the footer element on screen. */
+.print-footer { display: none; }

@@ -1,3 +1,23 @@
+/**
+ * Impact Data Hooks
+ *
+ * React Query hooks for fetching and displaying economic impact data.
+ * Impact metrics track how each user's engagement (check-ins, reviews,
+ * deal claims) translates into measurable local economic benefit.
+ *
+ * USER JOURNEY: Dashboard page → view personal metrics → compare on
+ * leaderboard → download impact report.
+ *
+ * DESIGN RATIONALE: All hooks share the `impactKeys` factory so React Query
+ * can deduplicate in-flight requests and invalidate related caches
+ * together (e.g., after a recalculation).
+ *
+ * DATA FLOW:
+ *   Supabase (user_impact, business_check_ins, reviews, deal_claims)
+ *     → API routes (/api/impact/*, /api/leaderboard, /api/community-pulse)
+ *       → React Query hooks (this file)
+ *         → Dashboard, Leaderboard, Report components
+ */
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -33,12 +53,14 @@ const impactKeys = {
 // Fetch Functions
 // ============================================================================
 
+/** Fetch the user_impact row for the authenticated user via GET /api/impact. */
 async function fetchUserImpact(userId: string): Promise<UserImpact> {
   const response = await fetch('/api/impact')
   if (!response.ok) throw new Error('Failed to fetch impact')
   return response.json()
 }
 
+/** Trigger a server-side recalculation and return the fresh result via GET /api/impact/calculate. */
 async function fetchImpactCalculation(userId: string): Promise<ImpactCalculationResult> {
   const response = await fetch('/api/impact/calculate')
   if (!response.ok) throw new Error('Failed to calculate impact')
@@ -51,6 +73,7 @@ interface LeaderboardResponse {
   totalCount: number
 }
 
+/** Fetch leaderboard entries with optional scope and timeframe filters via GET /api/leaderboard. */
 async function fetchLeaderboard(
   type = 'global',
   timeframe = 'all_time'
@@ -64,12 +87,14 @@ async function fetchLeaderboard(
   return response.json()
 }
 
+/** Fetch aggregate community stats (total dollars local, active users) via GET /api/community-pulse. */
 async function fetchCommunityPulse(): Promise<CommunityPulse> {
   const response = await fetch('/api/community-pulse')
   if (!response.ok) throw new Error('Failed to fetch community pulse')
   return response.json()
 }
 
+/** Fetch a detailed, multi-section impact report for CSV/print export via GET /api/impact/report. */
 async function fetchImpactReport(dateRange: { from?: string; to: string }): Promise<ImpactReportData> {
   const params = new URLSearchParams()
   if (dateRange.from) params.set('from', dateRange.from)
@@ -83,6 +108,7 @@ async function fetchImpactReport(dateRange: { from?: string; to: string }): Prom
 // Mutations
 // ============================================================================
 
+/** POST /api/impact/recalculate — force a full recompute of the user's impact metrics. */
 async function recalculateImpact(): Promise<void> {
   const response = await fetch('/api/impact/recalculate', {
     method: 'POST',
