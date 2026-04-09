@@ -38,12 +38,14 @@ import {
 } from "@/hooks/useBookmarks";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { PhotoGallery } from "@/components/features/business/PhotoGallery";
+import { BaanihaliPuzzleCaptcha } from "@/components/features/bot/BaanihaliPuzzleCaptcha";
 import { toast } from "sonner";
 import { NavLink } from "@/components/ui/nav-link";
 import {
   buildBusinessFallbackImageUrl,
   buildBusinessPhotoUrl,
   buildBusinessSummary,
+  formatTagLabel,
   getBusinessReviewLabel,
   getGoogleMapsReviewUrl,
   shouldShowGoogleReviewHint,
@@ -108,11 +110,13 @@ export default function BusinessDetailPage({
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [reviewErrors, setReviewErrors] = useState<Record<string, string>>({});
+  const [reviewCaptchaToken, setReviewCaptchaToken] = useState<string | null>(null);
+  const [showReviewCaptcha, setShowReviewCaptcha] = useState(false);
   const [aiDescription, setAiDescription] = useState<string | null>(null);
   const [aiDescriptionCached, setAiDescriptionCached] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
-  const { data: business, isLoading, refetch } = useBusiness(id);
+  const { data: business, isLoading, isError, refetch } = useBusiness(id);
   const canonicalBusinessId = business?.id || id;
   const { data: isBookmarked } = useIsBookmarked(canonicalBusinessId);
   const toggleBookmark = useToggleBookmark();
@@ -121,6 +125,39 @@ export default function BusinessDetailPage({
   useEffect(() => {
     setHeroPhotoFailed(false);
   }, [business?.id]);
+
+  // Submit review with a specific CAPTCHA token (called directly from CAPTCHA onVerify)
+  const submitReviewWithToken = async (token: string) => {
+    if (!business?.id || !user) return;
+    setIsSubmittingReview(true);
+    try {
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          business_id: business.id,
+          rating: reviewRating,
+          content: reviewText,
+          captchaToken: token,
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to submit review");
+      }
+      toast.success("Review submitted", { description: "Thank you for sharing your experience!" });
+      setReviewText("");
+      setReviewRating(5);
+      setReviewCaptchaToken(null);
+      queryClient.invalidateQueries({ queryKey: ["businesses", "detail"] });
+      refetch();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to submit review.";
+      toast.error("Review failed", { description: message });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   useEffect(() => {
     setReviewsPage(1);
@@ -229,6 +266,12 @@ export default function BusinessDetailPage({
       return;
     }
 
+    // Bot prevention: CAPTCHA must be verified (button is disabled without it)
+    if (!reviewCaptchaToken) {
+      toast.error("CAPTCHA required", { description: "Please verify the CAPTCHA first." });
+      return;
+    }
+
     try {
       const response = await fetch("/api/reviews", {
         method: "POST",
@@ -237,6 +280,7 @@ export default function BusinessDetailPage({
           business_id: business.id,
           rating: reviewRating,
           content: reviewText,
+          captchaToken: reviewCaptchaToken,
         }),
       });
 
@@ -250,6 +294,7 @@ export default function BusinessDetailPage({
       });
       setReviewText("");
       setReviewRating(5);
+      setReviewCaptchaToken(null);
       queryClient.invalidateQueries({ queryKey: ["businesses", "detail"] });
       refetch();
     } catch (error) {
@@ -410,9 +455,11 @@ export default function BusinessDetailPage({
     }
   };
 
-  if (isLoading) {
+  // Show skeleton while loading OR before the query has resolved (prevents hydration mismatch
+  // where server renders "not found" but client starts with loading state)
+  if (isLoading || (!business && !isError)) {
     return (
-      <div className="relative min-h-screen bg-background" suppressHydrationWarning>
+      <div className="relative min-h-screen bg-background">
         <Header />
         <div className="pt-20 pb-12">
           <div className="mx-auto max-w-6xl px-6">
@@ -457,23 +504,35 @@ export default function BusinessDetailPage({
     return "$".repeat(level);
   };
 
-  const getBusinessHours = (hours: Record<string, string>) => {
-    const days = [
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-      "sunday",
-    ];
-    const today = days[new Date().getDay() - 1] || "sunday";
-    return { hours, today };
+  const getBusinessHours = (rawHours: unknown): { hours: Record<string, string>; today: string } => {
+    const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+    const today = dayNames[new Date().getDay()];
+
+    // Google Places v2 stores hours as string array: ["Monday: 9 AM – 5 PM", ...]
+    if (Array.isArray(rawHours)) {
+      const parsed: Record<string, string> = {};
+      for (const entry of rawHours) {
+        if (typeof entry === "string") {
+          const colonIdx = entry.indexOf(":");
+          if (colonIdx > 0) {
+            const day = entry.substring(0, colonIdx).trim().toLowerCase();
+            const time = entry.substring(colonIdx + 1).trim();
+            parsed[day] = time;
+          }
+        }
+      }
+      return { hours: parsed, today };
+    }
+
+    // Legacy format: { monday: "9:00 AM - 5:00 PM", ... }
+    if (rawHours && typeof rawHours === "object") {
+      return { hours: rawHours as Record<string, string>, today };
+    }
+
+    return { hours: {}, today };
   };
 
-  const { hours: businessHours, today } = getBusinessHours(
-    (business.hours as Record<string, string>) || {}
-  );
+  const { hours: businessHours, today } = getBusinessHours(business.hours);
   const localReviews = business.reviews || [];
   const externalReviews = business.external_reviews || [];
   const localReviewCount = business.local_review_count ?? localReviews.length;
@@ -695,7 +754,7 @@ export default function BusinessDetailPage({
                             <div className="flex flex-wrap gap-2">
                               {business.tags.map((tag: string) => (
                                 <Badge key={tag} variant="outline">
-                                  {tag}
+                                  {formatTagLabel(tag)}
                                 </Badge>
                               ))}
                             </div>
@@ -900,9 +959,27 @@ export default function BusinessDetailPage({
                                 </p>
                               </div>
                             </div>
+                            <div className="space-y-2">
+                              <Button
+                                type="button"
+                                variant={reviewCaptchaToken ? "secondary" : "outline"}
+                                className="w-full"
+                                onClick={() => {
+                                  setReviewErrors({});
+                                  setShowReviewCaptcha(true);
+                                }}
+                              >
+                                {reviewCaptchaToken ? "CAPTCHA Verified" : "Verify CAPTCHA"}
+                              </Button>
+                              {!reviewCaptchaToken && (
+                                <p className="text-xs text-muted-foreground text-center">
+                                  Required before submitting.
+                                </p>
+                              )}
+                            </div>
                             <Button
                               onClick={handleSubmitReview}
-                              disabled={isSubmittingReview}
+                              disabled={isSubmittingReview || !reviewCaptchaToken}
                             >
                               {isSubmittingReview ? (
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1333,6 +1410,26 @@ export default function BusinessDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Review CAPTCHA Modal */}
+      {showReviewCaptcha && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-border bg-background p-4 shadow-xl space-y-3">
+            <h3 className="text-base font-semibold">Verify You&apos;re Human</h3>
+            <p className="text-sm text-muted-foreground">
+              Complete this puzzle to submit your review.
+            </p>
+            <BaanihaliPuzzleCaptcha
+              onVerify={(token) => {
+                setReviewCaptchaToken(token);
+                setShowReviewCaptcha(false);
+                submitReviewWithToken(token);
+              }}
+              onCancel={() => setShowReviewCaptcha(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

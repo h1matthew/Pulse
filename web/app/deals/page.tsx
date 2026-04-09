@@ -260,9 +260,9 @@ export default function DealsPage() {
                   {availableDeals.length === 0 && (
                     <div className="text-center py-16">
                       <div className="text-4xl mb-4">🏷️</div>
-                      <h3 className="text-lg font-semibold mb-2">
+                      <h2 className="text-lg font-semibold mb-2">
                         No available deals right now
-                      </h3>
+                      </h2>
                       <p className="text-muted-foreground">
                         Check back soon for new local offers.
                       </p>
@@ -294,7 +294,7 @@ export default function DealsPage() {
 
                               <div className="flex-1">
                                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  <h3 className="text-lg font-semibold">
+                                  <h2 className="text-lg font-semibold">
                                     {businessHref ? (
                                       <Link href={businessHref} className="text-primary hover:underline">
                                         {deal.title}
@@ -302,7 +302,7 @@ export default function DealsPage() {
                                     ) : (
                                       deal.title
                                     )}
-                                  </h3>
+                                  </h2>
                                   {deal.deal_type === "boost_mission" && (
                                     <Badge className="bg-chart-3 text-white">Boost Mission</Badge>
                                   )}
@@ -387,7 +387,7 @@ export default function DealsPage() {
                   {visibleClaims.length === 0 && (
                     <div className="text-center py-16">
                       <div className="text-4xl mb-4">🎁</div>
-                      <h3 className="text-lg font-semibold mb-2">No claimed deals yet</h3>
+                      <h2 className="text-lg font-semibold mb-2">No claimed deals yet</h2>
                       <p className="text-muted-foreground">
                         Claim an offer to see it here.
                       </p>
@@ -408,7 +408,7 @@ export default function DealsPage() {
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-lg font-semibold">
+                                <h2 className="text-lg font-semibold">
                                   {claim.deal.business?.id ? (
                                     <Link href={`/business/${claim.deal.business.id}`} className="text-primary hover:underline">
                                       {claim.deal.title}
@@ -416,7 +416,7 @@ export default function DealsPage() {
                                   ) : (
                                     claim.deal.title
                                   )}
-                                </h3>
+                                </h2>
                                 <Badge variant="outline">
                                   {claim.redeemed_at ? "Used" : "Claimed"}
                                 </Badge>
@@ -477,6 +477,7 @@ export default function DealsPage() {
                 <Button
                   variant="outline"
                   size="icon"
+                  aria-label={copiedCode ? "Code copied" : "Copy redemption code"}
                   onClick={handleCopyCode}
                 >
                   {copiedCode ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}

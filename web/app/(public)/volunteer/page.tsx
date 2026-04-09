@@ -1,5 +1,4 @@
 import { AnimatedSection } from '@/components/features/home/AnimatedSection'
-import { SpaceBackground } from '@/components/features/home/SpaceBackground'
 import { Users, Mail, ArrowRight, CheckCircle } from 'lucide-react'
 import { NavLink } from '@/components/ui/nav-link'
 import { Button } from '@/components/ui/button'
@@ -9,28 +8,26 @@ export const revalidate = 3600
 
 const opportunities = [
   {
-    title: 'Content Creation',
-    description: 'Help create lessons, quizzes, and educational materials about rocket science.',
+    title: 'Community Ambassador',
+    description: 'Help spread the word about Pulse and encourage local businesses and residents to join the platform.',
   },
   {
-    title: 'Workshop Instruction',
-    description: 'Lead or assist in hands-on model rocket building workshops for students.',
+    title: 'Local Business Outreach',
+    description: 'Visit local businesses, help them create listings, and explain how Pulse drives foot traffic to their doors.',
   },
   {
-    title: 'Technical Development',
-    description: 'Contribute to our platform, simulations, and interactive tools.',
+    title: 'Content & Reviews',
+    description: 'Write thoughtful reviews, take photos, and help build a rich directory that makes it easy to discover great local spots.',
   },
   {
-    title: 'Community Outreach',
-    description: 'Help spread the word and connect with schools and organizations.',
+    title: 'Event Coordination',
+    description: 'Organize "Shop Local" events, business crawls, and community meetups that bring neighbors and businesses together.',
   },
 ]
 
 export default function VolunteerPage() {
   return (
     <div className="relative">
-      <SpaceBackground />
-
       <main className="pb-24 px-6">
         <div className="mx-auto max-w-4xl">
           {/* Header */}
@@ -48,8 +45,8 @@ export default function VolunteerPage() {
             </AnimatedSection>
             <AnimatedSection animation="fade-up" delay={0.2}>
               <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-                Share your passion for aerospace education and help inspire the next 
-                generation of rocket scientists.
+                Help strengthen your local economy by connecting community members
+                with the businesses that make your neighborhood unique.
               </p>
             </AnimatedSection>
           </div>
@@ -88,12 +85,12 @@ export default function VolunteerPage() {
                 Ready to Make a Difference?
               </h2>
               <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-                Send us an email telling us about yourself and how you&apos;d like to contribute. 
+                Tell us about yourself and how you&apos;d like to help your local community.
                 We&apos;d love to have you on board!
               </p>
-              <NavLink href="mailto:contact@maxapogee.org?subject=Volunteer%20Application">
+              <NavLink href="/about">
                 <Button size="lg" className="gap-2">
-                  Contact Us
+                  Learn More
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </NavLink>

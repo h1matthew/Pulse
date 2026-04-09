@@ -286,6 +286,7 @@ export default function AssistantPage() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask about local businesses, your impact, or how Pulse works..."
+                    aria-label="Ask the Pulse AI assistant a question"
                     className="flex-1 h-12"
                     disabled={isLoading}
                   />
