@@ -58,11 +58,12 @@ async function fetchUserBookmarks(userId: string): Promise<BookmarksResponse> {
   return response.json()
 }
 
-async function checkIsBookmarked(businessId: string): Promise<boolean> {
-  const response = await fetch(`/api/bookmarks/check?businessId=${businessId}`)
-  if (!response.ok) return false
-  const data = await response.json()
-  return data.isBookmarked
+/** Fetch all bookmarked business IDs in a single call (avoids N+1 per-card checks) */
+async function fetchBookmarkedIds(): Promise<string[]> {
+  const response = await fetch('/api/bookmarks')
+  if (!response.ok) return []
+  const data: BookmarksResponse = await response.json()
+  return data.bookmarks.map(b => b.business_id)
 }
 
 // ============================================================================
@@ -109,13 +110,20 @@ export function useUserBookmarks(userId: string) {
   })
 }
 
-export function useIsBookmarked(businessId: string) {
+/** Fetch all bookmarked IDs once — used by useIsBookmarked to avoid N+1 calls */
+export function useBookmarkedIds() {
   return useQuery({
-    queryKey: bookmarkKeys.detail(businessId),
-    queryFn: () => checkIsBookmarked(businessId),
-    enabled: !!businessId,
-    staleTime: 1 * 60 * 1000,
+    queryKey: [...bookmarkKeys.all, 'ids'] as const,
+    queryFn: fetchBookmarkedIds,
+    staleTime: 2 * 60 * 1000,
   })
+}
+
+export function useIsBookmarked(businessId: string) {
+  const { data: bookmarkedIds } = useBookmarkedIds()
+  return {
+    data: Array.isArray(bookmarkedIds) ? bookmarkedIds.includes(businessId) : undefined,
+  }
 }
 
 export function useCreateBookmark() {
@@ -125,7 +133,7 @@ export function useCreateBookmark() {
     mutationFn: ({ businessId, note }: { businessId: string; note?: string }) =>
       createBookmark(businessId, note),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all })
     },
   })
 }
@@ -136,7 +144,7 @@ export function useDeleteBookmark() {
   return useMutation({
     mutationFn: deleteBookmark,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all })
     },
   })
 }
@@ -150,12 +158,34 @@ export function useToggleBookmark() {
         await deleteBookmark(businessId)
         return { bookmarked: false }
       } else {
-        await createBookmark(businessId, note)
+        try {
+          await createBookmark(businessId, note)
+        } catch {
+          // If create fails (e.g. 409 duplicate), try delete instead (toggle behavior)
+          await deleteBookmark(businessId)
+          return { bookmarked: false }
+        }
         return { bookmarked: true }
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: bookmarkKeys.lists() })
+    onMutate: async ({ businessId, isBookmarked }) => {
+      await queryClient.cancelQueries({ queryKey: [...bookmarkKeys.all, 'ids'] })
+      const previous = queryClient.getQueryData<string[]>([...bookmarkKeys.all, 'ids'])
+      queryClient.setQueryData<string[]>([...bookmarkKeys.all, 'ids'], (old) => {
+        const arr = [...(old || [])]
+        if (isBookmarked) return arr.filter(id => id !== businessId)
+        if (!arr.includes(businessId)) arr.push(businessId)
+        return arr
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData([...bookmarkKeys.all, 'ids'], context.previous)
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: bookmarkKeys.all })
     },
   })
 }

@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SpaceBackground } from "@/components/features/home/SpaceBackground"
 import { BaanihaliPuzzleCaptcha } from "@/components/features/bot/BaanihaliPuzzleCaptcha"
 import { ArrowLeft } from "lucide-react"
 
@@ -28,35 +27,11 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState("")
   const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null)
   const [showLoginCaptchaModal, setShowLoginCaptchaModal] = useState(false)
-  const [hasPromptedCaptcha, setHasPromptedCaptcha] = useState(false)
   const isLoginCaptchaVerified = Boolean(loginCaptchaToken)
 
   useEffect(() => {
     setMounted(true)
   }, [])
-
-  useEffect(() => {
-    if (
-      mounted &&
-      !checkingAuth &&
-      !showForgotPassword &&
-      activeTab === "login" &&
-      !isLoginCaptchaVerified &&
-      !showLoginCaptchaModal &&
-      !hasPromptedCaptcha
-    ) {
-      setShowLoginCaptchaModal(true)
-      setHasPromptedCaptcha(true)
-    }
-  }, [
-    mounted,
-    checkingAuth,
-    showForgotPassword,
-    activeTab,
-    isLoginCaptchaVerified,
-    showLoginCaptchaModal,
-    hasPromptedCaptcha,
-  ])
 
   // Check if user is already logged in and redirect to dashboard
   useEffect(() => {
@@ -76,9 +51,6 @@ export default function LoginPage() {
     setActiveTab(value)
     setError(null)
     setMessage(null)
-    setLoginCaptchaToken(null)
-    setShowLoginCaptchaModal(false)
-    setHasPromptedCaptcha(false)
   }
 
   async function handleForgotPassword(e: React.FormEvent) {
@@ -107,9 +79,6 @@ export default function LoginPage() {
     setError(null)
     setMessage(null)
     setResetEmail("")
-    setLoginCaptchaToken(null)
-    setShowLoginCaptchaModal(false)
-    setHasPromptedCaptcha(false)
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -118,9 +87,6 @@ export default function LoginPage() {
 
     if (!isLoginCaptchaVerified || !loginCaptchaToken) {
       setError("Please complete CAPTCHA verification to continue.")
-      if (!showLoginCaptchaModal) {
-        setShowLoginCaptchaModal(true)
-      }
       return
     }
 
@@ -168,16 +134,12 @@ export default function LoginPage() {
   // Show nothing while checking auth to prevent flash
   if (!mounted || checkingAuth) {
     return (
-      <>
-        <SpaceBackground />
-        <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-6" />
-      </>
+      <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-6" />
     )
   }
 
   return (
     <>
-      <SpaceBackground />
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-6">
         <div className="w-full max-w-sm animate-scale-in">
           <Card className="border-border/50 shadow-xl shadow-primary/5 transition-shadow duration-300 hover:shadow-2xl hover:shadow-primary/10">
@@ -403,8 +365,6 @@ export default function LoginPage() {
               }}
               onCancel={() => {
                 setShowLoginCaptchaModal(false)
-                setLoginCaptchaToken(null)
-                setError("Please complete CAPTCHA verification to continue.")
               }}
             />
           </div>
