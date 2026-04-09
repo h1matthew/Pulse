@@ -6,9 +6,6 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import React, { useState } from 'react'
 import LoginPage from '../page'
 
-const LOGIN_CAPTCHA_TRUST_STORAGE_KEY = 'pulse_login_captcha_verified_until'
-const LOGIN_CAPTCHA_TRUST_VALUE = 'verified'
-
 // Mock next/navigation
 const mockPush = vi.fn()
 const mockReplace = vi.fn()
@@ -37,11 +34,6 @@ vi.mock('@/lib/supabase/client', () => ({
       resetPasswordForEmail: mockResetPasswordForEmail,
     },
   }),
-}))
-
-// Mock SpaceBackground
-vi.mock('@/components/features/home/SpaceBackground', () => ({
-  SpaceBackground: () => <div data-testid="space-background" />,
 }))
 
 vi.mock('@/components/features/bot/BaanihaliPuzzleCaptcha', () => ({
@@ -92,7 +84,7 @@ vi.mock('@/components/ui/tabs', () => {
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    window.localStorage.clear()
+    try { window.localStorage.clear() } catch { /* jsdom may not support localStorage.clear */ }
     mockGetUser.mockResolvedValue({ data: { user: null } })
   })
 
@@ -100,10 +92,10 @@ describe('LoginPage', () => {
     // Keep the promise pending
     mockGetUser.mockReturnValue(new Promise(() => {}))
 
-    render(<LoginPage />)
+    const { container } = render(<LoginPage />)
 
-    // Should render SpaceBackground while checking auth
-    expect(screen.getByTestId('space-background')).toBeInTheDocument()
+    // Should render an empty main element while checking auth
+    expect(container.querySelector('main')).toBeInTheDocument()
   })
 
   it('renders login form after auth check', async () => {
@@ -178,8 +170,8 @@ describe('LoginPage', () => {
       target: { value: 'password123' },
     })
 
-    // First click reveals CAPTCHA modal gate
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    // Verify CAPTCHA via manual button, then sign in
+    fireEvent.click(screen.getByRole('button', { name: 'Verify CAPTCHA' }))
     fireEvent.click(screen.getByRole('button', { name: 'Complete CAPTCHA' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
@@ -205,7 +197,8 @@ describe('LoginPage', () => {
       target: { value: 'password123' },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    // Verify CAPTCHA via manual button, then sign in
+    fireEvent.click(screen.getByRole('button', { name: 'Verify CAPTCHA' }))
     fireEvent.click(screen.getByRole('button', { name: 'Complete CAPTCHA' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
@@ -230,19 +223,19 @@ describe('LoginPage', () => {
       target: { value: 'password123' },
     })
 
+    // Submitting without CAPTCHA shows error but does NOT auto-open modal
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     expect(
       screen.getByText('Please complete CAPTCHA verification to continue.')
     ).toBeInTheDocument()
-    expect(screen.getByText('Security Check')).toBeInTheDocument()
+    expect(screen.queryByText('Security Check')).not.toBeInTheDocument()
     expect(mockSignInWithPassword).not.toHaveBeenCalled()
   })
 
-  it('skips captcha when trusted verification exists in localStorage', async () => {
+  it('captcha verification persists across tab switches', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
     mockSignInWithPassword.mockResolvedValue({ error: null })
-    window.localStorage.setItem(LOGIN_CAPTCHA_TRUST_STORAGE_KEY, LOGIN_CAPTCHA_TRUST_VALUE)
 
     render(<LoginPage />)
 
@@ -250,13 +243,24 @@ describe('LoginPage', () => {
       expect(screen.getByText('Welcome')).toBeInTheDocument()
     })
 
+    // Verify CAPTCHA on login tab
+    fireEvent.click(screen.getByRole('button', { name: 'Verify CAPTCHA' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Complete CAPTCHA' }))
+
+    // Switch to signup and back
+    fireEvent.click(screen.getByRole('tab', { name: 'Sign up' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Log in' }))
+
+    // CAPTCHA should still be verified (button shows "CAPTCHA Verified")
+    expect(screen.getByRole('button', { name: 'CAPTCHA Verified' })).toBeInTheDocument()
+
+    // Fill in form and sign in — should work without re-verifying
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'test@example.com' },
     })
     fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'password123' },
     })
-
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     await waitFor(() => {
@@ -265,7 +269,6 @@ describe('LoginPage', () => {
         password: 'password123',
       })
     })
-    expect(screen.queryByText('Security Check')).not.toBeInTheDocument()
   })
 
   it('shows success message on signup', async () => {

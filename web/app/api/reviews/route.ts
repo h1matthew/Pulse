@@ -33,6 +33,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { createReviewSchema, formatZodError } from '@/lib/validation'
 import { verifyCaptcha } from '@/lib/captcha'
+import { ensureProfile } from '@/lib/ensure-profile'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -138,6 +139,8 @@ export async function POST(request: Request) {
         { status: 401 }
       )
     }
+
+    await ensureProfile(supabase, user)
 
     const body = await request.json()
 

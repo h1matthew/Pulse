@@ -42,21 +42,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const supabase = getSupabaseClient()
 
-    // Fetch profile to get isAdmin status
-    async function fetchProfile(userId: string) {
+    // Fetch profile (or create one if missing) to get isAdmin status
+    async function fetchProfile(userId: string, email?: string, fullName?: string) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('id', userId)
         .single()
-      setIsAdmin(profile?.is_admin ?? false)
+
+      if (profile) {
+        setIsAdmin(profile.is_admin ?? false)
+        return
+      }
+
+      // Profile doesn't exist — create it (new user or missing migration)
+      await supabase.from('profiles').upsert({
+        id: userId,
+        email: email || '',
+        full_name: fullName || '',
+        is_admin: false,
+      }, { onConflict: 'id' })
+      setIsAdmin(false)
     }
 
     // Get initial user
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user)
       if (user) {
-        fetchProfile(user.id).finally(() => setLoading(false))
+        fetchProfile(user.id, user.email, user.user_metadata?.full_name).finally(() => setLoading(false))
       } else {
         setIsAdmin(false)
         setLoading(false)
@@ -70,7 +83,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const newUser = session?.user ?? null
       setUser(newUser)
       if (newUser) {
-        fetchProfile(newUser.id)
+        fetchProfile(newUser.id, newUser.email, newUser.user_metadata?.full_name)
       } else {
         setIsAdmin(false)
       }
