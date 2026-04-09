@@ -1,11 +1,25 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import { useState, type ReactNode } from 'react'
 
 interface QueryProviderProps {
   children: ReactNode
 }
+
+// 24-hour max cache age — after this, localStorage cache is discarded
+const CACHE_MAX_AGE = 24 * 60 * 60 * 1000
+
+// Create a localStorage persister (safe to call at module level — guarded by typeof check)
+const persister =
+  typeof window !== 'undefined'
+    ? createSyncStoragePersister({
+        storage: window.localStorage,
+        key: 'pulse-query-cache',
+      })
+    : undefined
 
 export function QueryProvider({ children }: QueryProviderProps) {
   const [queryClient] = useState(
@@ -13,30 +27,39 @@ export function QueryProvider({ children }: QueryProviderProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Stale time: 5 minutes - course content is mostly static
-            // This significantly reduces unnecessary API calls
             staleTime: 5 * 60 * 1000,
-            // Cache time: 10 minutes - data kept in memory for this duration
-            gcTime: 10 * 60 * 1000,
-            // Retry failed requests twice
+            // Keep cached data for 24 hours (matches localStorage TTL)
+            gcTime: CACHE_MAX_AGE,
             retry: 2,
-            // PERFORMANCE FIX: Disable refetch on window focus
-            // Course content doesn't change frequently, so refetching every time
-            // the user switches tabs wastes bandwidth and slows down the app
             refetchOnWindowFocus: false,
-            // Don't refetch on reconnect - stale data is fine for educational content
             refetchOnReconnect: false,
-            // FIX: Prevent duplicate requests during React Strict Mode double-mounting
-            // Keep previous data during query key transitions to avoid flicker
             placeholderData: (previousData: unknown) => previousData,
           },
           mutations: {
-            // Retry mutations once
             retry: 1,
           },
         },
       })
   )
+
+  // Use persistent provider if localStorage is available, otherwise standard
+  if (persister) {
+    return (
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: CACHE_MAX_AGE,
+          // Only persist successful queries (not errors or loading states)
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) => query.state.status === 'success',
+          },
+        }}
+      >
+        {children}
+      </PersistQueryClientProvider>
+    )
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

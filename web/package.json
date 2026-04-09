@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
+    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev --webpack",
     "dev:turbo": "next dev",
     "build": "next build",
     "start": "next start",
@@ -45,7 +46,9 @@
     "@remotion/player": "^4.0.409",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.91.0",
+    "@tanstack/query-sync-storage-persister": "^5.96.2",
     "@tanstack/react-query": "^5.90.20",
+    "@tanstack/react-query-persist-client": "^5.96.2",
     "@tiptap/extension-placeholder": "^3.18.0",
     "@tiptap/pm": "^3.18.0",
     "@tiptap/react": "^3.18.0",

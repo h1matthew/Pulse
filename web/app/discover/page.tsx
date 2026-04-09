@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Search, SlidersHorizontal, MapPin, Star, Heart, Loader2, LocateFixed, Navigation, MapPinned, Clock, TrendingUp, Store, RefreshCw, Minus, Plus } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
@@ -25,6 +25,7 @@ import { useLocation, formatDistance, calculateDistance } from "@/hooks/useLocat
 import {
   useIsBookmarked,
   useToggleBookmark,
+  useBookmarkedIds,
 } from "@/hooks/useBookmarks";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { toast } from "sonner";
@@ -65,7 +66,7 @@ const DIAMOND_BAR_DEFAULT: LatLng = { lat: 34.0286, lng: -117.8208 };
  *
  * DESIGN RATIONALE:
  *   - Category filter pills use toggle (aria-pressed) for clear active state
- *   - Sort dropdown defaults to "Nearest" to surface the most relevant results
+ *   - Sort dropdown defaults to "Highest Rated" to showcase the best businesses first
  *   - Skeleton loading grid (6 cards) matches final layout to prevent CLS
  *   - Frosted-glass hero card anchors the page and provides at-a-glance stats
  *   - Staggered fade-up animations add perceived polish without blocking interaction
@@ -341,7 +342,7 @@ function BusinessCardSkeleton() {
 export default function DiscoverPage() {
   const [nearbyMode, setNearbyMode] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('distance')
+  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('rating')
   const [searchQuery, setSearchQuery] = useState('')
   const [radius, setRadius] = useState(10000)
   const [location, setLocation] = useState<LatLng | null>(null)
@@ -363,7 +364,8 @@ export default function DiscoverPage() {
     isLoading: businessesLoading,
     error: businessesError,
     refetch,
-  } = useNearbyBusinesses(location, radius, selectedCategory)
+  } = useNearbyBusinesses(location, radius)
+  const { data: bookmarkedIds } = useBookmarkedIds()
 
   // Try to get cached location on mount, fall back to Diamond Bar for demo
   useEffect(() => {
@@ -431,14 +433,12 @@ export default function DiscoverPage() {
   }, [requestLocation])
 
   // Filter and sort businesses
-  const processedBusinesses = (() => {
+  const processedBusinesses = useMemo(() => {
     if (!businesses) return []
 
     let filtered = [...businesses]
 
     // Filter by search query
-    // INPUT VALIDATION (syntactical): trim + strip angle brackets + cap at 100 chars
-    // INPUT VALIDATION (semantic): only filter when there's at least 1 visible char
     if (searchQuery.trim()) {
       const query = searchQuery.trim().replace(/[<>]/g, '').slice(0, 100).toLowerCase()
       filtered = filtered.filter(
@@ -450,13 +450,16 @@ export default function DiscoverPage() {
       )
     }
 
-    // Filter by category in nearby mode
-    if (nearbyMode && selectedCategory !== "all") {
+    // Filter by category or bookmarks
+    if (selectedCategory === "bookmarks") {
+      const ids = bookmarkedIds || []
+      filtered = filtered.filter(b => ids.includes(b.id))
+    } else if (selectedCategory !== "all") {
       filtered = filtered.filter(b => b.category?.slug === selectedCategory);
     }
 
     return filtered;
-  })();
+  }, [businesses, searchQuery, selectedCategory, bookmarkedIds]);
 
   // INPUT VALIDATION: Sanitize search query — strip angle brackets and cap length
   // to prevent XSS in reflected output and limit payload size (syntactical).
@@ -466,12 +469,20 @@ export default function DiscoverPage() {
   // Sort businesses by the user-selected criterion.
   // DESIGN RATIONALE: Sort is applied client-side after filtering so the user
   // sees instant reordering without an extra network round-trip.
-  const sortedBusinesses = [...processedBusinesses].sort((a, b) => {
+  const sortedBusinesses = useMemo(() => [...processedBusinesses].sort((a, b) => {
     switch (sortBy) {
-      case 'rating':
-        // Highest rated first; ties broken by review count for credibility
-        return (b.average_rating || 0) - (a.average_rating || 0)
-          || (b.review_count || 0) - (a.review_count || 0)
+      case 'rating': {
+        // Businesses with real photos and good reviews surface first for best presentation.
+        const photoA = Array.isArray(a.photos) ? a.photos[0] : null
+        const photoB = Array.isArray(b.photos) ? b.photos[0] : null
+        const hasRealPhotoA = typeof photoA === 'string' && photoA.startsWith('http') ? 1 : 0
+        const hasRealPhotoB = typeof photoB === 'string' && photoB.startsWith('http') ? 1 : 0
+        if (hasRealPhotoA !== hasRealPhotoB) return hasRealPhotoB - hasRealPhotoA
+        // Among businesses with equal photo status, rank by rating weighted by review volume
+        const scoreA = (a.average_rating || 0) * Math.log10(Math.max(a.review_count || 1, 1))
+        const scoreB = (b.average_rating || 0) * Math.log10(Math.max(b.review_count || 1, 1))
+        return scoreB - scoreA
+      }
       case 'review_count':
         // Most reviewed first; ties broken by rating so quality still surfaces
         return (b.review_count || 0) - (a.review_count || 0)
@@ -498,7 +509,7 @@ export default function DiscoverPage() {
         }
         return 0
     }
-  });
+  }), [processedBusinesses, sortBy, location]);
   const averageVisibleRating =
     sortedBusinesses.length > 0
       ? (
@@ -655,6 +666,20 @@ export default function DiscoverPage() {
                       {category.name}
                     </Button>
                   ))}
+                  <Button
+                    variant={selectedCategory === 'bookmarks' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedCategory('bookmarks')}
+                    aria-pressed={selectedCategory === 'bookmarks'}
+                    aria-label="Show bookmarked businesses"
+                    className={cn(
+                      'gap-1.5',
+                      selectedCategory === 'bookmarks' && 'shadow-md'
+                    )}
+                  >
+                    <span aria-hidden="true"><Heart className="h-3.5 w-3.5" /></span>
+                    Bookmarks
+                  </Button>
                 </div>
 
                 {/* Location info and radius */}
@@ -731,7 +756,7 @@ export default function DiscoverPage() {
                 <p className="text-muted-foreground mb-4">{businessesError.message}</p>
                 <Button onClick={() => refetch()}>Try Again</Button>
               </div>
-            ) : processedBusinesses.length === 0 ? (
+            ) : sortedBusinesses.length === 0 ? (
               <div className="text-center py-16">
                 <div className="text-4xl mb-4" aria-hidden="true">🔍</div>
                 <h3 className="text-lg font-semibold mb-2">No businesses found</h3>
@@ -746,7 +771,7 @@ export default function DiscoverPage() {
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {processedBusinesses.map((business, index) => (
+                {sortedBusinesses.map((business, index) => (
                   <BusinessCard
                     key={business.id}
                     business={business}
