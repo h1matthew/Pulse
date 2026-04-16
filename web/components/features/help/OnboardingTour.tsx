@@ -18,7 +18,7 @@
  */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -168,18 +168,20 @@ export function OnboardingTour() {
   /**
    * Manually trigger the onboarding tour (for help menu)
    */
-  const restartTour = () => {
+  const restartTour = useCallback(() => {
+    localStorage.removeItem(ONBOARDING_KEY)
+    setHasCompleted(false)
     setCurrentStep(0)
     setIsOpen(true)
     announce('Restarting onboarding tour', 'polite')
-  }
+  }, [announce])
 
   // Export restart function globally for help menu access
   useEffect(() => {
     if (typeof window !== 'undefined') {
       ;(window as Window & { restartPulseTour?: () => void }).restartPulseTour = restartTour
     }
-  }, [])
+  }, [restartTour])
 
   // Don't render if user has completed onboarding
   if (hasCompleted && !isOpen) return null

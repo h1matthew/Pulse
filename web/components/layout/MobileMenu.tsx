@@ -13,6 +13,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { PulseLogo } from '@/components/ui/PulseLogo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { SignOutButton } from './SignOutButton'
 
 const NAV_ITEMS_PUBLIC = [
   { href: '/about', label: 'About', icon: Users },
@@ -90,15 +91,16 @@ export function MobileMenu() {
               </div>
               <div className="py-6">
                 {isLoggedIn ? (
-                  <form action="/auth/signout" method="post" className="-mx-3">
-                    <button
-                      type="submit"
-                      onClick={() => setOpen(false)}
-                      className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-foreground hover:bg-muted"
-                    >
-                      Sign out
-                    </button>
-                  </form>
+                  <div className="-mx-3">
+                    <SignOutButton>
+                      <button
+                        type="button"
+                        className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-foreground hover:bg-muted"
+                      >
+                        Sign out
+                      </button>
+                    </SignOutButton>
+                  </div>
                 ) : (
                   <NavLink
                     href="/login"
