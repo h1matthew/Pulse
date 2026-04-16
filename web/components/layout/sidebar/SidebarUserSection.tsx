@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { LogOut, Settings, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { UserSettingsModal } from '@/components/features/user/UserSettingsModal'
+import { SignOutButton } from '@/components/layout/SignOutButton'
 
 interface SidebarUserSectionProps {
   email?: string | null
@@ -39,16 +40,18 @@ export function SidebarUserSection({ email, fullName }: SidebarUserSectionProps)
           </div>
           <Settings className="h-4 w-4 text-sidebar-foreground/40 opacity-0 transition-opacity group-hover:opacity-100" />
         </button>
-        <form action="/auth/signout" method="post" className="mt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
-        </form>
+        <div className="mt-2">
+          <SignOutButton>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </Button>
+          </SignOutButton>
+        </div>
       </div>
 
       <UserSettingsModal

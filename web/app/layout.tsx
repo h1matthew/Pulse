@@ -7,6 +7,7 @@ import { AccessibilityProvider } from "@/components/providers/AccessibilityProvi
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next"
 import { ChatWidget } from "@/components/features/assistant";
+import { OnboardingTour } from "@/components/features/help/OnboardingTour";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
@@ -60,6 +61,7 @@ export default function RootLayout({
                 <Toaster />
                 <Analytics />
                 <ChatWidget />
+                <OnboardingTour />
               </AccessibilityProvider>
             </AuthProvider>
           </QueryProvider>

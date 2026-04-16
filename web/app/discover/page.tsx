@@ -36,7 +36,8 @@ import {
   getBusinessReviewLabel,
 } from "@/lib/business/display";
 import { NavLink } from "@/components/ui/nav-link";
-import { getCachedLocation, geocodeZipCode, cacheLocation } from "@/lib/location";
+import { getCachedLocation, geocodeZipCode, cacheLocation, cacheLocationSource, getCachedLocationSource } from "@/lib/location";
+import { ChangeLocationDialog } from "@/components/features/discover/ChangeLocationDialog";
 import { cn } from "@/lib/utils";
 import type { BusinessWithCategory } from "@/types/business";
 import type { LatLng } from "@/types/business";
@@ -348,6 +349,8 @@ export default function DiscoverPage() {
   const [location, setLocation] = useState<LatLng | null>(null)
   const [locationSource, setLocationSource] = useState<'gps' | 'zip' | null>(null)
   const [isLoadingZip, setIsLoadingZip] = useState(false)
+  const [locationLabel, setLocationLabel] = useState('')
+  const [changeLocationOpen, setChangeLocationOpen] = useState(false)
 
   // Get geolocation hook for permission handling
   const {
@@ -370,12 +373,19 @@ export default function DiscoverPage() {
   // Try to get cached location on mount, fall back to Diamond Bar for demo
   useEffect(() => {
     const cached = getCachedLocation()
+    const sourceInfo = getCachedLocationSource()
     if (cached) {
       setLocation(cached)
-      setLocationSource('gps')
+      if (sourceInfo) {
+        setLocationSource(sourceInfo.source)
+        setLocationLabel(sourceInfo.label)
+      } else {
+        setLocationSource('gps')
+      }
     } else {
       setLocation(DIAMOND_BAR_DEFAULT)
       setLocationSource('zip')
+      setLocationLabel('')
     }
   }, [])
 
@@ -384,7 +394,10 @@ export default function DiscoverPage() {
     if (gpsLocation) {
       setLocation(gpsLocation)
       setLocationSource('gps')
+      setLocationLabel('')
       cacheLocation(gpsLocation)
+      cacheLocationSource('gps', '')
+      setChangeLocationOpen(false)
     }
   }, [gpsLocation])
 
@@ -410,7 +423,11 @@ export default function DiscoverPage() {
       if (coords) {
         setLocation(coords)
         setLocationSource('zip')
-        toast.success('Location found', {
+        setLocationLabel(zipCode)
+        cacheLocation(coords)
+        cacheLocationSource('zip', zipCode)
+        setChangeLocationOpen(false)
+        toast.success('Location updated', {
           description: `Showing businesses near ${zipCode}`,
         })
       } else {
@@ -689,11 +706,22 @@ export default function DiscoverPage() {
                     <span>
                       {locationSource === 'gps'
                         ? 'Using your current location'
-                        : 'Using zip code location'}
+                        : locationLabel
+                          ? `Near ${locationLabel}`
+                          : 'Using zip code location'}
                     </span>
                     <Badge variant="secondary" className="text-xs">
                       {processedBusinesses.length} businesses
                     </Badge>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => setChangeLocationOpen(true)}
+                      aria-label="Change location"
+                    >
+                      Change
+                    </Button>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Radius:</span>
@@ -845,6 +873,15 @@ export default function DiscoverPage() {
           </div>
         </div>
       </section>
+
+      <ChangeLocationDialog
+        open={changeLocationOpen}
+        onOpenChange={setChangeLocationOpen}
+        onSearchZip={handleZipSearch}
+        onUseGps={handleAllowLocation}
+        initialZip={locationSource === 'zip' ? locationLabel : undefined}
+        gpsDisabled={permission === 'denied' || locationLoading}
+      />
     </div>
   )
 }

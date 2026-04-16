@@ -42,9 +42,12 @@ interface AccessibilityContextType {
   clearAnnouncements: () => void
 }
 
-const AccessibilityContext = createContext<AccessibilityContextType | undefined>(
-  undefined
-)
+const noop = () => {}
+
+const AccessibilityContext = createContext<AccessibilityContextType>({
+  announce: noop,
+  clearAnnouncements: noop,
+})
 
 interface AccessibilityProviderProps {
   children: ReactNode
@@ -127,11 +130,5 @@ export function AccessibilityProvider({ children }: AccessibilityProviderProps) 
  * Must be used within an AccessibilityProvider
  */
 export function useAccessibility(): AccessibilityContextType {
-  const context = useContext(AccessibilityContext)
-  if (context === undefined) {
-    throw new Error(
-      'useAccessibility must be used within an AccessibilityProvider'
-    )
-  }
-  return context
+  return useContext(AccessibilityContext)
 }

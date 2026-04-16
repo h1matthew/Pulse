@@ -1,18 +1,64 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import React from 'react'
 import Home from '../page'
 
-// Mock all child components
+// Mock browser APIs not available in jsdom
+beforeAll(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
+
+  class MockIntersectionObserver {
+    observe = vi.fn()
+    disconnect = vi.fn()
+    unobserve = vi.fn()
+  }
+  global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver
+})
+
+// Mock components that use browser APIs or external providers
 vi.mock('@/components/layout/Header', () => ({
   Header: () => <header data-testid="header">Header</header>,
 }))
 
+vi.mock('@/components/features/home/HomeWrapper', () => ({
+  HomeWrapper: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="home-wrapper">{children}</div>
+  ),
+}))
+
 vi.mock('@/components/features/home/AnimatedSection', () => ({
   AnimatedSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
+
+vi.mock('@/components/features/home/ParallaxGlow', () => ({
+  ParallaxGlow: () => <div data-testid="parallax-glow" />,
+}))
+
+vi.mock('@/components/features/home/FeatureTabs', () => ({
+  FeatureTabs: () => <div data-testid="feature-tabs">Feature Tabs</div>,
+}))
+
+vi.mock('@/components/features/home/CommunityStatsIsland', () => ({
+  HeroStats: () => <div data-testid="hero-stats">Community Stats</div>,
+}))
+
+vi.mock('@/components/features/help/OnboardingTour', () => ({
+  OnboardingTour: () => null,
 }))
 
 vi.mock('@/components/ui/nav-link', () => ({
@@ -21,118 +67,81 @@ vi.mock('@/components/ui/nav-link', () => ({
   ),
 }))
 
-vi.mock('@/components/features/home/CommunityStatsIsland', () => ({
-  HeroStats: () => (
-    <div data-testid="hero-stats">
-      <span>Kept Local</span>
-      <span>Businesses</span>
-      <span>Reviews</span>
-      <span>Community Members</span>
-    </div>
-  ),
-  CommunityPulseCard: () => (
-    <div data-testid="community-pulse-card">
-      <span>Community Pulse Score</span>
-    </div>
-  ),
+vi.mock('@/components/ui/PulseLogo', () => ({
+  PulseLogo: () => <svg data-testid="pulse-logo" />,
 }))
 
 describe('Home Page', () => {
   it('renders without crashing', () => {
     render(<Home />)
-
     expect(document.body).toBeInTheDocument()
   })
 
   it('renders the header', () => {
     render(<Home />)
-
     expect(screen.getByTestId('header')).toBeInTheDocument()
   })
 
-  it('renders hero section with main heading', () => {
+  it('renders hero section main heading', () => {
     render(<Home />)
-
-    expect(screen.getByText('Discover Local.')).toBeInTheDocument()
-  })
-
-  it('renders subheading with gradient text', () => {
-    render(<Home />)
-
-    expect(screen.getByText('Impact Community.')).toBeInTheDocument()
+    expect(screen.getByText(/Every dollar you spend locally creates/)).toBeInTheDocument()
   })
 
   it('renders hero description', () => {
     render(<Home />)
-
-    expect(screen.getByText(/Every review, bookmark, and visit strengthens your local economy/)).toBeInTheDocument()
+    expect(screen.getByText(/Discover small businesses in your community/)).toBeInTheDocument()
   })
 
-  it('renders CTA button to explore businesses', () => {
+  it('renders primary CTA button', () => {
     render(<Home />)
-
-    expect(screen.getByText('Explore Local Businesses')).toBeInTheDocument()
+    expect(screen.getByText('Explore Businesses')).toBeInTheDocument()
   })
 
   it('renders secondary CTA button', () => {
     render(<Home />)
-
-    expect(screen.getByText('Learn How It Works')).toBeInTheDocument()
+    expect(screen.getByText('How It Works')).toBeInTheDocument()
   })
 
-  it('renders stats preview section', () => {
+  it('renders feature tabs section', () => {
     render(<Home />)
-
-    expect(screen.getByText('Kept Local')).toBeInTheDocument()
-    expect(screen.getByText('Businesses')).toBeInTheDocument()
-    expect(screen.getByText('Community Members')).toBeInTheDocument()
+    expect(screen.getByTestId('feature-tabs')).toBeInTheDocument()
   })
 
-  it('renders features section heading', () => {
+  it('renders community stats section', () => {
     render(<Home />)
-
-    expect(screen.getByText('More Than a Directory')).toBeInTheDocument()
+    expect(screen.getByTestId('hero-stats')).toBeInTheDocument()
   })
 
-  it('renders feature cards', () => {
+  it('renders discover businesses section', () => {
     render(<Home />)
-
-    expect(screen.getByText('Economic Impact Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('AI-Matched For You')).toBeInTheDocument()
-    expect(screen.getAllByText('Boost Missions').length).toBeGreaterThan(0)
+    expect(screen.getByText('Find businesses your neighbors love')).toBeInTheDocument()
   })
 
-  it('renders community pulse section', () => {
+  it('renders impact section', () => {
     render(<Home />)
-
-    expect(screen.getByText('Feel the Pulse of Your Community')).toBeInTheDocument()
+    expect(screen.getByText('See where your money goes')).toBeInTheDocument()
   })
 
-  it('renders final CTA section with correct heading', () => {
+  it('renders final CTA section', () => {
     render(<Home />)
-
-    expect(screen.getByText('Ready to Make an Impact?')).toBeInTheDocument()
+    expect(screen.getByText('Your community is already here')).toBeInTheDocument()
   })
 
-  it('renders footer with brand name', () => {
+  it('renders footer brand name', () => {
     render(<Home />)
+    expect(screen.getAllByText('Pulse').length).toBeGreaterThanOrEqual(1)
+  })
 
-    // Footer contains brand name
-    const footerBrand = screen.getAllByText('Pulse')
-    expect(footerBrand.length).toBeGreaterThanOrEqual(1)
+  it('renders footer tagline', () => {
+    render(<Home />)
+    expect(
+      screen.getByText(/Strengthening local economies, one discovery at a time/)
+    ).toBeInTheDocument()
   })
 
   it('renders footer navigation links', () => {
     render(<Home />)
-
-    expect(screen.getByText('Discover')).toBeInTheDocument()
-    expect(screen.getByText('Community')).toBeInTheDocument()
-    expect(screen.getByText('About')).toBeInTheDocument()
-  })
-
-  it('renders mission tagline in footer', () => {
-    render(<Home />)
-
-    expect(screen.getByText(/Strengthening local economies, one discovery at a time/)).toBeInTheDocument()
+    expect(screen.getByText('All Businesses')).toBeInTheDocument()
+    expect(screen.getByText('Our Mission')).toBeInTheDocument()
   })
 })

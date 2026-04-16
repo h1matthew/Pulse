@@ -172,6 +172,40 @@ const toRadians = (degrees: number): number => {
 }
 
 /**
+ * Save location source and label to localStorage cache
+ */
+export const cacheLocationSource = (source: 'gps' | 'zip', label: string): void => {
+  try {
+    localStorage.setItem('user_location_source', JSON.stringify({
+      source,
+      label,
+      timestamp: Date.now()
+    }))
+  } catch {
+    // localStorage not available
+  }
+}
+
+/**
+ * Get cached location source from localStorage
+ */
+export const getCachedLocationSource = (): { source: 'gps' | 'zip'; label: string } | null => {
+  try {
+    const cached = localStorage.getItem('user_location_source')
+    if (cached) {
+      const { source, label, timestamp } = JSON.parse(cached)
+      // Cache valid for 1 hour (same TTL as location cache)
+      if (Date.now() - timestamp < 60 * 60 * 1000) {
+        return { source, label }
+      }
+    }
+  } catch {
+    // localStorage not available
+  }
+  return null
+}
+
+/**
  * Format distance for display
  */
 export const formatDistance = (miles: number): string => {

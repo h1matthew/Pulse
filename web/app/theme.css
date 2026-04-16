@@ -1,14 +1,13 @@
 /*
  * Theme Configuration - Pulse
  * =============================
- * Vibrant community-focused color palette for local business discovery
+ * Minimalist dark-first palette with a single blue accent
+ * Inspired by Linear, Vercel, and GitHub dark modes
  * Single source of truth for all design tokens
  *
  * Color format: oklch(lightness chroma hue)
- *   - Hue 170-190 = teal (growth, trust)
- *   - Hue 25-45 = coral/orange (energy, local)
- *   - Hue 140-160 = green (economic growth)
- *   - Hue 280-300 = purple (community connection)
+ *   - Hue 260 = blue (primary accent, all chart colors)
+ *   - Near-zero chroma for neutrals
  */
 
 /* ─── Tailwind Token Registration ─── */
@@ -100,107 +99,107 @@
 :root {
   --radius: 0.625rem;
 
-  /* Core - Clean light background */
-  --background: oklch(0.98 0.005 250);
-  --foreground: oklch(0.2 0.02 250);
+  /* Core */
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.1 0.01 260);
 
   /* Surfaces */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 250);
+  --card-foreground: oklch(0.1 0.01 260);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 250);
+  --popover-foreground: oklch(0.1 0.01 260);
 
-  /* Brand - Vibrant teal for trust and growth */
-  --primary: oklch(0.6 0.18 175);
+  /* Brand — single blue accent */
+  --primary: oklch(0.55 0.2 260);
   --primary-foreground: oklch(0.99 0 0);
 
-  /* Secondary - Warm coral for energy */
-  --secondary: oklch(0.92 0.05 45);
-  --secondary-foreground: oklch(0.3 0.08 45);
+  /* Secondary */
+  --secondary: oklch(0.96 0.005 260);
+  --secondary-foreground: oklch(0.25 0.01 260);
 
   /* Muted */
-  --muted: oklch(0.95 0.01 250);
-  --muted-foreground: oklch(0.55 0.02 250);
+  --muted: oklch(0.96 0.005 260);
+  --muted-foreground: oklch(0.45 0.01 260);
 
-  /* Accent - Fresh green for economic growth */
-  --accent: oklch(0.92 0.08 145);
-  --accent-foreground: oklch(0.25 0.1 145);
+  /* Accent */
+  --accent: oklch(0.96 0.01 260);
+  --accent-foreground: oklch(0.2 0.01 260);
 
   /* Semantic */
   --destructive: oklch(0.577 0.245 27.325);
 
   /* Borders & inputs */
-  --border: oklch(0.9 0.01 250);
-  --input: oklch(0.9 0.01 250);
-  --ring: oklch(0.6 0.18 175);
+  --border: oklch(0.92 0.005 260);
+  --input: oklch(0.92 0.005 260);
+  --ring: oklch(0.55 0.2 260);
 
-  /* Charts - Vibrant community palette */
-  --chart-1: oklch(0.6 0.18 175);    /* Teal - primary */
-  --chart-2: oklch(0.7 0.16 45);     /* Coral - energy */
-  --chart-3: oklch(0.65 0.14 145);   /* Green - growth */
-  --chart-4: oklch(0.6 0.15 280);    /* Purple - community */
-  --chart-5: oklch(0.75 0.18 85);    /* Yellow - optimism */
+  /* Charts — blue variations */
+  --chart-1: oklch(0.55 0.2 260);
+  --chart-2: oklch(0.65 0.15 260);
+  --chart-3: oklch(0.48 0.16 260);
+  --chart-4: oklch(0.72 0.1 260);
+  --chart-5: oklch(0.4 0.12 260);
 
   /* Sidebar */
-  --sidebar: oklch(0.98 0.005 250);
-  --sidebar-foreground: oklch(0.2 0.02 250);
-  --sidebar-primary: oklch(0.6 0.18 175);
+  --sidebar: oklch(0.99 0 0);
+  --sidebar-foreground: oklch(0.1 0.01 260);
+  --sidebar-primary: oklch(0.55 0.2 260);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.95 0.01 250);
-  --sidebar-accent-foreground: oklch(0.2 0.02 250);
-  --sidebar-border: oklch(0.9 0.01 250);
-  --sidebar-ring: oklch(0.6 0.18 175);
+  --sidebar-accent: oklch(0.96 0.005 260);
+  --sidebar-accent-foreground: oklch(0.1 0.01 260);
+  --sidebar-border: oklch(0.92 0.005 260);
+  --sidebar-ring: oklch(0.55 0.2 260);
 }
 
 /* ─── Dark Mode ─── */
 .dark {
-  /* Core - Deep but warm dark */
-  --background: oklch(0.15 0.02 250);
-  --foreground: oklch(0.95 0.01 250);
+  /* Core — near-black, neutral */
+  --background: oklch(0.065 0.005 260);
+  --foreground: oklch(0.98 0 0);
 
   /* Surfaces */
-  --card: oklch(0.2 0.02 250);
-  --card-foreground: oklch(0.95 0.01 250);
-  --popover: oklch(0.2 0.02 250);
-  --popover-foreground: oklch(0.95 0.01 250);
+  --card: oklch(0.1 0.005 260);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.1 0.005 260);
+  --popover-foreground: oklch(0.98 0 0);
 
-  /* Brand - Brighter teal in dark mode */
-  --primary: oklch(0.7 0.2 175);
-  --primary-foreground: oklch(0.1 0 0);
+  /* Brand — blue accent */
+  --primary: oklch(0.62 0.18 260);
+  --primary-foreground: oklch(0.99 0 0);
 
-  /* Secondary - Warm coral glow */
-  --secondary: oklch(0.25 0.04 45);
-  --secondary-foreground: oklch(0.9 0.06 45);
+  /* Secondary */
+  --secondary: oklch(0.14 0.005 260);
+  --secondary-foreground: oklch(0.85 0 0);
 
   /* Muted */
-  --muted: oklch(0.25 0.02 250);
-  --muted-foreground: oklch(0.65 0.02 250);
+  --muted: oklch(0.14 0.005 260);
+  --muted-foreground: oklch(0.55 0.01 260);
 
-  /* Accent - Glowing green */
-  --accent: oklch(0.25 0.06 145);
-  --accent-foreground: oklch(0.9 0.08 145);
+  /* Accent */
+  --accent: oklch(0.14 0.01 260);
+  --accent-foreground: oklch(0.85 0.01 260);
 
   /* Borders & inputs */
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.2 175);
+  --border: oklch(1 0 0 / 8%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.62 0.18 260);
 
-  /* Charts - Brighter in dark mode */
-  --chart-1: oklch(0.7 0.2 175);
-  --chart-2: oklch(0.75 0.18 45);
-  --chart-3: oklch(0.7 0.16 145);
-  --chart-4: oklch(0.7 0.17 280);
-  --chart-5: oklch(0.8 0.2 85);
+  /* Charts — blue variations */
+  --chart-1: oklch(0.62 0.18 260);
+  --chart-2: oklch(0.72 0.13 260);
+  --chart-3: oklch(0.52 0.15 260);
+  --chart-4: oklch(0.78 0.08 260);
+  --chart-5: oklch(0.45 0.12 260);
 
   /* Sidebar */
-  --sidebar: oklch(0.18 0.02 250);
-  --sidebar-foreground: oklch(0.95 0.01 250);
-  --sidebar-primary: oklch(0.7 0.2 175);
-  --sidebar-primary-foreground: oklch(0.1 0 0);
-  --sidebar-accent: oklch(0.25 0.02 250);
-  --sidebar-accent-foreground: oklch(0.95 0.01 250);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.7 0.2 175);
+  --sidebar: oklch(0.08 0.005 260);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.62 0.18 260);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.14 0.005 260);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.62 0.18 260);
 }
 
 /* ─── Animation Keyframes ─── */
@@ -351,11 +350,11 @@
 @keyframes card-hover {
   from {
     transform: translateY(0);
-    box-shadow: 0 1px 3px oklch(0 0 0 / 0.1);
+    box-shadow: 0 1px 3px oklch(0 0 0 / 0.2);
   }
   to {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px oklch(0 0 0 / 0.15);
+    box-shadow: 0 12px 24px oklch(0 0 0 / 0.4);
   }
 }
 
@@ -394,11 +393,11 @@
 @keyframes deal-flash {
   0%, 100% {
     opacity: 1;
-    box-shadow: 0 0 0 0 oklch(0.7 0.16 45 / 0.4);
+    box-shadow: 0 0 0 0 oklch(0.62 0.18 260 / 0.3);
   }
   50% {
     opacity: 1;
-    box-shadow: 0 0 20px 5px oklch(0.7 0.16 45 / 0.2);
+    box-shadow: 0 0 20px 5px oklch(0.62 0.18 260 / 0.15);
   }
 }
 
@@ -467,11 +466,11 @@
 .impact-meter {
   background: conic-gradient(
     from 0deg,
-    oklch(0.6 0.18 175) 0%,
-    oklch(0.7 0.16 45) 25%,
-    oklch(0.65 0.14 145) 50%,
-    oklch(0.6 0.15 280) 75%,
-    oklch(0.75 0.18 85) 100%
+    oklch(0.45 0.12 260) 0%,
+    oklch(0.55 0.18 260) 25%,
+    oklch(0.65 0.15 260) 50%,
+    oklch(0.72 0.1 260) 75%,
+    oklch(0.8 0.06 260) 100%
   );
 }
 
@@ -487,7 +486,7 @@
 
 /* Gradient text utility */
 .gradient-text {
-  background: linear-gradient(135deg, oklch(0.6 0.18 175), oklch(0.7 0.16 45));
+  background: linear-gradient(135deg, oklch(0.55 0.18 260), oklch(0.72 0.13 260));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -495,16 +494,16 @@
 
 /* Community pulse glow */
 .pulse-glow {
-  box-shadow: 0 0 30px oklch(0.6 0.18 175 / 0.3);
+  box-shadow: 0 0 30px oklch(0.62 0.18 260 / 0.25);
 }
 
 /* Deal badge shimmer */
 .deal-shimmer {
   background: linear-gradient(
     90deg,
-    oklch(0.7 0.16 45 / 0) 0%,
-    oklch(0.7 0.16 45 / 0.3) 50%,
-    oklch(0.7 0.16 45 / 0) 100%
+    oklch(0.62 0.18 260 / 0) 0%,
+    oklch(0.62 0.18 260 / 0.2) 50%,
+    oklch(0.62 0.18 260 / 0) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 2s linear infinite;

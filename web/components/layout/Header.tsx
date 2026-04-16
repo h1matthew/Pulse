@@ -8,6 +8,7 @@ import { NavLink } from '@/components/ui/nav-link'
 import { PulseLogo } from '@/components/ui/PulseLogo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { MobileMenu } from './MobileMenu'
+import { SignOutButton } from './SignOutButton'
 import { HelpMenu } from '@/components/features/help/HelpMenu'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -300,7 +301,7 @@ export function Header() {
               </NavLink>
             )}
             {isLoggedIn ? (
-              <form action="/auth/signout" method="post">
+              <SignOutButton>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -321,7 +322,7 @@ export function Header() {
                     Sign out
                   </span>
                 </Button>
-              </form>
+              </SignOutButton>
             ) : (
               <NavLink href="/login">
                 <Button

@@ -7,17 +7,18 @@
  */
 import { ArrowRight } from "lucide-react"
 import { Header } from "@/components/layout/Header"
+import { HomeWrapper } from "@/components/features/home/HomeWrapper"
 import { AnimatedSection } from "@/components/features/home/AnimatedSection"
 import { HeroStats } from "@/components/features/home/CommunityStatsIsland"
 import { FeatureTabs } from "@/components/features/home/FeatureTabs"
 import { ParallaxGlow } from "@/components/features/home/ParallaxGlow"
-import { OnboardingTour } from "@/components/features/help/OnboardingTour"
+
 import { PulseLogo } from "@/components/ui/PulseLogo"
 import { NavLink } from "@/components/ui/nav-link"
 
 export default function Home() {
   return (
-    <div className="dark relative min-h-screen bg-[#0a0c10] text-white overflow-hidden">
+    <HomeWrapper>
       <Header />
 
       {/* ── Hero ── */}
@@ -266,7 +267,6 @@ export default function Home() {
         </div>
       </footer>
 
-      <OnboardingTour />
-    </div>
+    </HomeWrapper>
   )
 }
