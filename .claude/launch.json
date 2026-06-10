@@ -6,6 +6,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "cd /Users/brady/Code/Pulse/web && npm run dev"],
       "port": 3000
+    },
+    {
+      "name": "pathfind-web-demo",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "http-server", "/Users/brady/Code/pathfind/web-demo", "-p", "3002", "-c-1"],
+      "port": 3002
     }
   ]
 }
