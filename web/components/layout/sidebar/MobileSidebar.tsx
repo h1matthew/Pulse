@@ -27,7 +27,7 @@ export function MobileSidebar({ email, fullName, isAdmin }: MobileSidebarProps) 
       {/* Mobile header bar */}
       <header className="md:hidden flex h-14 items-center justify-between border-b border-border/30 bg-background/60 backdrop-blur-xl px-4">
         <NavLink href="/" className="flex items-center gap-2">
-          <PulseLogo className="h-8 w-8 text-foreground" />
+          <PulseLogo className="h-10 w-10 text-foreground" />
           <span className="text-lg font-semibold tracking-tight text-foreground">
             Pulse
           </span>
@@ -55,7 +55,7 @@ export function MobileSidebar({ email, fullName, isAdmin }: MobileSidebarProps) 
           {/* Logo header */}
           <div className="flex h-14 items-center gap-2 border-b border-border/30 px-6">
             <NavLink href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-              <PulseLogo className="h-8 w-8 text-foreground" />
+              <PulseLogo className="h-10 w-10 text-foreground" />
               <span className="text-lg font-semibold tracking-tight text-foreground">
                 Pulse
               </span>

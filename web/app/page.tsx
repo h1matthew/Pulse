@@ -11,6 +11,7 @@ import { HomeWrapper } from "@/components/features/home/HomeWrapper"
 import { AnimatedSection } from "@/components/features/home/AnimatedSection"
 import { HeroStats } from "@/components/features/home/CommunityStatsIsland"
 import { HeroPreview } from "@/components/features/home/HeroPreview"
+import { HeroCityName } from "@/components/features/home/HeroCityName"
 import { FeatureTabs } from "@/components/features/home/FeatureTabs"
 import { PulseLogo } from "@/components/ui/PulseLogo"
 import { NavLink } from "@/components/ui/nav-link"
@@ -53,8 +54,8 @@ export default function Home() {
           <AnimatedSection animation="fade-up">
             <div className="max-w-2xl">
               <p className="mb-5 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">Pulse local guide</p>
-              <h1 className="text-5xl font-semibold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-                Find good places nearby.
+              <h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                Feel the <span className="gradient-text">Pulse</span> of <HeroCityName />.
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
                 Local shops, deals, and a simple view of what your support keeps in town.
@@ -89,7 +90,7 @@ export default function Home() {
         </AnimatedSection>
       </section>
 
-      <section aria-label="Community stats" className="border-y border-border bg-card/40 px-6 py-12">
+      <section aria-label="Community stats" className="px-6 py-12">
         <AnimatedSection animation="fade-up">
           <HeroStats />
         </AnimatedSection>
@@ -125,7 +126,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section aria-label="Simple impact" className="border-t border-border px-6 py-20 sm:py-24">
+      <section aria-label="Simple impact" className="px-6 py-20 sm:py-24">
         <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
           <AnimatedSection animation="fade-up">
             <div className="rounded-lg border border-border bg-card">
@@ -163,7 +164,7 @@ export default function Home() {
 
       <section aria-label="Call to action" className="px-6 py-20">
         <AnimatedSection animation="fade-up">
-          <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 border-t border-border pt-10 sm:flex-row sm:items-center">
+          <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-3xl font-semibold tracking-tight text-foreground">Start with what is close.</h2>
               <p className="mt-3 text-base text-muted-foreground">Find a place for today. Save the rest for later.</p>
@@ -179,11 +180,11 @@ export default function Home() {
         </AnimatedSection>
       </section>
 
-      <footer role="contentinfo" aria-label="Site footer" className="border-t border-border px-6 py-10">
+      <footer role="contentinfo" aria-label="Site footer" className="px-6 py-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <PulseLogo className="h-5 w-5 text-foreground" />
+              <PulseLogo className="h-7 w-7 text-foreground" />
               <span className="font-semibold text-foreground">Pulse</span>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">Local discovery, kept simple.</p>

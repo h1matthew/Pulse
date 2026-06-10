@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { isChainBusiness } from '@/lib/business/classify'
 import type { BusinessWithCategory } from '@/types/business'
 
 export interface RAGContext {
@@ -175,8 +176,12 @@ export async function retrieveBusinesses(
     .select('id, name, slug')
     .eq('is_active', true)
 
-  // Filter by keyword relevance if keywords exist
-  let filteredBusinesses = businesses || []
+  // Only recommend independent small businesses — never chains/franchises
+  let filteredBusinesses = (businesses || []).filter(
+    (business) =>
+      business.is_chain !== true &&
+      (business.is_chain === false || !isChainBusiness({ name: business.name }))
+  )
 
   if (keywords.length > 0 && filteredBusinesses.length > 0) {
     // Score each business by keyword match

@@ -81,9 +81,21 @@ vi.mock('@/components/ui/tabs', () => {
   }
 })
 
+// Login submits to /api/auth/login (server-side rate limited)
+const mockFetch = vi.fn()
+
+function mockLoginResponse(status: number, body: unknown) {
+  mockFetch.mockResolvedValue({
+    ok: status >= 200 && status < 300,
+    status,
+    json: () => Promise.resolve(body),
+  })
+}
+
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal('fetch', mockFetch)
     try { window.localStorage.clear() } catch { /* jsdom may not support localStorage.clear */ }
     mockGetUser.mockResolvedValue({ data: { user: null } })
   })
@@ -152,9 +164,7 @@ describe('LoginPage', () => {
 
   it('handles login error', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
-    mockSignInWithPassword.mockResolvedValue({
-      error: { message: 'Invalid credentials' },
-    })
+    mockLoginResponse(401, { error: 'Invalid credentials' })
 
     render(<LoginPage />)
 
@@ -182,7 +192,7 @@ describe('LoginPage', () => {
 
   it('redirects to dashboard on successful login', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
-    mockSignInWithPassword.mockResolvedValue({ error: null })
+    mockLoginResponse(200, { user: { id: 'user-1' } })
 
     render(<LoginPage />)
 
@@ -230,12 +240,43 @@ describe('LoginPage', () => {
       screen.getByText('Please complete CAPTCHA verification to continue.')
     ).toBeInTheDocument()
     expect(screen.queryByText('Security Check')).not.toBeInTheDocument()
-    expect(mockSignInWithPassword).not.toHaveBeenCalled()
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('shows a friendly message when login is rate limited', async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+    mockLoginResponse(429, {
+      error: 'Too many login attempts. Please try again later.',
+      retryAfter: 300,
+    })
+
+    render(<LoginPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome')).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'test@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'password123' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Verify CAPTCHA' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Complete CAPTCHA' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Too many login attempts. Please try again in 5 minutes.')
+      ).toBeInTheDocument()
+    })
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
   it('captcha verification persists across tab switches', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
-    mockSignInWithPassword.mockResolvedValue({ error: null })
+    mockLoginResponse(200, { user: { id: 'user-1' } })
 
     render(<LoginPage />)
 
@@ -264,9 +305,13 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     await waitFor(() => {
-      expect(mockSignInWithPassword).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        password: 'password123',
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'test@example.com',
+          password: 'password123',
+        }),
       })
     })
   })

@@ -1,6 +1,5 @@
 import { Sidebar } from './sidebar/Sidebar'
 import { MobileSidebar } from './sidebar/MobileSidebar'
-import { AppBackground } from './AppBackground'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -12,8 +11,7 @@ interface AppShellProps {
 export function AppShell({ children, email, fullName, isAdmin }: AppShellProps) {
   return (
     <div className="relative flex min-h-screen">
-      {/* Animated background */}
-      <AppBackground />
+      {/* AppBackground renders once in the root layout */}
 
       {/* Desktop sidebar */}
       <Sidebar email={email} fullName={fullName} isAdmin={isAdmin} />

@@ -32,22 +32,26 @@ class MockIntersectionObserver implements IntersectionObserver {
   takeRecords = vi.fn(() => []);
 }
 
+function mockMatchMedia(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation(() => ({
+      matches,
+      media: "",
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
 describe("AnimatedSection", () => {
   beforeEach(() => {
     vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation(() => ({
-        matches: false,
-        media: "",
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })),
-    });
+    mockMatchMedia(false);
   });
 
   afterEach(() => {
@@ -55,7 +59,7 @@ describe("AnimatedSection", () => {
     intersectionCallback = null;
   });
 
-  it("is visible before and after first reveal by default", () => {
+  it("starts hidden, then transitions in when scrolled into view", () => {
     render(
       <AnimatedSection>
         <div>Content</div>
@@ -63,18 +67,30 @@ describe("AnimatedSection", () => {
     );
 
     const wrapper = screen.getByText("Content").parentElement;
-    expect(wrapper).toHaveClass("opacity-100");
+    expect(wrapper).toHaveClass("opacity-0", "translate-y-10");
 
     act(() => {
       intersectionCallback?.([{ isIntersecting: true }]);
     });
-    expect(wrapper).toHaveClass("animate-fade-in-up");
+    expect(wrapper).toHaveClass("opacity-100");
+    expect(wrapper).not.toHaveClass("opacity-0");
+  });
 
+  it("stays revealed after scrolling away by default (once)", () => {
+    render(
+      <AnimatedSection>
+        <div>Content</div>
+      </AnimatedSection>
+    );
+
+    const wrapper = screen.getByText("Content").parentElement;
+    act(() => {
+      intersectionCallback?.([{ isIntersecting: true }]);
+    });
     act(() => {
       intersectionCallback?.([{ isIntersecting: false }]);
     });
-    expect(wrapper).toHaveClass("animate-fade-in-up");
-    expect(wrapper).not.toHaveClass("opacity-0");
+    expect(wrapper).toHaveClass("opacity-100");
   });
 
   it("can hide again when once is false", () => {
@@ -85,16 +101,60 @@ describe("AnimatedSection", () => {
     );
 
     const wrapper = screen.getByText("Repeat").parentElement;
-    expect(wrapper).toHaveClass("opacity-100");
-
     act(() => {
       intersectionCallback?.([{ isIntersecting: true }]);
     });
-    expect(wrapper).toHaveClass("animate-fade-in-up");
+    expect(wrapper).toHaveClass("opacity-100");
 
     act(() => {
       intersectionCallback?.([{ isIntersecting: false }]);
     });
+    expect(wrapper).toHaveClass("opacity-0");
+  });
+
+  it("uses the hidden pose for the requested animation", () => {
+    render(
+      <AnimatedSection animation="slide-right">
+        <div>Slide</div>
+      </AnimatedSection>
+    );
+
+    const wrapper = screen.getByText("Slide").parentElement;
+    expect(wrapper).toHaveClass("translate-x-12");
+  });
+
+  it("starts rise-up content well below its slot", () => {
+    render(
+      <AnimatedSection animation="rise-up">
+        <div>Rise</div>
+      </AnimatedSection>
+    );
+
+    const wrapper = screen.getByText("Rise").parentElement;
+    expect(wrapper).toHaveClass("opacity-0", "translate-y-24");
+  });
+
+  it("applies the reveal delay as a transition delay", () => {
+    render(
+      <AnimatedSection delay={0.2}>
+        <div>Delayed</div>
+      </AnimatedSection>
+    );
+
+    const wrapper = screen.getByText("Delayed").parentElement;
+    expect(wrapper?.style.transitionDelay).toBe("0.2s");
+  });
+
+  it("shows content immediately when reduced motion is preferred", () => {
+    mockMatchMedia(true);
+
+    render(
+      <AnimatedSection>
+        <div>Reduced</div>
+      </AnimatedSection>
+    );
+
+    const wrapper = screen.getByText("Reduced").parentElement;
     expect(wrapper).toHaveClass("opacity-100");
   });
 });

@@ -92,11 +92,34 @@ export default function LoginPage() {
 
     setLoading(true)
 
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    // Login goes through our API route so attempts are rate limited
+    // server-side (per IP and per account).
+    let response: Response
+    try {
+      response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+    } catch {
+      setError("Network error. Please try again.")
+      setLoading(false)
+      return
+    }
 
-    if (error) {
-      setError(error.message)
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      if (response.status === 429) {
+        const retryAfter = data?.retryAfter
+        const wait = retryAfter
+          ? retryAfter >= 120
+            ? `${Math.ceil(retryAfter / 60)} minutes`
+            : `${retryAfter} seconds`
+          : "a few minutes"
+        setError(`Too many login attempts. Please try again in ${wait}.`)
+      } else {
+        setError(data?.error || "Unable to sign in. Please try again.")
+      }
       setLoading(false)
       return
     }

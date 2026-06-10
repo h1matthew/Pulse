@@ -56,7 +56,7 @@ const tourSteps: TourStep[] = [
     title: 'Welcome to Pulse',
     description:
       'Pulse helps you discover local businesses and see how your engagement strengthens your community. Every visit, review, and bookmark makes a difference!',
-    icon: <PulseLogo className="h-6 w-6" />,
+    icon: <PulseLogo className="h-8 w-8" />,
     color: 'bg-primary',
   },
   {

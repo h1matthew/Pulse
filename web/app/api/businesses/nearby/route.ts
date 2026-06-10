@@ -34,6 +34,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { isRealBusinessPlaceTypes, isRealBusinessRecord } from '@/lib/business/display'
+import { isChainBusiness } from '@/lib/business/classify'
 import { NextResponse } from 'next/server'
 import type { LatLng } from '@/types/business'
 
@@ -110,14 +111,15 @@ function mapSubtypeToCategory(subtypes: string[], subtype_gcids?: string[]): str
   return 'retail'
 }
 
-/** Convert Google v2 priceLevel enum to numeric 1-4 scale. */
+/** Convert Google v2 priceLevel enum to numeric 1-4 scale.
+ * The businesses_price_range_check constraint requires 1-4 or NULL,
+ * so PRICE_LEVEL_FREE maps to null. */
 function convertPriceLevel(priceLevel?: string | null): number | null {
   switch (priceLevel) {
     case 'PRICE_LEVEL_INEXPENSIVE': return 1
     case 'PRICE_LEVEL_MODERATE': return 2
     case 'PRICE_LEVEL_EXPENSIVE': return 3
     case 'PRICE_LEVEL_VERY_EXPENSIVE': return 4
-    case 'PRICE_LEVEL_FREE': return 0
     // Legacy OWN format
     case '$': return 1
     case '$$': return 2
@@ -412,6 +414,11 @@ async function syncPlacesToDatabase(
       const types = place.types || []
       if (!isRealBusinessPlaceTypes(types)) continue
 
+      // Skip chains/franchises entirely — Pulse only lists independent
+      // small businesses.
+      const displayName = place.displayName?.text || ''
+      if (isChainBusiness({ name: displayName, tags: types })) continue
+
       // Map types to internal category
       const categorySlug = mapSubtypeToCategory(types)
       const { data: category } = await db
@@ -466,6 +473,7 @@ async function syncPlacesToDatabase(
         place_id: placeId,
         data_source: 'google',
         is_verified: true,
+        is_chain: false,
         photos,
         hours,
         tags,
@@ -560,6 +568,7 @@ export async function GET(request: Request) {
         data_source: business.data_source,
         tags: business.tags,
         name: business.name,
+        is_chain: business.is_chain,
       })
     )
 
@@ -629,6 +638,7 @@ export async function GET(request: Request) {
         data_source: business.data_source,
         tags: business.tags,
         name: business.name,
+        is_chain: business.is_chain,
       })
     )
 

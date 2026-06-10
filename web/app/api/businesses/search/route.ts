@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { searchBusinesses as searchGooglePlaces } from '@/lib/google-places'
 import { isRealBusinessPlaceTypes, isRealBusinessRecord } from '@/lib/business/display'
+import { isChainBusiness } from '@/lib/business/classify'
 import { NextResponse } from 'next/server'
 import type { LatLng } from '@/types/business'
 
@@ -52,6 +53,7 @@ export async function GET(request: Request) {
         data_source: business.data_source,
         tags: business.tags,
         name: business.name,
+        is_chain: business.is_chain,
       })
     )
 
@@ -59,6 +61,7 @@ export async function GET(request: Request) {
     const transformedGoogleResults =
       googleResults?.places
         .filter((place) => isRealBusinessPlaceTypes(place.types || []))
+        .filter((place) => !isChainBusiness({ name: place.name, tags: place.types || [] }))
         .map((place) => ({
           id: place.place_id,
           name: place.name,

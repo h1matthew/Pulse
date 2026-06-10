@@ -74,6 +74,7 @@ export async function GET(request: Request) {
         data_source: business.data_source,
         tags: business.tags,
         name: business.name,
+        is_chain: business.is_chain,
       })
     )
 

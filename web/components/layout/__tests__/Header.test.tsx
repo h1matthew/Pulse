@@ -50,9 +50,9 @@ describe('Header', () => {
   it('renders logo', () => {
     const { container } = render(<Header />)
 
-    // PulseLogo renders as an inline SVG with aria-hidden="true"
-    const svg = container.querySelector('svg[aria-hidden="true"]')
-    expect(svg).toBeInTheDocument()
+    // PulseLogo renders the logo image with aria-hidden="true"
+    const logo = container.querySelector('img[src*="pulse-logo"]')
+    expect(logo).toBeInTheDocument()
   })
 
   it('renders brand name', () => {

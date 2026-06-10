@@ -1,3 +1,5 @@
+import { isChainBusiness } from "./classify";
+
 export interface BusinessSummaryInput {
   name: string;
   short_description?: string | null;
@@ -27,6 +29,7 @@ export interface RealBusinessRecordInput {
   data_source?: "google" | "osm" | "user_added" | null;
   tags?: string[] | null;
   name?: string | null;
+  is_chain?: boolean | null;
 }
 
 export interface BusinessPhotoOptions {
@@ -204,6 +207,20 @@ export function isRealBusinessPlaceTypes(types?: string[] | null): boolean {
 }
 
 export function isRealBusinessRecord(input: RealBusinessRecordInput): boolean {
+  // Pulse only surfaces independent small businesses — exclude chains and
+  // franchises regardless of where the record came from. The database flag
+  // wins when set; otherwise fall back to name-based classification.
+  if (input.is_chain === true) {
+    return false;
+  }
+  if (
+    input.is_chain !== false &&
+    input.name &&
+    isChainBusiness({ name: input.name, tags: input.tags ?? undefined })
+  ) {
+    return false;
+  }
+
   if (input.data_source !== "google") {
     return true;
   }

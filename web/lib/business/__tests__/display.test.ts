@@ -172,7 +172,46 @@ describe("business display helpers", () => {
         isRealBusinessRecord({
           data_source: "google",
           tags: ["service"],
+          name: "Miguel's Auto Service",
+        })
+      ).toBe(true);
+    });
+
+    it("filters records flagged as chains in the database", () => {
+      expect(
+        isRealBusinessRecord({
+          data_source: "user_added",
+          tags: [],
+          name: "Totally Local Cafe",
+          is_chain: true,
+        })
+      ).toBe(false);
+    });
+
+    it("filters known chains by name when the flag is unset", () => {
+      expect(
+        isRealBusinessRecord({
+          data_source: "google",
+          tags: ["restaurant"],
+          name: "Starbucks Reserve Roastery",
+        })
+      ).toBe(false);
+      expect(
+        isRealBusinessRecord({
+          data_source: "google",
+          tags: ["service"],
           name: "Costco Gas Station",
+        })
+      ).toBe(false);
+    });
+
+    it("trusts an explicit is_chain=false over name heuristics", () => {
+      expect(
+        isRealBusinessRecord({
+          data_source: "user_added",
+          tags: [],
+          name: "Subway Tile Studio",
+          is_chain: false,
         })
       ).toBe(true);
     });

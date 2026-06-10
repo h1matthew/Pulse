@@ -48,8 +48,9 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult> {
 }
 
 /**
- * Geocode a US zip code to coordinates
- * Caches results in localStorage for better performance
+ * Geocode a US zip code to coordinates.
+ * Goes through our own /api/geo/zip route so the Google key stays
+ * server-side. Caches results in localStorage for better performance.
  */
 export async function geocodeZipCode(zipCode: string): Promise<LatLng | null> {
   if (!zipCode || !/^\d{5}(-\d{4})?$/.test(zipCode.trim())) {
@@ -73,15 +74,31 @@ export async function geocodeZipCode(zipCode: string): Promise<LatLng | null> {
     // localStorage not available
   }
 
-  // Geocode the zip
-  const result = await geocodeAddress(trimmedZip)
+  // Geocode the zip via the server-side route
+  let location: LatLng | null = null
+  try {
+    const response = await fetch(`/api/geo/zip?zip=${encodeURIComponent(trimmedZip)}`)
+    if (!response.ok) return null
+
+    const data = await response.json()
+    if (
+      data.location &&
+      typeof data.location.lat === 'number' &&
+      typeof data.location.lng === 'number'
+    ) {
+      location = data.location
+    }
+  } catch (error) {
+    console.error('Zip geocoding error:', error)
+    return null
+  }
 
   // Cache the result
-  if (result.location) {
+  if (location) {
     try {
       const cacheKey = `zip_geocode_${trimmedZip}`
       localStorage.setItem(cacheKey, JSON.stringify({
-        location: result.location,
+        location,
         timestamp: Date.now()
       }))
     } catch {
@@ -89,7 +106,7 @@ export async function geocodeZipCode(zipCode: string): Promise<LatLng | null> {
     }
   }
 
-  return result.location
+  return location
 }
 
 /**
@@ -146,6 +163,24 @@ export async function reverseGeocode(location: LatLng): Promise<string | null> {
     if (data.status !== 'OK' || !data.results?.[0]) return null
 
     return data.results[0].formatted_address
+  } catch (error) {
+    console.error('Reverse geocoding error:', error)
+    return null
+  }
+}
+
+/**
+ * Reverse geocode coordinates to just the city name (e.g. "Diamond Bar").
+ * Goes through our own /api/geo/city route so the Google key stays
+ * server-side. Returns null when the lookup fails or no city is found.
+ */
+export async function reverseGeocodeCity(location: LatLng): Promise<string | null> {
+  try {
+    const response = await fetch(`/api/geo/city?lat=${location.lat}&lng=${location.lng}`)
+    if (!response.ok) return null
+
+    const data = await response.json()
+    return typeof data.city === 'string' && data.city ? data.city : null
   } catch (error) {
     console.error('Reverse geocoding error:', error)
     return null

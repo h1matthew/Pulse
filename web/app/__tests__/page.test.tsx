@@ -88,7 +88,9 @@ describe('Home Page', () => {
 
   it('renders hero section main heading', () => {
     render(<Home />)
-    expect(screen.getByText('Find good places nearby.')).toBeInTheDocument()
+    const heading = screen.getByRole('heading', { level: 1 })
+    // HeroCityName falls back to "Your City" without a resolved location
+    expect(heading).toHaveTextContent('Feel the Pulse of Your City.')
   })
 
   it('renders hero description', () => {

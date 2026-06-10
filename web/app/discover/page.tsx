@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react
 import { AlertCircle, Clock, Heart, MapPin, Minus, Navigation, Plus, RefreshCw, Search, ShieldCheck, Star, Store } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
+import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -601,7 +602,7 @@ export default function DiscoverPage() {
       <main className="px-4 pb-12 pt-24 sm:px-6">
         <div className="mx-auto max-w-6xl space-y-6">
           <section aria-labelledby="discover-heading">
-            <div className="flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
+            <AnimatedSection animation="rise-up" className="flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
               <div className="max-w-2xl">
                 <p className="mb-2 text-sm font-medium text-primary">{locationSummary}</p>
                 <h1 id="discover-heading" className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -622,7 +623,7 @@ export default function DiscoverPage() {
                   {radius / 1000} km
                 </span>
               </div>
-            </div>
+            </AnimatedSection>
           </section>
 
           {/* Location Prompt */}
@@ -637,6 +638,7 @@ export default function DiscoverPage() {
 
           {/* Search and Filters */}
           {hasLocation && (
+            <AnimatedSection animation="rise-up" delay={0.08}>
             <section
               aria-label="Search and filters"
               className="rounded-lg border border-border bg-card p-3 shadow-sm sm:p-4"
@@ -812,6 +814,7 @@ export default function DiscoverPage() {
                   </div>
                 </div>
             </section>
+            </AnimatedSection>
           )}
 
           {/* Business Grid */}
@@ -864,11 +867,12 @@ export default function DiscoverPage() {
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {sortedBusinesses.map((business) => (
-                    <BusinessCard
-                      key={business.id}
-                      business={business}
-                      userLocation={location}
-                    />
+                    <AnimatedSection key={business.id} animation="rise-up">
+                      <BusinessCard
+                        business={business}
+                        userLocation={location}
+                      />
+                    </AnimatedSection>
                   ))}
                 </div>
               )}
