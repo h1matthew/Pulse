@@ -216,7 +216,7 @@ export default function DashboardPage() {
   // Show loading state while auth is loading
   if (authLoading) {
     return (
-      <div className="relative min-h-screen bg-background">
+      <div className="relative min-h-screen">
         <Header />
         <div className="pt-20 pb-12 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -231,7 +231,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <Header />
 
       <div className="pt-20 pb-12">

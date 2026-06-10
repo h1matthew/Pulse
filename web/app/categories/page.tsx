@@ -1,150 +1,237 @@
-import { MapPin, ArrowRight } from "lucide-react";
+import {
+  ArrowRight,
+  Gamepad2,
+  HeartPulse,
+  Palette,
+  ShoppingBag,
+  Store,
+  Utensils,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { Header } from "@/components/layout/Header";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { NavLink } from "@/components/ui/nav-link";
-import { CATEGORY_FILTERS } from "@/lib/constants/navigation";
+import { createClient } from "@/lib/supabase/server";
 
-const CATEGORIES = [
-  {
-    id: "food-drink",
-    name: "Food & Drink",
-    description: "Restaurants, cafes, bars, and food trucks serving local flavors",
-    icon: "🍽️",
-    color: "oklch(0.7 0.16 45)",
-    businessCount: 234,
-    featured: ["The Local Bean", "Corner Bistro", "Artisan Bakery"],
-  },
-  {
-    id: "retail",
-    name: "Retail",
-    description: "Clothing, gifts, books, and specialty shops",
-    icon: "🛍️",
-    color: "oklch(0.6 0.18 175)",
-    businessCount: 156,
-    featured: ["Artisan Books & Gifts", "Vintage Finds", "Local Threads"],
-  },
-  {
-    id: "services",
-    name: "Services",
-    description: "Professional services and home maintenance experts",
-    icon: "🛠️",
-    color: "oklch(0.6 0.15 280)",
-    businessCount: 189,
-    featured: ["Quick Fix Handyman", "Downtown Legal", "Spark Electric"],
-  },
-  {
-    id: "health-wellness",
-    name: "Health & Wellness",
-    description: "Gyms, spas, salons, and healthcare providers",
-    icon: "💪",
-    color: "oklch(0.65 0.14 145)",
-    businessCount: 98,
-    featured: ["Wellness Hub Spa", "Urban Fitness Studio", "Mindful Yoga"],
-  },
-  {
-    id: "arts-culture",
-    name: "Arts & Culture",
-    description: "Galleries, theaters, museums, and creative studios",
-    icon: "🎨",
-    color: "oklch(0.75 0.18 85)",
-    businessCount: 67,
-    featured: ["The Craft Workshop", "Community Gallery", "Indie Theater"],
-  },
-  {
-    id: "entertainment",
-    name: "Entertainment",
-    description: "Arcades, bowling, cinemas, and live venues",
-    icon: "🎭",
-    color: "oklch(0.65 0.2 320)",
-    businessCount: 45,
-    featured: ["Retro Arcade", "Comedy Club", "Jazz Lounge"],
-  },
+interface CategoryRow {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+}
+
+interface BusinessRow {
+  category_id: string | null;
+  name: string;
+  average_rating: number | null;
+  review_count: number | null;
+  is_chain: boolean | null;
+}
+
+interface CategoryWithStats extends CategoryRow {
+  businessCount: number;
+  featured: string[];
+}
+
+/** Slug → lucide icon. Unknown slugs fall back to a generic storefront. */
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  "food-drink": Utensils,
+  retail: ShoppingBag,
+  services: Wrench,
+  "health-wellness": HeartPulse,
+  "arts-culture": Palette,
+  entertainment: Gamepad2,
+};
+
+/** Used only when a category row has no description in the database. */
+const FALLBACK_DESCRIPTION = "Local businesses in this category.";
+
+/**
+ * Static fallback so the page still renders a useful directory if the
+ * categories fetch fails. Counts will be zero because these ids will not
+ * match any business rows.
+ */
+const FALLBACK_CATEGORIES: CategoryRow[] = [
+  { id: "food-drink", slug: "food-drink", name: "Food & Drink", description: "Restaurants, cafes, bars, and food trucks", sort_order: 1 },
+  { id: "retail", slug: "retail", name: "Retail", description: "Clothing, gifts, books, and specialty shops", sort_order: 2 },
+  { id: "services", slug: "services", name: "Services", description: "Professional services and home maintenance", sort_order: 3 },
+  { id: "health-wellness", slug: "health-wellness", name: "Health & Wellness", description: "Gyms, spas, salons, and healthcare", sort_order: 4 },
+  { id: "arts-culture", slug: "arts-culture", name: "Arts & Culture", description: "Galleries, theaters, museums, and studios", sort_order: 5 },
+  { id: "entertainment", slug: "entertainment", name: "Entertainment", description: "Arcades, bowling, cinemas, and venues", sort_order: 6 },
 ];
 
-export default function CategoriesPage() {
+async function fetchCategories(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<CategoryRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from("categories")
+      .select("id, slug, name, description, sort_order")
+      .eq("is_active", true)
+      .order("sort_order");
+    if (error || !data || data.length === 0) return FALLBACK_CATEGORIES;
+    return data as CategoryRow[];
+  } catch {
+    return FALLBACK_CATEGORIES;
+  }
+}
+
+async function fetchBusinesses(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<BusinessRow[]> {
+  try {
+    const { data, error } = await supabase
+      .from("businesses")
+      .select("category_id, name, average_rating, review_count, is_chain")
+      .gt("average_rating", 0);
+    if (error || !data) return [];
+    return data as BusinessRow[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Per category: the real business count plus the top 3 businesses by rating
+ * (tie-break: review count) as "featured" names. Independent businesses
+ * (is_chain !== true) are preferred over chains.
+ */
+function buildCategoryStats(
+  categories: CategoryRow[],
+  businesses: BusinessRow[]
+): CategoryWithStats[] {
+  return categories.map((category) => {
+    const matches = businesses.filter((b) => b.category_id === category.id);
+    const featured = [...matches]
+      .sort((a, b) => {
+        const chainA = a.is_chain === true ? 1 : 0;
+        const chainB = b.is_chain === true ? 1 : 0;
+        if (chainA !== chainB) return chainA - chainB;
+        const ratingDiff = (b.average_rating ?? 0) - (a.average_rating ?? 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        return (b.review_count ?? 0) - (a.review_count ?? 0);
+      })
+      .slice(0, 3)
+      .map((b) => b.name);
+
+    return {
+      ...category,
+      businessCount: matches.length,
+      featured,
+    };
+  });
+}
+
+function pluralizeBusinesses(count: number): string {
+  return `${count} ${count === 1 ? "business" : "businesses"}`;
+}
+
+export default async function CategoriesPage() {
+  const supabase = await createClient();
+  const [categories, businesses] = await Promise.all([
+    fetchCategories(supabase),
+    fetchBusinesses(supabase),
+  ]);
+
+  const categoryStats = buildCategoryStats(categories, businesses);
+  const totalLabel = `${pluralizeBusinesses(businesses.length)} across ${categories.length} ${categories.length === 1 ? "category" : "categories"}`;
+
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="min-h-screen">
       <Header />
 
-      <div className="pt-20 pb-12">
-        <div className="mx-auto max-w-6xl px-6">
-          {/* Header */}
+      <main className="px-4 pb-12 pt-24 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          {/* Page header */}
           <AnimatedSection animation="fade-up">
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="h-6 w-6 text-primary" />
-                <h1 className="text-3xl font-bold tracking-tight">
-                  Browse by Category
-                </h1>
-              </div>
-              <p className="text-muted-foreground">
-                Explore local businesses organized by category
+            <div className="mb-10 border-b border-border pb-8">
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Browse the directory
+              </p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+                Browse by Category
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                Every place in the directory, organized by what it does.
+              </p>
+              <p className="mt-4 font-mono text-xs text-muted-foreground">
+                {totalLabel}
               </p>
             </div>
           </AnimatedSection>
 
-          {/* Categories Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {CATEGORIES.map((category, index) => (
-              <AnimatedSection
-                key={category.id}
-                animation="fade-up"
-                delay={0.1 * (index + 1)}
-              >
-                <NavLink href={`/discover?category=${category.id}`}>
-                  <Card className="h-full card-lift cursor-pointer group">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className="text-5xl"
-                          style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.1))" }}
-                        >
-                          {category.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold mb-1 group-hover:text-primary transition-colors">
-                            {category.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            {category.description}
+          {/* Category grid */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {categoryStats.map((category, index) => {
+              const Icon = CATEGORY_ICONS[category.slug] ?? Store;
+              return (
+                <AnimatedSection
+                  key={category.id}
+                  animation="fade-up"
+                  delay={0.05 * (index + 1)}
+                  className="h-full"
+                >
+                  <NavLink
+                    href={`/discover?category=${category.slug}`}
+                    aria-label={`Explore ${category.name}`}
+                    className="card-lift group flex h-full flex-col rounded-lg border border-border bg-card p-6 transition-colors hover:border-primary/30"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-lg font-semibold tracking-tight transition-colors group-hover:text-primary">
+                          {category.name}
+                        </h2>
+                        <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                          {category.description || FALLBACK_DESCRIPTION}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex-1">
+                      <p className="mt-4 font-mono text-sm text-primary">
+                        {pluralizeBusinesses(category.businessCount)}
+                      </p>
+
+                      {category.featured.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-xs text-muted-foreground">
+                            Top rated:
                           </p>
-                          <p className="text-sm font-medium text-primary mb-3">
-                            {category.businessCount} businesses
-                          </p>
-                          <div className="space-y-1">
-                            <p className="text-xs text-muted-foreground">Featured:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {category.featured.map((business) => (
-                                <span
-                                  key={business}
-                                  className="text-xs bg-muted px-2 py-0.5 rounded"
-                                >
-                                  {business}
-                                </span>
-                              ))}
-                            </div>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {category.featured.map((name) => (
+                              <span
+                                key={name}
+                                className="rounded bg-muted px-2 py-0.5 text-xs"
+                              >
+                                {name}
+                              </span>
+                            ))}
                           </div>
                         </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Explore {category.name.toLowerCase()}
-                        </span>
-                        <Button variant="ghost" size="sm" className="group/btn">
-                          View All
-                          <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover/btn:translate-x-1" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </NavLink>
-              </AnimatedSection>
-            ))}
+                      )}
+                    </div>
+
+                    <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+                      <span className="text-sm text-muted-foreground transition-colors group-hover:text-foreground">
+                        Explore {category.name}
+                      </span>
+                      <ArrowRight
+                        className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  </NavLink>
+                </AnimatedSection>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -2,32 +2,29 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Sparkles, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { useLocation } from "@/hooks/useLocation";
 import { SuggestedQuestions } from "./SuggestedQuestions";
-import { ChatMessage } from "./ChatMessage";
+import { ChatMessage, type AssistantChatMessage } from "./ChatMessage";
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  suggestions?: string[];
-  timestamp: Date;
+const WELCOME_TEXT =
+  "Hi there! I'm your Pulse local guide — ask me for nearby food, shops, or services.";
+
+function createWelcomeMessage(): AssistantChatMessage {
+  return {
+    id: "welcome",
+    role: "assistant",
+    content: WELCOME_TEXT,
+    timestamp: new Date(),
+  };
 }
 
 export function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hi there! I'm Pulse Assistant. I can help you discover amazing local businesses or explain how supporting local strengthens your community. What can I help you with?",
-      timestamp: new Date(),
-    },
+  const [messages, setMessages] = useState<AssistantChatMessage[]>([
+    createWelcomeMessage(),
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +32,14 @@ export function ChatWidget() {
 
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastSentRef = useRef<string | null>(null);
+  const messageIdRef = useRef(0);
   const { location } = useLocation();
+
+  const nextMessageId = (suffix: string) => {
+    messageIdRef.current += 1;
+    return `msg-${messageIdRef.current}-${suffix}`;
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -45,20 +49,33 @@ export function ChatWidget() {
   // Focus input when chat opens
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      const id = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(id);
     }
   }, [isOpen]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  // ESC closes the panel
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isOpen]);
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
+  const handleSend = async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
+    if (!text || isLoading) return;
+
+    const userMessage: AssistantChatMessage = {
+      id: nextMessageId("user"),
       role: "user",
-      content: input.trim(),
+      content: text,
       timestamp: new Date(),
     };
 
+    lastSentRef.current = text;
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
@@ -69,11 +86,10 @@ export function ChatWidget() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: userMessage.content,
-          history: messages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          message: text,
+          history: messages
+            .filter((m) => !m.error)
+            .map((m) => ({ role: m.role, content: m.content })),
           location: location
             ? { lat: location.lat, lng: location.lng }
             : undefined,
@@ -81,26 +97,32 @@ export function ChatWidget() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to get response");
+        throw new Error("Assistant request failed");
       }
 
       const data = await response.json();
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+      const assistantMessage: AssistantChatMessage = {
+        id: nextMessageId("assistant"),
         role: "assistant",
-        content: data.text,
-        suggestions: data.suggestions,
+        content: typeof data.text === "string" ? data.text : "",
+        suggestions: Array.isArray(data.suggestions)
+          ? data.suggestions.filter(
+              (s: unknown): s is string => typeof s === "string"
+            )
+          : undefined,
+        degraded: data.degraded === true,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+    } catch {
+      const errorMessage: AssistantChatMessage = {
+        id: nextMessageId("error"),
         role: "assistant",
         content:
-          "I'm sorry, I'm having trouble connecting right now. Please try again in a moment!",
+          "I couldn't reach the assistant just now. Check your connection and give it another go.",
+        error: true,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -109,28 +131,22 @@ export function ChatWidget() {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+  const handleRetry = () => {
+    if (lastSentRef.current && !isLoading) {
+      void handleSend(lastSentRef.current);
     }
   };
 
-  const handleSuggestionClick = (question: string) => {
-    setInput(question);
-    setShowSuggestions(false);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleSend();
+    }
   };
 
   const handleClearChat = () => {
-    setMessages([
-      {
-        id: "welcome",
-        role: "assistant",
-        content:
-          "Hi there! I'm Pulse Assistant. I can help you discover amazing local businesses or explain how supporting local strengthens your community. What can I help you with?",
-        timestamp: new Date(),
-      },
-    ]);
+    setMessages([createWelcomeMessage()]);
+    lastSentRef.current = null;
     setShowSuggestions(true);
   };
 
@@ -148,9 +164,10 @@ export function ChatWidget() {
             <Button
               onClick={() => setIsOpen(true)}
               size="lg"
-              className="h-14 w-14 rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              aria-label="Open Pulse Assistant"
+              className="h-12 w-12 rounded-xl border border-border shadow-sm transition-shadow hover:shadow-md"
             >
-              <MessageCircle className="h-6 w-6" />
+              <MessageCircle className="h-5 w-5" />
             </Button>
           </motion.div>
         )}
@@ -166,16 +183,24 @@ export function ChatWidget() {
             transition={{ duration: 0.2 }}
             className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)]"
           >
-            <div className="bg-background border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[600px]">
+            <div
+              role="dialog"
+              aria-label="Pulse Assistant"
+              className="bg-background border border-border rounded-xl shadow-lg overflow-hidden flex flex-col max-h-[600px]"
+            >
               {/* Header */}
-              <div className="bg-gradient-to-r from-primary to-chart-2 p-4 flex items-center justify-between">
+              <div className="bg-primary p-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-white" />
+                  <div className="h-8 w-8 rounded-md bg-primary-foreground/15 flex items-center justify-center">
+                    <MessageCircle className="h-4 w-4 text-primary-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">Pulse Assistant</h3>
-                    <p className="text-xs text-white/80">Powered by AI</p>
+                    <h3 className="font-semibold text-primary-foreground">
+                      Pulse Assistant
+                    </h3>
+                    <p className="text-xs text-primary-foreground/80">
+                      Local guide
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -183,7 +208,7 @@ export function ChatWidget() {
                     variant="ghost"
                     size="sm"
                     onClick={handleClearChat}
-                    className="text-white/80 hover:text-white hover:bg-white/20"
+                    className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
                   >
                     Clear
                   </Button>
@@ -191,7 +216,8 @@ export function ChatWidget() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsOpen(false)}
-                    className="text-white/80 hover:text-white hover:bg-white/20"
+                    aria-label="Close Pulse Assistant"
+                    className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -200,20 +226,57 @@ export function ChatWidget() {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto max-h-[420px]">
-                <div className="p-4 space-y-4">
-                  {messages.map((message) => (
-                    <ChatMessage key={message.id} message={message} />
-                  ))}
+                <div className="p-4 space-y-3">
+                  {messages.map((message, index) => {
+                    const isLatest = index === messages.length - 1;
+                    const showChips =
+                      isLatest &&
+                      !isLoading &&
+                      message.role === "assistant" &&
+                      !message.error &&
+                      !!message.suggestions?.length;
+
+                    return (
+                      <div key={message.id} className="space-y-2">
+                        <ChatMessage
+                          message={message}
+                          onRetry={message.error ? handleRetry : undefined}
+                        />
+                        {showChips && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {message.suggestions?.map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => void handleSend(suggestion)}
+                                className="rounded-full border border-border bg-background px-3 py-1 text-xs text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {isLoading && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    <div
+                      role="status"
+                      className="flex items-center gap-2 text-muted-foreground"
+                    >
+                      <Loader2
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
                       <span className="text-sm">Thinking...</span>
                     </div>
                   )}
 
                   {showSuggestions && messages.length <= 1 && (
-                    <SuggestedQuestions onSelect={handleSuggestionClick} />
+                    <SuggestedQuestions
+                      onSelect={(question) => void handleSend(question)}
+                    />
                   )}
 
                   <div ref={scrollEndRef} />
@@ -221,7 +284,7 @@ export function ChatWidget() {
               </div>
 
               {/* Input */}
-              <div className="p-4 border-t bg-muted/30">
+              <div className="p-4 border-t border-border bg-secondary/50">
                 <div className="flex gap-2">
                   <Input
                     ref={inputRef}
@@ -233,9 +296,10 @@ export function ChatWidget() {
                     disabled={isLoading}
                   />
                   <Button
-                    onClick={handleSend}
+                    onClick={() => void handleSend()}
                     disabled={!input.trim() || isLoading}
                     size="icon"
+                    aria-label="Send message"
                   >
                     {isLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

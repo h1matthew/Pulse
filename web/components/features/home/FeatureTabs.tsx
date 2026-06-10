@@ -1,292 +1,259 @@
 'use client'
 
-import { useState } from 'react'
-import type { LucideIcon } from 'lucide-react'
-import { Search, Star, TrendingUp, Tag, MapPin, Heart, ArrowRight, DollarSign, Store } from 'lucide-react'
+/**
+ * FeatureTabs — the "Local snapshot" card on the homepage.
+ *
+ * The Find tab shows REAL nearby businesses (open-now first, then best rated)
+ * with working per-row bookmark buttons — guests save on-device via
+ * useToggleBookmark's local scope. Deals and Impact stay static: they are
+ * product explainers, not live data. The header bookmark icon links to
+ * /bookmarks. Live rows are gated behind a mount flag so the server render
+ * and the client's first paint match (React Query can hydrate persisted
+ * data, which would otherwise mismatch).
+ */
+
+import { useEffect, useMemo, useState } from 'react'
+import { Bookmark, MapPin, Star, Tag, TrendingUp } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { NavLink } from '@/components/ui/nav-link'
+import { Button } from '@/components/ui/button'
+import { useLocation, calculateDistance, formatDistance } from '@/hooks/useLocation'
+import { useNearbyBusinesses } from '@/hooks/useBusinesses'
+import { useIsBookmarked, useToggleBookmark } from '@/hooks/useBookmarks'
+import { isOpenNow } from '@/lib/business/hours'
+import type { BusinessWithCategory, LatLng } from '@/types/business'
+
+// Diamond Bar, CA — where the seeded data lives. Used when the visitor hasn't
+// shared their location, so the card always shows real nearby businesses.
+const DEFAULT_LOCATION: LatLng = { lat: 34.0286, lng: -117.8103 }
+const RADIUS_METERS = 10000
 
 const TABS = [
-  { id: 'discover', label: 'Discover' },
-  { id: 'review', label: 'Review' },
-  { id: 'impact', label: 'Impact' },
+  { id: 'find', label: 'Find' },
   { id: 'deals', label: 'Deals' },
-  { id: 'missions', label: 'Missions' },
+  { id: 'impact', label: 'Impact' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
 
-const TAB_CONTENT: Record<TabId, { description: string; cta: string; href: string }> = {
-  discover: {
-    description: 'Browse by category, sort by rating, or let AI match you with local spots. Real businesses from Google Places, not a static directory.',
-    cta: 'Start discovering',
+interface SnapshotRow {
+  name: string
+  meta: string
+  value: string
+}
+
+interface SnapshotContent {
+  eyebrow: string
+  title: string
+  description: string
+  href: string
+  cta: string
+  rows: SnapshotRow[]
+}
+
+// Deals and Impact are static product explainers; Find rows are live (below).
+const SNAPSHOTS: Record<TabId, SnapshotContent> = {
+  find: {
+    eyebrow: 'Nearby places',
+    title: 'Open now, well reviewed, close by.',
+    description: 'A short list you can act on.',
     href: '/discover',
-  },
-  review: {
-    description: 'Leave star ratings and written reviews protected by CAPTCHA. Sort businesses by rating to find the best local spots — no fake reviews.',
-    cta: 'Write a review',
-    href: '/discover',
-  },
-  impact: {
-    description: '68 cents of every local dollar stays in your community. Track dollars kept local, jobs supported, and your impact tier on a personal dashboard.',
-    cta: 'View your impact',
-    href: '/dashboard',
+    cta: 'Browse places',
+    rows: [],
   },
   deals: {
-    description: 'Claim deals with unique redemption codes. From percentage discounts to free items — the more you engage locally, the more perks you unlock.',
-    cta: 'Browse deals',
+    eyebrow: 'Useful offers',
+    title: 'Deals without the hunt.',
+    description: 'Claim what fits today.',
     href: '/deals',
+    cta: 'See deals',
+    rows: [
+      { name: 'Weeknight bento', meta: 'H Mart Diamond Bar', value: '15%' },
+      { name: 'Seafood combo', meta: 'The Boiling Crab', value: '$8' },
+      { name: 'Family arcade pass', meta: 'Round1 Arcade', value: '20%' },
+    ],
   },
-  missions: {
-    description: 'Complete Boost Missions like "Try 3 new coffee shops this month." Track progress with visual bars and unlock rewards when you finish.',
-    cta: 'See missions',
-    href: '/missions',
+  impact: {
+    eyebrow: 'Your month',
+    title: 'A simple local record.',
+    description: 'See what stayed nearby.',
+    href: '/dashboard',
+    cta: 'View impact',
+    rows: [
+      { name: 'Kept local', meta: 'From visits and claims', value: '$184' },
+      { name: 'Places supported', meta: 'This month', value: '7' },
+      { name: 'Saved places', meta: 'Ready for later', value: '12' },
+    ],
   },
 }
 
-// ── Category banners with gradient backgrounds ──
+const ICONS: Record<TabId, typeof MapPin> = {
+  find: MapPin,
+  deals: Tag,
+  impact: TrendingUp,
+}
 
-const CATEGORIES = [
-  { name: 'All', slug: '', gradient: 'from-white/10 to-white/5' },
-  { name: 'Food & Drink', slug: 'food-drink', gradient: 'from-orange-500/20 to-amber-500/10' },
-  { name: 'Retail', slug: 'retail', gradient: 'from-blue-500/20 to-indigo-500/10' },
-  { name: 'Services', slug: 'services', gradient: 'from-emerald-500/20 to-teal-500/10' },
-]
+function coords(b: BusinessWithCategory): LatLng | null {
+  const lat = b.latitude == null ? NaN : Number(b.latitude)
+  const lng = b.longitude == null ? NaN : Number(b.longitude)
+  return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null
+}
 
-// ── Real businesses from the Pulse platform ──
+interface NearbyRow {
+  id: string
+  name: string
+  meta: string
+  rating: string | null
+}
 
-const BUSINESSES = [
-  { name: 'H Mart Diamond Bar', cat: 'Food & Drink', rating: 4.6, reviews: 312 },
-  { name: '99 Ranch Market', cat: 'Food & Drink', rating: 4.4, reviews: 287 },
-  { name: 'The Boiling Crab', cat: 'Food & Drink', rating: 4.3, reviews: 458 },
-]
+/** Open-now places first, then best rated — both tiers sorted by rating then review count. */
+function selectNearby(businesses: BusinessWithCategory[], origin: LatLng): NearbyRow[] {
+  const byRating = (a: BusinessWithCategory, b: BusinessWithCategory) => {
+    const ratingDelta = (Number(b.average_rating) || 0) - (Number(a.average_rating) || 0)
+    if (ratingDelta !== 0) return ratingDelta
+    return (b.review_count ?? 0) - (a.review_count ?? 0)
+  }
 
-const REVIEWS = [
-  {
-    author: 'Emily R.',
-    avatar: 'bg-gradient-to-br from-rose-400 to-pink-600',
-    initials: 'ER',
-    rating: 5,
-    text: 'The seafood boil is incredible — generous portions and the Whole Sha-Bang sauce is addictive. Always packed for a reason.',
-    business: 'The Boiling Crab',
-    time: '3 days ago',
-  },
-  {
-    author: 'David L.',
-    avatar: 'bg-gradient-to-br from-sky-400 to-blue-600',
-    initials: 'DL',
-    rating: 4,
-    text: 'Best Asian grocery selection in the SGV. Fresh produce, great bakery section, and the food court has amazing options.',
-    business: 'H Mart Diamond Bar',
-    time: '1 week ago',
-  },
-]
+  const sorted = [...businesses].sort(byRating)
+  const open = sorted.filter((b) => isOpenNow(b.hours) === true)
+  const rest = sorted.filter((b) => isOpenNow(b.hours) !== true)
 
-// ── Visual components for each tab ──
+  return [...open, ...rest].slice(0, 3).map((b) => {
+    const c = coords(b)
+    const category = b.category?.name ?? 'Local business'
+    const distance = c ? formatDistance(calculateDistance(origin, c)) : null
+    return {
+      id: b.id,
+      name: b.name,
+      meta: distance ? `${category} · ${distance}` : category,
+      rating: b.average_rating ? Number(b.average_rating).toFixed(1) : null,
+    }
+  })
+}
 
-function DiscoverVisual() {
+function RowSkeleton() {
   return (
-    <div className="space-y-3">
-      <NavLink href="/discover" className="block">
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-colors cursor-pointer">
-          <Search className="h-4 w-4 text-white/40" />
-          <span className="text-sm text-white/40">Search businesses near you...</span>
+    <div className="divide-y divide-border" data-testid="find-rows-skeleton">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-4 sm:px-5">
+          <div className="min-w-0 space-y-2">
+            <div className="h-3.5 w-40 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-28 animate-pulse rounded bg-muted" />
+          </div>
+          <div className="h-3.5 w-8 animate-pulse rounded bg-muted" />
+          <div className="h-7 w-7 animate-pulse rounded bg-muted" />
         </div>
+      ))}
+    </div>
+  )
+}
+
+function NearbyBusinessRow({ row }: { row: NearbyRow }) {
+  const { data: isBookmarked } = useIsBookmarked(row.id)
+  const toggleBookmark = useToggleBookmark()
+  const bookmarked = isBookmarked === true
+
+  const handleToggle = async () => {
+    try {
+      const result = await toggleBookmark.mutateAsync({
+        businessId: row.id,
+        isBookmarked: bookmarked,
+      })
+      if (result.local) {
+        toast.success(result.bookmarked ? 'Saved on this device' : 'Removed from this device', {
+          description: 'Sign in to sync bookmarks across devices.',
+        })
+      } else {
+        toast.success(result.bookmarked ? 'Business bookmarked' : 'Bookmark removed')
+      }
+    } catch {
+      toast.error('Failed to update bookmark')
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-4 sm:px-5">
+      <NavLink
+        href={`/business/${row.id}`}
+        className="min-w-0 rounded-sm transition-colors hover:text-primary"
+      >
+        <div className="truncate text-sm font-medium text-foreground">{row.name}</div>
+        <div className="mt-1 text-xs text-muted-foreground">{row.meta}</div>
       </NavLink>
-
-      <div className="flex gap-2 flex-wrap">
-        {CATEGORIES.map((cat, i) => (
-          <NavLink
-            key={cat.name}
-            href={cat.slug ? `/discover?category=${cat.slug}` : '/discover'}
-          >
-            <span className={cn(
-              "relative overflow-hidden text-xs px-4 py-1.5 rounded-full border cursor-pointer transition-all hover:border-white/30",
-              i === 0
-                ? "bg-white/10 border-white/20 text-white"
-                : "border-white/10 text-white/70 hover:text-white",
-              `bg-gradient-to-r ${cat.gradient}`
-            )}>
-              {cat.name}
-            </span>
-          </NavLink>
-        ))}
+      <div className="flex items-center gap-1 text-sm font-mono font-semibold text-foreground">
+        <Star className="h-3.5 w-3.5 fill-primary text-primary" aria-hidden="true" />
+        {row.rating ?? '—'}
       </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        onClick={handleToggle}
+        disabled={toggleBookmark.isPending}
+        aria-label={bookmarked ? `Remove bookmark for ${row.name}` : `Bookmark ${row.name}`}
+      >
+        <Bookmark
+          className={cn(
+            'h-4 w-4',
+            bookmarked ? 'fill-primary text-primary' : 'text-muted-foreground'
+          )}
+          aria-hidden="true"
+        />
+      </Button>
+    </div>
+  )
+}
 
-      {BUSINESSES.map((b) => (
-        <div key={b.name} className="flex items-center justify-between px-4 py-3.5 rounded-lg bg-white/[0.03] border border-white/10 hover:border-white/20 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-teal-500/20 to-teal-500/5 flex items-center justify-center">
-              <Store className="h-4 w-4 text-teal-400/70" />
-            </div>
-            <div>
-              <div className="text-sm font-medium text-white">{b.name}</div>
-              <div className="text-xs text-white/40">{b.cat}</div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="flex items-center gap-1 text-xs">
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-              <span className="text-white font-medium">{b.rating}</span>
-            </div>
-            <div className="text-xs text-white/30">{b.reviews} reviews</div>
-          </div>
-        </div>
+function NearbyRows() {
+  // Stable skeleton until mounted + loaded so SSR and first client paint match.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  const { location } = useLocation()
+  const effectiveLocation = location ?? DEFAULT_LOCATION
+  const { data, isLoading } = useNearbyBusinesses(effectiveLocation, RADIUS_METERS)
+
+  const rows = useMemo(() => selectNearby(data ?? [], effectiveLocation), [data, effectiveLocation])
+
+  if (!mounted || isLoading || rows.length === 0) {
+    return <RowSkeleton />
+  }
+
+  return (
+    <div className="divide-y divide-border">
+      {rows.map((row) => (
+        <NearbyBusinessRow key={row.id} row={row} />
       ))}
     </div>
   )
-}
-
-function ReviewVisual() {
-  return (
-    <div className="space-y-3">
-      {REVIEWS.map((r) => (
-        <div key={r.author} className="px-4 py-3.5 rounded-lg bg-white/[0.03] border border-white/10">
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-2.5">
-              <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white", r.avatar)}>
-                {r.initials}
-              </div>
-              <span className="text-sm font-medium text-white">{r.author}</span>
-            </div>
-            <div className="flex gap-0.5">
-              {[1,2,3,4,5].map(s => (
-                <Star key={s} className={cn("h-3 w-3", s <= r.rating ? "fill-amber-400 text-amber-400" : "text-white/20")} />
-              ))}
-            </div>
-          </div>
-          <p className="text-sm text-white/70 leading-relaxed">&ldquo;{r.text}&rdquo;</p>
-          <div className="text-xs text-white/30 mt-2">{r.business} · {r.time}</div>
-        </div>
-      ))}
-      <div className="px-4 py-2.5 rounded-lg border border-dashed border-white/10 flex items-center justify-center gap-2 text-white/30 text-sm">
-        <Star className="h-4 w-4" /> Protected by CAPTCHA verification
-      </div>
-    </div>
-  )
-}
-
-function ImpactVisual() {
-  const metrics: { label: string; value: string; icon: LucideIcon; iconColor: string }[] = [
-    { label: 'Kept Local', value: '$1,240', icon: DollarSign, iconColor: 'text-emerald-400' },
-    { label: 'Businesses', value: '18', icon: Store, iconColor: 'text-blue-400' },
-    { label: 'Reviews', value: '12', icon: Star, iconColor: 'text-amber-400' },
-    { label: 'Jobs Impacted', value: '2', icon: Heart, iconColor: 'text-pink-400' },
-  ]
-
-  return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2.5">
-        {metrics.map(m => {
-          const Icon = m.icon
-          return (
-            <div key={m.label} className="px-3 py-3 rounded-lg bg-white/[0.03] border border-white/10">
-              <Icon className={cn("h-4 w-4 mb-1.5", m.iconColor)} />
-              <div className="text-xl font-bold text-white">{m.value}</div>
-              <div className="text-xs text-white/40">{m.label}</div>
-            </div>
-          )
-        })}
-      </div>
-      <div className="px-4 py-3 rounded-lg border border-teal-500/20 bg-teal-500/5">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-white/70">Impact Tier</span>
-          <span className="text-sm font-semibold text-teal-400">Local Supporter 💚</span>
-        </div>
-        <div className="h-1.5 rounded-full bg-white/10 mt-2 overflow-hidden">
-          <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-teal-500 to-teal-400" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function DealsVisual() {
-  const deals = [
-    { title: 'Weeknight Bento Bundle', biz: 'H Mart Diamond Bar', discount: '15% off', code: 'HMART15', codeColor: 'text-teal-400' },
-    { title: 'Fresh Produce Friday', biz: '99 Ranch Market', discount: '20% off', code: 'RANCH20', codeColor: 'text-amber-400' },
-    { title: 'Seafood Combo Perk', biz: 'The Boiling Crab', discount: '$8 off', code: 'CRAB8', codeColor: 'text-rose-400' },
-  ]
-
-  return (
-    <div className="space-y-2.5">
-      {deals.map(d => (
-        <div key={d.code} className="flex items-center justify-between px-4 py-3.5 rounded-lg bg-white/[0.03] border border-white/10">
-          <div>
-            <div className="text-sm font-medium text-white">{d.title}</div>
-            <div className="text-xs text-white/40">{d.biz}</div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-teal-400">{d.discount}</span>
-            <span className={cn("text-xs font-mono font-bold bg-white/5 px-2.5 py-1 rounded border border-white/10", d.codeColor)}>
-              {d.code}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function MissionsVisual() {
-  return (
-    <div className="space-y-2.5">
-      {[
-        { name: 'Coffee Explorer', desc: 'Visit 3 different coffee shops', progress: 2, target: 3, color: 'bg-amber-400' },
-        { name: 'Retail Champion', desc: 'Support 5 local retail stores', progress: 3, target: 5, color: 'bg-teal-400' },
-        { name: 'Review Rockstar', desc: 'Leave 10 verified reviews', progress: 7, target: 10, color: 'bg-purple-400' },
-      ].map(m => (
-        <div key={m.name} className="px-4 py-3.5 rounded-lg bg-white/[0.03] border border-white/10">
-          <div className="flex items-center justify-between mb-1">
-            <div>
-              <div className="text-sm font-medium text-white">{m.name}</div>
-              <div className="text-xs text-white/40">{m.desc}</div>
-            </div>
-            <span className="text-xs font-medium text-white/60">{m.progress}/{m.target}</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-white/10 mt-2 overflow-hidden">
-            <div className={cn("h-full rounded-full transition-all duration-500", m.color)} style={{ width: `${(m.progress / m.target) * 100}%` }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-const VISUALS: Record<TabId, () => React.ReactNode> = {
-  discover: DiscoverVisual,
-  review: ReviewVisual,
-  impact: ImpactVisual,
-  deals: DealsVisual,
-  missions: MissionsVisual,
 }
 
 export function FeatureTabs() {
-  const [active, setActive] = useState<TabId>('discover')
-  const content = TAB_CONTENT[active]
-  const Visual = VISUALS[active]
+  const [active, setActive] = useState<TabId>('find')
+  const content = SNAPSHOTS[active]
+  const Icon = ICONS[active]
 
   return (
-    <div>
-      {/* Product demo frame */}
-      <div className="mx-auto max-w-3xl mb-8">
-        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5 sm:p-6 shadow-2xl shadow-black/20 backdrop-blur-sm">
-          <Visual />
-        </div>
-      </div>
+    <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
+      <div>
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">Local snapshot</p>
+        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+          Today nearby
+        </h2>
+        <p className="mt-4 max-w-sm text-base leading-7 text-muted-foreground">A short list for today.</p>
 
-      {/* Tab switcher */}
-      <div className="flex items-center justify-center mb-6">
-        <div className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] p-1 backdrop-blur-sm">
-          {TABS.map(tab => (
+        <div className="mt-6 inline-flex rounded-md border border-border p-1">
+          {TABS.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               onClick={() => setActive(tab.id)}
               className={cn(
-                "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                'rounded px-3 py-1.5 text-sm font-medium transition-colors',
                 active === tab.id
-                  ? "bg-white/10 text-white shadow-sm"
-                  : "text-white/50 hover:text-white/70"
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               {tab.label}
@@ -295,17 +262,48 @@ export function FeatureTabs() {
         </div>
       </div>
 
-      {/* Tab description */}
-      <div className="text-center max-w-2xl mx-auto">
-        <p className="text-white/60 text-base sm:text-lg leading-relaxed mb-4">
-          {content.description}
-        </p>
-        <NavLink
-          href={content.href}
-          className="inline-flex items-center gap-1.5 text-teal-400 font-medium text-sm hover:underline underline-offset-4"
-        >
-          {content.cta} <ArrowRight className="h-3.5 w-3.5" />
-        </NavLink>
+      <div className="rounded-lg border border-border bg-card shadow-sm">
+        <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Icon className="h-4 w-4 text-primary" />
+              {content.eyebrow}
+            </div>
+            <h3 className="mt-3 text-xl font-semibold tracking-tight text-foreground">{content.title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{content.description}</p>
+          </div>
+          <NavLink
+            href="/bookmarks"
+            aria-label="View saved places"
+            className="mt-1 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Bookmark className="h-4 w-4" aria-hidden="true" />
+          </NavLink>
+        </div>
+
+        {active === 'find' ? (
+          <NearbyRows />
+        ) : (
+          <div className="divide-y divide-border">
+            {content.rows.map((row) => (
+              <div key={row.name} className="grid grid-cols-[1fr_auto] gap-4 px-4 py-4 sm:px-5">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-foreground">{row.name}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">{row.meta}</div>
+                </div>
+                <div className="flex items-center gap-1 text-sm font-mono font-semibold text-foreground">
+                  {row.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="border-t border-border px-4 py-4 sm:px-5">
+          <NavLink href={content.href} className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline underline-offset-4">
+            {content.cta}
+          </NavLink>
+        </div>
       </div>
     </div>
   )

@@ -326,7 +326,7 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-background">
+      <div className="relative min-h-screen">
         <Header />
         <div className="pt-20 pb-12 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -337,7 +337,7 @@ export default function SettingsPage() {
 
   if (!user) {
     return (
-      <div className="relative min-h-screen bg-background">
+      <div className="relative min-h-screen">
         <Header />
         <div className="pt-20 pb-12">
           <div className="mx-auto max-w-4xl px-6 text-center">
@@ -352,7 +352,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <Header />
       <div className="pt-20 pb-12">
         <div className="mx-auto max-w-4xl px-6">

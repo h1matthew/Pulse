@@ -45,8 +45,8 @@ describe('QueryProvider', () => {
     // Stale time: 5 minutes
     expect(screen.getByTestId('staleTime').textContent).toBe('300000')
 
-    // GC time: 10 minutes
-    expect(screen.getByTestId('gcTime').textContent).toBe('600000')
+    // GC time: 24 hours
+    expect(screen.getByTestId('gcTime').textContent).toBe('86400000')
 
     // Retry: 2
     expect(screen.getByTestId('retry').textContent).toBe('2')

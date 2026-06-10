@@ -109,7 +109,7 @@ export default function GetInvolvedPage() {
               </p>
               <NavLink
                 href="/about"
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all"
+                className="inline-flex items-center gap-2 btn-primary rounded-xl px-6 py-3 text-sm font-medium text-primary-foreground transition-all"
               >
                 Learn More
                 <ArrowRight className="h-4 w-4" />

@@ -14,6 +14,7 @@ const mockFrom = vi.fn()
 const mockSelect = vi.fn()
 const mockEq = vi.fn()
 const mockSingle = vi.fn()
+const mockUpsert = vi.fn()
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({
@@ -49,9 +50,10 @@ describe('AuthProvider', () => {
     })
 
     // Default profile query mock
-    mockFrom.mockReturnValue({ select: mockSelect })
+    mockFrom.mockReturnValue({ select: mockSelect, upsert: mockUpsert })
     mockSelect.mockReturnValue({ eq: mockEq })
     mockEq.mockReturnValue({ single: mockSingle })
+    mockUpsert.mockResolvedValue({ data: null, error: null })
   })
 
   afterEach(() => {

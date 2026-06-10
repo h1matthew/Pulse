@@ -55,7 +55,7 @@ describe("AnimatedSection", () => {
     intersectionCallback = null;
   });
 
-  it("stays visible after first reveal by default", () => {
+  it("is visible before and after first reveal by default", () => {
     render(
       <AnimatedSection>
         <div>Content</div>
@@ -63,7 +63,7 @@ describe("AnimatedSection", () => {
     );
 
     const wrapper = screen.getByText("Content").parentElement;
-    expect(wrapper).toHaveClass("opacity-0");
+    expect(wrapper).toHaveClass("opacity-100");
 
     act(() => {
       intersectionCallback?.([{ isIntersecting: true }]);
@@ -85,7 +85,7 @@ describe("AnimatedSection", () => {
     );
 
     const wrapper = screen.getByText("Repeat").parentElement;
-    expect(wrapper).toHaveClass("opacity-0");
+    expect(wrapper).toHaveClass("opacity-100");
 
     act(() => {
       intersectionCallback?.([{ isIntersecting: true }]);
@@ -95,6 +95,6 @@ describe("AnimatedSection", () => {
     act(() => {
       intersectionCallback?.([{ isIntersecting: false }]);
     });
-    expect(wrapper).toHaveClass("opacity-0");
+    expect(wrapper).toHaveClass("opacity-100");
   });
 });

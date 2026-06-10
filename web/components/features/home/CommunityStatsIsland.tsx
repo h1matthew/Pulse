@@ -1,9 +1,23 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useCommunityPulse } from '@/hooks/useImpact'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+
+/**
+ * React Query can hydrate persisted community-pulse data on the client before
+ * the server ever fetched it, so the server renders the skeleton while the
+ * client's first paint would render numbers — a hydration mismatch. Gate the
+ * "loaded" branch behind a mount flag so the first client render always
+ * matches the server (skeleton), then reveal real data after mount.
+ */
+function useMounted(): boolean {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  return mounted
+}
 
 // Inline formatters (cannot import from impact-calculator.ts — it pulls in supabase/server)
 function formatDollars(amount: number): string {
@@ -38,9 +52,9 @@ interface StatCardProps {
 
 function StatCard({ value, label, colorClass }: StatCardProps) {
   return (
-    <Card className="bg-card/50 backdrop-blur">
+    <Card className="bg-card">
       <CardContent className="p-4 text-center">
-        <div className={cn('text-2xl font-bold', colorClass)}>{value}</div>
+        <div className={cn('text-2xl font-mono font-semibold', colorClass)}>{value}</div>
         <div className="text-xs text-muted-foreground">{label}</div>
       </CardContent>
     </Card>
@@ -51,19 +65,18 @@ interface MetricRowProps {
   label: string
   value: string
   pct: number
-  gradientClass: string
 }
 
-function MetricRow({ label, value, pct, gradientClass }: MetricRowProps) {
+function MetricRow({ label, value, pct }: MetricRowProps) {
   return (
     <>
       <div className="flex justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value}</span>
+        <span className="font-mono font-medium text-foreground">{value}</span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className={cn('h-full bg-gradient-to-r rounded-full', gradientClass)}
+          className="h-full bg-primary rounded-full"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -90,7 +103,7 @@ function HeroStatsSkeleton() {
 
 function PulseCardSkeleton() {
   return (
-    <Card className="relative bg-card/80 backdrop-blur">
+    <Card className="relative bg-card">
       <CardContent className="p-8">
         <div className="text-center mb-8 space-y-2">
           <Skeleton className="h-12 w-32 mx-auto" />
@@ -132,6 +145,15 @@ function positiveOr(value: number | undefined | null, fallback: number): number 
 
 export function HeroStats() {
   const { data, isLoading } = useCommunityPulse()
+  const mounted = useMounted()
+
+  if (!mounted || isLoading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto">
+        <HeroStatsSkeleton />
+      </div>
+    )
+  }
 
   const dollars = positiveOr(data?.total_dollars_kept_local, FALLBACK_STATS.dollars)
   const businesses = positiveOr(data?.total_businesses_supported, FALLBACK_STATS.businesses)
@@ -141,19 +163,19 @@ export function HeroStats() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto">
       <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-bold tracking-tight">{formatDollars(dollars)}+</div>
+        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatDollars(dollars)}+</div>
         <div className="text-sm text-muted-foreground mt-1">Kept Local</div>
       </div>
       <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-bold tracking-tight">{businesses.toLocaleString()}</div>
+        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{businesses.toLocaleString()}</div>
         <div className="text-sm text-muted-foreground mt-1">Businesses</div>
       </div>
       <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-bold tracking-tight">{formatCompact(reviews)}+</div>
+        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatCompact(reviews)}+</div>
         <div className="text-sm text-muted-foreground mt-1">Reviews</div>
       </div>
       <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-bold tracking-tight">{formatCompact(activeUsers)}</div>
+        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatCompact(activeUsers)}</div>
         <div className="text-sm text-muted-foreground mt-1">Community Members</div>
       </div>
     </div>
@@ -163,20 +185,21 @@ export function HeroStats() {
 export function CommunityPulseCard() {
   const { data, isLoading } = useCommunityPulse()
 
+  const mounted = useMounted()
   const dollars = positiveOr(data?.total_dollars_kept_local, FALLBACK_STATS.dollars)
   const businesses = positiveOr(data?.total_businesses_supported, FALLBACK_STATS.businesses)
   const pulseScore = positiveOr(data?.pulse_score, FALLBACK_STATS.pulseScore)
   const jobs = Math.max(0, Math.floor(dollars / 15_000))
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return <PulseCardSkeleton />
   }
 
   return (
-    <Card className="relative bg-card/80 backdrop-blur">
+    <Card className="relative bg-card">
       <CardContent className="p-8">
         <div className="text-center mb-8">
-          <div className="text-5xl font-bold gradient-text mb-2">
+          <div className="text-5xl font-mono font-semibold text-primary mb-2">
             {pulseScore.toLocaleString()}
           </div>
           <div className="text-sm text-muted-foreground">Community Pulse Score</div>
@@ -186,19 +209,16 @@ export function CommunityPulseCard() {
             label="Dollars Kept Local"
             value={formatDollars(dollars)}
             pct={barPct(dollars, MAX_DOLLARS)}
-            gradientClass="from-primary to-chart-2"
           />
           <MetricRow
             label="Businesses Supported"
             value={businesses.toLocaleString()}
             pct={barPct(businesses, MAX_BUSINESSES)}
-            gradientClass="from-chart-3 to-chart-4"
           />
           <MetricRow
             label="Jobs Impacted"
             value={jobs.toString()}
             pct={barPct(jobs, MAX_JOBS)}
-            gradientClass="from-chart-5 to-primary"
           />
         </div>
       </CardContent>

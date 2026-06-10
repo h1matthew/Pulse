@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server'
 import {
   generateAssistantResponse,
   generateAssistantResponseStream,
+  generateFallbackResponse,
   getQuickResponse,
 } from '@/lib/assistant'
 
@@ -80,44 +81,65 @@ export async function POST(request: NextRequest) {
 
     // Handle streaming response
     if (stream) {
-      const encoder = new TextEncoder()
-      const stream = new ReadableStream({
-        async start(controller) {
-          try {
-            for await (const chunk of generateAssistantResponseStream(message, {
-              history,
-              userContext,
-            })) {
-              controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
-              )
-            }
-            controller.close()
-          } catch (error) {
-            controller.error(error)
-          }
-        },
-      })
+      try {
+        const iterator = generateAssistantResponseStream(message, {
+          history,
+          userContext,
+        })[Symbol.asyncIterator]()
 
-      return new NextResponse(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      })
+        // Pull the first chunk eagerly so LLM setup failures (e.g. an
+        // expired API key) can fall back to a non-streamed response.
+        const firstChunk = await iterator.next()
+
+        const encoder = new TextEncoder()
+        const sseStream = new ReadableStream({
+          async start(controller) {
+            try {
+              let current = firstChunk
+              while (!current.done) {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify(current.value)}\n\n`)
+                )
+                current = await iterator.next()
+              }
+              controller.close()
+            } catch (error) {
+              controller.error(error)
+            }
+          },
+        })
+
+        return new NextResponse(sseStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        })
+      } catch (llmError) {
+        console.error('Assistant stream setup failed, using fallback:', llmError)
+        const fallback = await generateFallbackResponse(message, { location })
+        return NextResponse.json(fallback)
+      }
     }
 
-    // Handle non-streaming response
-    const response = await generateAssistantResponse(message, {
-      history,
-      userContext,
-    })
+    // Handle non-streaming response; never 500 on LLM unavailability —
+    // degrade to a database-backed answer instead.
+    try {
+      const response = await generateAssistantResponse(message, {
+        history,
+        userContext,
+      })
 
-    return NextResponse.json({
-      ...response,
-      suggestions: response.suggestions || getFollowUpSuggestions(message),
-    })
+      return NextResponse.json({
+        ...response,
+        suggestions: response.suggestions || getFollowUpSuggestions(message),
+      })
+    } catch (llmError) {
+      console.error('Assistant LLM unavailable, using fallback:', llmError)
+      const fallback = await generateFallbackResponse(message, { location })
+      return NextResponse.json(fallback)
+    }
   } catch (error) {
     console.error('Assistant API error:', error)
 

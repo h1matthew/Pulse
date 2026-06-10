@@ -3,11 +3,12 @@
 /**
  * Suggested Questions Component
  *
- * Shows quick question buttons for the user to get started
+ * Shows quick question buttons for the user to get started.
+ * Selecting a question sends it immediately via the onSelect callback.
  */
 
-import { useState, useEffect } from "react";
-import { Coffee, Heart, MapPin, HelpCircle, Zap, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { Heart, MapPin, HelpCircle, Zap, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -20,23 +21,19 @@ const CATEGORIES = [
     id: "discovery",
     name: "Discover",
     icon: MapPin,
-    color: "bg-chart-2",
     questions: [
       "Find me a quiet coffee shop with WiFi",
       "What are the best family-friendly restaurants?",
       "Show me unique local gift shops",
-      "Where can I find a good brunch spot?",
     ],
   },
   {
     id: "impact",
     name: "Impact",
     icon: TrendingUp,
-    color: "bg-chart-3",
     questions: [
       "How does supporting local help my community?",
       "What is the local multiplier effect?",
-      "How much impact have I made?",
       "Why should I choose local over chains?",
     ],
   },
@@ -44,43 +41,37 @@ const CATEGORIES = [
     id: "features",
     name: "Features",
     icon: Zap,
-    color: "bg-chart-4",
     questions: [
       "How do Boost Missions work?",
       "What happens when I bookmark a business?",
-      "How is my impact score calculated?",
       "How do I claim a deal?",
     ],
   },
-];
+] as const;
 
 export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
-  const [activeCategory, setActiveCategory] = useState("discovery");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>("discovery");
 
-  useEffect(() => {
-    const category = CATEGORIES.find((c) => c.id === activeCategory);
-    setSuggestions(category?.questions.slice(0, 3) || []);
-  }, [activeCategory]);
-
-  const activeCategoryData = CATEGORIES.find((c) => c.id === activeCategory);
+  const activeCategoryData =
+    CATEGORIES.find((c) => c.id === activeCategory) ?? CATEGORIES[0];
 
   return (
-    <div className="mt-4 pt-4 border-t">
+    <div className="mt-4 pt-4 border-t border-border">
       {/* Category Tabs */}
       <div className="flex gap-1 mb-3">
         {CATEGORIES.map((category) => (
           <button
             key={category.id}
+            type="button"
             onClick={() => setActiveCategory(category.id)}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
               activeCategory === category.id
                 ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:text-foreground"
+                : "bg-secondary text-muted-foreground hover:text-foreground"
             )}
           >
-            <category.icon className="h-3 w-3" />
+            <category.icon className="h-3 w-3" aria-hidden="true" />
             {category.name}
           </button>
         ))}
@@ -88,24 +79,18 @@ export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
 
       {/* Question Buttons */}
       <div className="space-y-2">
-        {suggestions.map((question, index) => (
+        {activeCategoryData.questions.map((question) => (
           <Button
-            key={index}
+            key={question}
             variant="outline"
             size="sm"
             onClick={() => onSelect(question)}
-            className="w-full justify-start text-left h-auto py-2 px-3 text-sm font-normal hover:bg-primary/5 hover:border-primary/30"
+            className="w-full justify-start text-left h-auto py-2 px-3 text-sm font-normal hover:border-primary/40"
           >
-            {activeCategoryData && (
-              <activeCategoryData.icon
-                className={cn(
-                  "h-3.5 w-3.5 mr-2 flex-shrink-0",
-                  activeCategory === "discovery" && "text-chart-2",
-                  activeCategory === "impact" && "text-chart-3",
-                  activeCategory === "features" && "text-chart-4"
-                )}
-              />
-            )}
+            <activeCategoryData.icon
+              className="h-3.5 w-3.5 mr-2 flex-shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
             <span className="line-clamp-1">{question}</span>
           </Button>
         ))}
@@ -119,7 +104,7 @@ export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
           onClick={() => onSelect("Tell me about Pulse")}
           className="flex-1 text-xs text-muted-foreground"
         >
-          <Heart className="h-3 w-3 mr-1" />
+          <Heart className="h-3 w-3 mr-1" aria-hidden="true" />
           Our Mission
         </Button>
         <Button
@@ -128,7 +113,7 @@ export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
           onClick={() => onSelect("What can you help me with?")}
           className="flex-1 text-xs text-muted-foreground"
         >
-          <HelpCircle className="h-3 w-3 mr-1" />
+          <HelpCircle className="h-3 w-3 mr-1" aria-hidden="true" />
           Help
         </Button>
       </div>

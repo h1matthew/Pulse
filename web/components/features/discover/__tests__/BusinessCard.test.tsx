@@ -139,7 +139,8 @@ describe('BusinessCard', () => {
 
   it('renders tags', () => {
     render(<BusinessCard business={mockBusiness} index={0} />)
-    expect(screen.getByText('restaurant')).toBeInTheDocument()
-    expect(screen.getByText('food')).toBeInTheDocument()
+    // Tags are rendered via formatTagLabel, which Title-cases snake_case tags
+    expect(screen.getByText('Restaurant')).toBeInTheDocument()
+    expect(screen.getByText('Food')).toBeInTheDocument()
   })
 })

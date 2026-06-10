@@ -459,7 +459,7 @@ export default function BusinessDetailPage({
   // where server renders "not found" but client starts with loading state)
   if (isLoading || (!business && !isError)) {
     return (
-      <div className="relative min-h-screen bg-background">
+      <div className="relative min-h-screen">
         <Header />
         <div className="pt-20 pb-12">
           <div className="mx-auto max-w-6xl px-6">
@@ -481,7 +481,7 @@ export default function BusinessDetailPage({
 
   if (!business) {
     return (
-      <div className="relative min-h-screen bg-background">
+      <div className="relative min-h-screen">
         <Header />
         <div className="pt-20 pb-12">
           <div className="mx-auto max-w-6xl px-6 text-center">
@@ -600,7 +600,7 @@ export default function BusinessDetailPage({
     : null;
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <Header />
 
       {/* Hero area with subtle gradient */}

@@ -33,13 +33,16 @@ vi.mock("@/components/features/home/AnimatedSection", () => ({
   AnimatedSection: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock("@/components/features/bot/CaptchaWidget", () => ({
-  CaptchaWidget: ({ onVerify }: { onVerify: (token: string) => void }) => {
-    React.useEffect(() => {
-      onVerify("test-captcha-token");
-    }, [onVerify]);
-    return <div data-testid="captcha-widget" />;
-  },
+vi.mock("@/components/features/bot/BaanihaliPuzzleCaptcha", () => ({
+  BaanihaliPuzzleCaptcha: ({ onVerify }: { onVerify: (token: string) => void }) => (
+    <button
+      type="button"
+      data-testid="captcha-widget"
+      onClick={() => onVerify("test-captcha-token")}
+    >
+      Solve puzzle
+    </button>
+  ),
 }));
 
 vi.mock("@/components/ui/nav-link", () => ({
@@ -281,9 +284,14 @@ describe("BusinessDetailPage reviews", () => {
       target: { value: "Great food and service." },
     });
 
+    // Submitting requires CAPTCHA verification, so the button starts disabled.
     const submitButton = screen.getByRole("button", { name: /submit review/i });
-    await waitFor(() => expect(submitButton).toBeEnabled());
-    fireEvent.click(submitButton);
+    expect(submitButton).toBeDisabled();
+
+    // Open the CAPTCHA modal and solve it the way a user would. Verifying the
+    // CAPTCHA submits the review with the resolved token.
+    fireEvent.click(screen.getByRole("button", { name: /verify captcha/i }));
+    fireEvent.click(screen.getByTestId("captcha-widget"));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

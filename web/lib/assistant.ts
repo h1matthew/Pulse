@@ -1,12 +1,30 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { sanitizeForPrompt } from '@/lib/gemini-business'
+import { createClient } from '@/lib/supabase/server'
+import { isOpenNow } from '@/lib/business/hours'
 
 export interface StreamChunk {
   type: 'chunk' | 'suggestions'
   data: string | string[]
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+/**
+ * Resolve the Gemini API key. Falls back to the Google Places key — both are
+ * Google Cloud API keys, and the Places project may have the Generative
+ * Language API enabled when the primary Gemini key is expired or missing.
+ */
+function resolveApiKey(): string {
+  return process.env.GEMINI_API_KEY || process.env.GOOGLE_PLACES_API_KEY || ''
+}
+
+/**
+ * Lazily construct the Gemini client so a missing or expired key never
+ * crashes module imports. An empty key fails at request time instead, which
+ * callers handle by falling back to generateFallbackResponse.
+ */
+function getGenAI(): GoogleGenerativeAI {
+  return new GoogleGenerativeAI(resolveApiKey())
+}
 
 const PULSE_SYSTEM_PROMPT = `You are the Pulse AI Assistant — a friendly, knowledgeable guide for a local business discovery platform called Pulse.
 
@@ -21,18 +39,25 @@ Pulse helps users discover and support small, local businesses. Users can:
 
 ## Your Role
 You help users with:
-1. **Business Recommendations** — Suggest types of businesses or categories based on what they're looking for
+1. **Business Recommendations** — Recommend specific local businesses from the Local Business Directory section below when one is provided
 2. **Feature Explanations** — Explain how Pulse features work (bookmarks, deals, missions, impact tracking)
 3. **Impact Education** — Explain why supporting local businesses matters (local multiplier effect, job creation, community investment)
 4. **General Guidance** — Help users navigate the platform and get the most out of Pulse
 
+## Response Format (strict)
+- Keep replies SHORT: at most ~60 words. One brief lead-in sentence, then the content. No filler, no restating the question.
+- Format with Markdown. When recommending businesses, use a compact bullet list, one line per pick, at most 3 picks:
+  - **Business Name** — 4.8★ (212 reviews) · 0.3 mi
+- Bold business names. Use "·" separators. Do not use headings or long paragraphs.
+- For impact/economics questions you may include one short LaTeX formula delimited by $$ on both sides, e.g. $$\\$100 \\times 0.68 = \\$68 \\text{ stays local}$$ — never use single-$ math delimiters (plain money amounts like $100 must stay plain text).
+
 ## Guidelines
-- Be warm, enthusiastic, and concise (2-3 paragraphs max)
 - Focus on local business discovery — redirect off-topic questions politely
-- When recommending businesses, suggest categories or types rather than specific businesses (you don't have access to the database)
-- If the user mentions their location, acknowledge it and suggest exploring nearby businesses on the Discover page
-- Always end responses with an actionable suggestion (e.g., "Check out the Discover page to find coffee shops near you!")
-- Never make up specific business names, addresses, or phone numbers`
+- When recommending businesses, use ONLY businesses listed in the Local Business Directory section — cite their real ratings, review counts, and distances exactly as listed
+- Prefer highlighting independent local businesses over chains when both fit the request (that's Pulse's mission)
+- If the directory has no good match for the request, say so honestly and point the user to the Discover page (/discover)
+- End with one short actionable pointer (e.g., "More on the Discover page.")
+- Never make up business names, addresses, phone numbers, ratings, or any details not present in the directory`
 
 interface AssistantOptions {
   history?: Array<{ role: 'user' | 'assistant'; content: string }>
@@ -40,6 +65,187 @@ interface AssistantOptions {
     userId?: string
     location?: { lat: number; lng: number }
   }
+}
+
+// ============================================================================
+// RAG: ground every answer in real businesses from the Pulse directory
+// ============================================================================
+
+export interface RetrievedBusiness {
+  name: string
+  category: string | null
+  rating: number | null
+  reviewCount: number
+  city: string | null
+  priceRange: number | null
+  isChain: boolean | null
+  distanceMiles: number | null
+  openNow: boolean | null
+}
+
+interface RetrievedBusinessRow {
+  name: string
+  average_rating: number | string | null
+  review_count: number | null
+  city: string | null
+  price_range: number | null
+  is_chain: boolean | null
+  hours: unknown
+  latitude: number | string | null
+  longitude: number | string | null
+  categories: { name: string | null; slug: string | null } | { name: string | null; slug: string | null }[] | null
+}
+
+function haversineMiles(
+  a: { lat: number; lng: number },
+  b: { lat: number; lng: number }
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const R = 3958.8 // Earth radius in miles
+  const dLat = toRad(b.lat - a.lat)
+  const dLng = toRad(b.lng - a.lng)
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+/**
+ * Retrieve the businesses most relevant to the user's message from Supabase.
+ * Pulls the top-rated pool (optionally narrowed by detected category intent),
+ * then ranks by distance when the user's location is known. Fail-safe: any
+ * error returns [] so the assistant degrades to ungrounded guidance instead
+ * of crashing the request.
+ */
+export async function retrieveBusinessContext(
+  message: string,
+  location?: { lat: number; lng: number },
+  limit = 12
+): Promise<RetrievedBusiness[]> {
+  try {
+    const supabase = await createClient()
+    const categorySlug = detectCategorySlug(message)
+
+    const baseSelect =
+      'name, average_rating, review_count, city, price_range, is_chain, hours, latitude, longitude'
+
+    let query = supabase
+      .from('businesses')
+      .select(
+        categorySlug
+          ? `${baseSelect}, categories!inner(name, slug)`
+          : `${baseSelect}, categories(name, slug)`
+      )
+      .gt('average_rating', 0)
+
+    if (categorySlug) {
+      query = query.eq('categories.slug', categorySlug)
+    }
+
+    const { data, error } = await query
+      .order('average_rating', { ascending: false })
+      .order('review_count', { ascending: false })
+      .limit(40)
+
+    if (error || !data || data.length === 0) return []
+
+    const rows = data as unknown as RetrievedBusinessRow[]
+    const mapped: RetrievedBusiness[] = rows
+      .filter((row) => typeof row.name === 'string' && row.name.length > 0)
+      .map((row) => {
+        const category = Array.isArray(row.categories)
+          ? row.categories[0]?.name ?? null
+          : row.categories?.name ?? null
+
+        const lat = row.latitude == null ? null : Number(row.latitude)
+        const lng = row.longitude == null ? null : Number(row.longitude)
+        const hasCoords =
+          lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)
+
+        let distanceMiles: number | null = null
+        if (location && hasCoords) {
+          distanceMiles = haversineMiles(location, { lat: lat as number, lng: lng as number })
+        }
+
+        const rating = row.average_rating == null ? null : Number(row.average_rating)
+
+        return {
+          name: row.name,
+          category,
+          rating: rating != null && Number.isFinite(rating) ? rating : null,
+          reviewCount: row.review_count ?? 0,
+          city: row.city ?? null,
+          priceRange: row.price_range ?? null,
+          isChain: row.is_chain ?? null,
+          distanceMiles,
+          openNow: isOpenNow(row.hours),
+        }
+      })
+
+    // Rank by quality first, discounted by distance (when known) and by chain
+    // status — a 4.8-star independent a mile away should beat the 2.8-star
+    // chain next door. Unknown coordinates rank as if moderately far.
+    const score = (b: RetrievedBusiness) => {
+      const rating = b.rating ?? 0
+      const distance = location ? (b.distanceMiles ?? 7.5) : 0
+      const chainPenalty = b.isChain === true ? 0.7 : 0
+      return rating - 0.4 * distance - chainPenalty
+    }
+    mapped.sort((a, b) => score(b) - score(a))
+
+    return mapped.slice(0, limit)
+  } catch {
+    return []
+  }
+}
+
+/** Render retrieved businesses as compact directory lines for the LLM prompt. */
+export function formatDirectoryContext(businesses: RetrievedBusiness[]): string {
+  return businesses
+    .map((b) => {
+      const parts = [b.name]
+      if (b.category) parts.push(b.category)
+      if (b.rating != null) {
+        const reviewLabel = b.reviewCount === 1 ? 'review' : 'reviews'
+        parts.push(`${b.rating.toFixed(1)} stars (${b.reviewCount} ${reviewLabel})`)
+      }
+      if (b.city) parts.push(b.city)
+      if (b.priceRange != null) parts.push('$'.repeat(Math.min(Math.max(b.priceRange, 1), 4)))
+      if (b.distanceMiles != null) parts.push(`${b.distanceMiles.toFixed(1)} mi away`)
+      if (b.openNow === true) parts.push('Open now')
+      parts.push(b.isChain === true ? 'Chain' : 'Independent')
+      return `- ${parts.join(' | ')}`
+    })
+    .join('\n')
+}
+
+/**
+ * Build the full grounded system prompt: base persona + the real business
+ * directory retrieved for this message (or honest fallback instructions when
+ * retrieval came up empty).
+ */
+async function buildGroundedSystemPrompt(
+  message: string,
+  userContext?: AssistantOptions['userContext']
+): Promise<string> {
+  const retrieved = await retrieveBusinessContext(message, userContext?.location)
+
+  if (retrieved.length === 0) {
+    return `${PULSE_SYSTEM_PROMPT}
+
+## Local Business Directory
+(The directory is unavailable for this request. Recommend categories or types of businesses instead — do NOT name specific businesses — and point the user to the Discover page (/discover).)`
+  }
+
+  const locationNote = userContext?.location
+    ? ' Distances are measured from the user\'s current location, so these are genuinely nearby.'
+    : ''
+
+  return `${PULSE_SYSTEM_PROMPT}
+
+## Local Business Directory
+These are real businesses from the Pulse directory, pre-sorted by relevance for this user.${locationNote} Recommend only from this list:
+${formatDirectoryContext(retrieved)}`
 }
 
 /**
@@ -81,9 +287,10 @@ export async function generateAssistantResponse(
   message: string,
   options: AssistantOptions = {}
 ): Promise<{ text: string; suggestions?: string[] }> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
+  const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
   const sanitizedMessage = sanitizeForPrompt(message, 2000)
   const { history = [], userContext } = options
+  const systemPrompt = await buildGroundedSystemPrompt(message, userContext)
 
   let contextNote = ''
   if (userContext?.location) {
@@ -100,7 +307,7 @@ export async function generateAssistantResponse(
       history: [
         {
           role: 'user',
-          parts: [{ text: `[System context: ${PULSE_SYSTEM_PROMPT}${contextNote}]\n\nI have a question about local businesses.` }],
+          parts: [{ text: `[System context: ${systemPrompt}${contextNote}]\n\nI have a question about local businesses.` }],
         },
         {
           role: 'model',
@@ -119,7 +326,7 @@ export async function generateAssistantResponse(
     }
   }
 
-  const prompt = `${PULSE_SYSTEM_PROMPT}${contextNote}
+  const prompt = `${systemPrompt}${contextNote}
 
 ## Additional Instructions
 After your main response, include exactly 3 follow-up questions the user might want to ask. Format them at the very end like this:
@@ -151,9 +358,10 @@ export async function* generateAssistantResponseStream(
   message: string,
   options: AssistantOptions = {}
 ): AsyncGenerator<StreamChunk> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
+  const model = getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
   const sanitizedMessage = sanitizeForPrompt(message, 2000)
   const { history = [], userContext } = options
+  const systemPrompt = await buildGroundedSystemPrompt(message, userContext)
 
   let contextNote = ''
   if (userContext?.location) {
@@ -172,7 +380,7 @@ export async function* generateAssistantResponseStream(
       history: [
         {
           role: 'user',
-          parts: [{ text: `[System context: ${PULSE_SYSTEM_PROMPT}${contextNote}]\n\nI have a question about local businesses.` }],
+          parts: [{ text: `[System context: ${systemPrompt}${contextNote}]\n\nI have a question about local businesses.` }],
         },
         {
           role: 'model',
@@ -191,7 +399,7 @@ export async function* generateAssistantResponseStream(
       }
     }
   } else {
-    const prompt = `${PULSE_SYSTEM_PROMPT}${contextNote}
+    const prompt = `${systemPrompt}${contextNote}
 
 ## Additional Instructions
 After your main response, include exactly 3 follow-up questions the user might want to ask. Format them at the very end like this:
@@ -216,6 +424,100 @@ ${sanitizedMessage}`
   const suggestions = extractSuggestions(fullResponse)
   if (suggestions.length > 0) {
     yield { type: 'suggestions', data: suggestions }
+  }
+}
+
+export interface FallbackResponse {
+  text: string
+  suggestions?: string[]
+  degraded: true
+}
+
+interface FallbackOptions {
+  location?: { lat: number; lng: number }
+}
+
+/** Keyword → category slug maps, checked in order; first match wins. */
+const CATEGORY_KEYWORDS: Array<{ slug: string; keywords: string[] }> = [
+  { slug: 'food-drink', keywords: ['food', 'eat', 'restaurant', 'dinner', 'lunch', 'coffee', 'cafe'] },
+  { slug: 'retail', keywords: ['shop', 'store', 'retail', 'gift'] },
+  { slug: 'health-wellness', keywords: ['gym', 'spa', 'health', 'dentist', 'doctor'] },
+  { slug: 'services', keywords: ['salon', 'repair', 'bank', 'service'] },
+  { slug: 'entertainment', keywords: ['movie', 'fun', 'arcade', 'entertainment', 'bowling'] },
+  { slug: 'arts-culture', keywords: ['art', 'museum', 'gallery', 'library'] },
+]
+
+/**
+ * Map a free-text message to a business category slug using simple keyword
+ * matching (whole words, optional plural "s"). Returns null when no category
+ * intent is detected.
+ */
+export function detectCategorySlug(message: string): string | null {
+  const lower = message.toLowerCase()
+
+  for (const { slug, keywords } of CATEGORY_KEYWORDS) {
+    for (const keyword of keywords) {
+      if (new RegExp(`\\b${keyword}s?\\b`).test(lower)) {
+        return slug
+      }
+    }
+  }
+
+  return null
+}
+
+const FALLBACK_SUGGESTIONS = [
+  'What are Boost Missions?',
+  'How does supporting local help my community?',
+  'Find me a top-rated coffee shop',
+]
+
+const GENERIC_FALLBACK_TEXT =
+  "I couldn't pull up specific recommendations right now, but the Discover page (/discover) lets you browse top-rated local businesses by category, rating, and distance. Give it a look!"
+
+/**
+ * Database-backed fallback used when the Gemini API is unavailable (expired
+ * key, quota, outage). Shares retrieveBusinessContext with the LLM path, so
+ * results are narrowed by category intent and ranked by distance when the
+ * user's location is known.
+ */
+export async function generateFallbackResponse(
+  message: string,
+  opts: FallbackOptions = {}
+): Promise<FallbackResponse> {
+  const nearYou = opts.location ? ' near you' : ''
+
+  const businesses = await retrieveBusinessContext(message, opts.location, 5)
+
+  if (businesses.length === 0) {
+    return {
+      text: GENERIC_FALLBACK_TEXT,
+      suggestions: FALLBACK_SUGGESTIONS,
+      degraded: true,
+    }
+  }
+
+  const lines = businesses.slice(0, 3).map((business) => {
+    const rating = business.rating != null ? `${business.rating.toFixed(1)}★` : 'New'
+    const reviewLabel = business.reviewCount === 1 ? 'review' : 'reviews'
+    const parts = [`**${business.name}** — ${rating} (${business.reviewCount} ${reviewLabel})`]
+    if (business.distanceMiles != null) parts.push(`${business.distanceMiles.toFixed(1)} mi`)
+    else if (business.city) parts.push(business.city)
+    return `- ${parts.join(' · ')}`
+  })
+
+  const text = [
+    `Top-rated local spots${nearYou}:`,
+    '',
+    ...lines,
+    '',
+    'More on the [Discover page](/discover).',
+  ].join('\n')
+
+  return {
+    text,
+    suggestions: FALLBACK_SUGGESTIONS,
+    degraded: true,
   }
 }
 

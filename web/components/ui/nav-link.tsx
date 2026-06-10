@@ -1,23 +1,21 @@
 'use client'
 
-import { useCallback, type MouseEvent, type ReactNode } from 'react'
+import { useCallback, type AnchorHTMLAttributes, type MouseEvent, type ReactNode } from 'react'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { useNavigation } from '@/hooks/useNavigation'
 import { cn } from '@/lib/utils'
 
-export interface NavLinkProps {
+export interface NavLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href' | 'onClick'> {
   href: string
   children: ReactNode
-  className?: string
-  style?: React.CSSProperties
   /** Show a spinner icon while navigating */
   showSpinner?: boolean
   /** Extra click handler (e.g. close a mobile menu) */
   onClick?: () => void
 }
 
-export function NavLink({ href, children, className, style, showSpinner, onClick }: NavLinkProps) {
+export function NavLink({ href, children, className, style, showSpinner, onClick, ...props }: NavLinkProps) {
   const { isNavigating, navigate } = useNavigation()
 
   const handleClick = useCallback(
@@ -36,6 +34,7 @@ export function NavLink({ href, children, className, style, showSpinner, onClick
       className={cn(className, isNavigating && 'pointer-events-none opacity-60')}
       style={style}
       suppressHydrationWarning={true}
+      {...props}
       aria-disabled={isNavigating || undefined}
     >
       {children}

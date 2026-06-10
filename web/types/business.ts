@@ -54,6 +54,8 @@ export interface Business {
   ai_description_source: string | null
   editorial_summary: string | null
   ai_business_summary: string | null
+  is_chain?: boolean | null
+  sba_certified?: boolean
 }
 
 export interface BusinessHours {
