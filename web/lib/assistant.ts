@@ -38,6 +38,15 @@ Pulse helps users discover and support small, local businesses. Users can:
 - Complete "Boost Missions" (challenges like "Try 3 new coffee shops this month")
 - Track their economic impact on the local community through a personal dashboard
 
+## Product Knowledge (answer feature questions from this, with the page links)
+- **Discover** ([/discover](/discover)): real nearby businesses from Google Places with photos and ratings; filters for category, Independent-only, Open now, price ($–$$$$), and 4.0+ rating.
+- **Bookmarks** ([/bookmarks](/bookmarks)): tap the heart/bookmark icon on any business. Signed-in users sync to their account; signed-out users save on their device until they sign in.
+- **Deals** ([/deals](/deals)): claim an offer to get a unique redemption code, then show the code at the business. Claiming is free — Pulse has no payments.
+- **Boost Missions** ([/missions](/missions)): challenges like "Try 3 new coffee shops this month"; progress fills as you check in, and finishing unlocks perks.
+- **Impact Dashboard** ([/dashboard](/dashboard)): estimates dollars kept local, businesses supported, and jobs touched from check-ins, reviews, and claimed deals. Key fact: roughly $68 of every $100 spent locally stays in the community, versus about $43 at a chain.
+- **Categories** ([/categories](/categories)): the directory organized by what each place does, with live counts.
+- Questions like "what is Pulse?", "how do missions work?", or "why shop local?" should be answered from this knowledge — short and concrete, never with a list of unrelated businesses.
+
 ## Your Role
 You help users with:
 1. **Business Recommendations** — Recommend specific local businesses from the Local Business Directory section below when one is provided
@@ -282,6 +291,11 @@ export function getQuickResponse(message: string): string | null {
     return "I'm the Pulse AI Assistant! Here's what I can help with:\n\n- **Find businesses** — Tell me what you're looking for (coffee, restaurants, shops, etc.)\n- **Explain features** — Ask about bookmarks, deals, missions, or impact tracking\n- **Impact info** — Learn how supporting local businesses helps your community\n- **Get started** — I'll walk you through how to use Pulse\n\nWhat sounds interesting?"
   }
 
+  // About Pulse — answer product questions directly (and instantly)
+  if (/\b(about pulse|what(?:'s| is) pulse|what does pulse do|how does pulse work|tell me about (?:pulse|this app|this site))\b/.test(lower)) {
+    return "**Pulse** helps you discover and support local businesses — and see the impact of doing it.\n\n- **Discover** real nearby businesses with photos, ratings, and filters\n- **Save** bookmarks, claim **deals**, and take on **Boost Missions**\n- **Track your impact** — how much of your spending stays in the community\n\nStart on the [Discover page](/discover)."
+  }
+
   return null
 }
 
@@ -479,19 +493,79 @@ const FALLBACK_SUGGESTIONS = [
 ]
 
 const GENERIC_FALLBACK_TEXT =
-  "I couldn't pull up specific recommendations right now, but the Discover page (/discover) lets you browse top-rated local businesses by category, rating, and distance. Give it a look!"
+  "I couldn't pull up specific recommendations right now, but the [Discover page](/discover) lets you browse top-rated local businesses by category, rating, and distance. Give it a look!"
+
+/**
+ * Curated answers for product/impact questions. Without these, the fallback
+ * (and any non-discovery question while the LLM is down) would answer
+ * "Tell me about Pulse" with a list of dental studios — accurate copy beats
+ * an off-topic business list.
+ */
+const TOPIC_ANSWERS: Array<{
+  pattern: RegExp
+  text: string
+  suggestions: string[]
+}> = [
+  {
+    pattern: /\b(boost mission|missions?)\b/i,
+    text:
+      '**Boost Missions** are local challenges — like *"Try 3 new coffee shops this month."*\n\n- Track progress as you check in at businesses\n- Finish missions to unlock perks\n\nSee what\'s active on the [Missions page](/missions).',
+    suggestions: ['Find me a top-rated coffee shop', 'How do deals work?', 'How does my impact get tracked?'],
+  },
+  {
+    pattern: /\b(bookmarks?|sav(e|ing) (a |my )?(business|place|spot))\b/i,
+    text:
+      '**Bookmarks** save businesses you want to remember.\n\n- Tap the heart or bookmark icon on any business\n- Signed in: synced to your account\n- Signed out: kept on this device until you sign in\n\nFind them on your [Bookmarks page](/bookmarks).',
+    suggestions: ['Find me a top-rated coffee shop', 'What are Boost Missions?', 'Tell me about Pulse'],
+  },
+  {
+    pattern: /\b(deals?|coupons?|discounts?|claim(ing)?)\b/i,
+    text:
+      '**Deals** are offers from local businesses.\n\n- Browse current offers on the [Deals page](/deals)\n- Claim one to get a unique redemption code\n- Show the code at the business to redeem\n\nNo payments in the app — claiming is free.',
+    suggestions: ['What are Boost Missions?', 'Find me dinner nearby', 'How does supporting local help?'],
+  },
+  {
+    pattern: /\b(impact|local economy|multiplier|support(ing)? local|shop(ping)? local|buy(ing)? local|dollars? kept)\b/i,
+    text:
+      'Spending locally keeps money in your community — roughly **$68 of every $100** stays local versus about **$43** at a chain.\n\nPulse estimates your personal impact (dollars kept local, businesses supported, jobs touched) from your check-ins, reviews, and claimed deals — see your [Dashboard](/dashboard).',
+    suggestions: ['Find me a top-rated independent spot', 'What are Boost Missions?', 'Tell me about Pulse'],
+  },
+]
+
+/** Discovery-style asks: only these should produce a business list. */
+const DISCOVERY_PATTERN =
+  /\b(find|near(?:by| me)?|recommend|suggest|best|top[- ]rated|popular|around (?:here|me|town)|what'?s good|where (?:can|should|is)|open now|spots?|places?|hungry)\b/i
 
 /**
  * Database-backed fallback used when the Gemini API is unavailable (expired
- * key, quota, outage). Shares retrieveBusinessContext with the LLM path, so
- * results are narrowed by category intent and ranked by distance when the
- * user's location is known.
+ * key, quota, outage). Routes by intent: product/impact questions get
+ * curated answers; discovery questions get real top-rated businesses
+ * (shared retrieveBusinessContext — category-narrowed, distance-ranked).
  */
 export async function generateFallbackResponse(
   message: string,
   opts: FallbackOptions = {}
 ): Promise<FallbackResponse> {
   const nearYou = opts.location ? ' near you' : ''
+
+  // Product/feature/impact questions → curated copy, not a business list.
+  // Category intent (e.g. "find a good restaurant") outranks topic matches
+  // ("restaurant" isn't a topic), but "how do deals work" must not return
+  // restaurants — so topics win unless the message clearly asks to discover.
+  const categorySlug = detectCategorySlug(message)
+  const topic = TOPIC_ANSWERS.find((t) => t.pattern.test(message))
+  if (topic && !categorySlug) {
+    return { text: topic.text, suggestions: topic.suggestions, degraded: true }
+  }
+
+  // Not a discovery-style question either → honest generic guidance.
+  if (!categorySlug && !DISCOVERY_PATTERN.test(message)) {
+    return {
+      text: GENERIC_FALLBACK_TEXT,
+      suggestions: FALLBACK_SUGGESTIONS,
+      degraded: true,
+    }
+  }
 
   const businesses = await retrieveBusinessContext(message, opts.location, 5)
 

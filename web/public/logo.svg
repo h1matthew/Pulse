@@ -1,0 +1,14 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="badge"><circle cx="256" cy="256" r="216"/></clipPath>
+  </defs>
+  <circle cx="256" cy="256" r="216" fill="#0D193C"/>
+  <circle cx="256" cy="256" r="178" fill="#15224D"/>
+  <g clip-path="url(#badge)">
+    <path d="M 188 264 A 96 96 0 0 0 215 419" stroke="#2F6BE9" stroke-width="20" stroke-linecap="round"/>
+    <path d="M 324 264 A 96 96 0 0 1 297 419" stroke="#2F6BE9" stroke-width="20" stroke-linecap="round"/>
+    <path d="M 223 263 A 66 66 0 1 0 289 263" stroke="#5FA5F9" stroke-width="22" stroke-linecap="round"/>
+    <circle cx="256" cy="232" r="24" stroke="#4D8BF5" stroke-width="12"/>
+    <circle cx="256" cy="232" r="11" fill="#FFFFFF"/>
+  </g>
+</svg>

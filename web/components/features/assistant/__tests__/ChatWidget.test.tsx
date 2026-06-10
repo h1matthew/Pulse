@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ChatWidget } from "../ChatWidget";
@@ -13,13 +13,16 @@ interface MotionDivProps {
   exit?: unknown;
   transition?: unknown;
   className?: string;
+  style?: CSSProperties;
 }
 
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>,
   motion: {
-    div: ({ children, className }: MotionDivProps) => (
-      <div className={className}>{children}</div>
+    div: ({ children, className, style }: MotionDivProps) => (
+      <div className={className} style={style}>
+        {children}
+      </div>
     ),
   },
 }));
@@ -254,5 +257,26 @@ describe("ChatWidget", () => {
 
     expect(screen.queryByText("Sure thing.")).not.toBeInTheDocument();
     expect(screen.getByText(/Hi there!/)).toBeInTheDocument();
+  });
+
+  it("is resizable via the top-left grip (anchored bottom-right, drag up-left grows it)", async () => {
+    window.localStorage.removeItem("pulse-chat-size");
+    render(<ChatWidget />);
+    fireEvent.click(screen.getByRole("button", { name: "Open Pulse Assistant" }));
+
+    const dialog = await screen.findByRole("dialog");
+    const panel = dialog.parentElement as HTMLElement;
+    expect(panel.style.width).toBe("380px"); // default
+
+    const grip = screen.getByRole("separator", { name: "Resize chat window" });
+    fireEvent.pointerDown(grip, { clientX: 500, clientY: 500 });
+    fireEvent.pointerMove(window, { clientX: 400, clientY: 450 }); // 100 left, 50 up
+    fireEvent.pointerUp(window);
+
+    expect(panel.style.width).toBe("480px");
+    // Size persists for the next open
+    expect(
+      JSON.parse(window.localStorage.getItem("pulse-chat-size")!).width
+    ).toBe(480);
   });
 });
