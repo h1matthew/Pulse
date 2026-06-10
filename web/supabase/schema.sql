@@ -597,9 +597,10 @@ CREATE TRIGGER update_founders_updated_at
 
 -- Seed founder data
 INSERT INTO founders (id, name, role, bio, display_order) VALUES
-  ('henry', 'Henry Dai', 'Cofounder', 'Henry Dai is an experienced competitive rocketeer specializing in precision build and remote-controlled events. He has been selected by the National Association of Rocketry to represent the USA National Team and has earned multiple medals at World Space Modeling Championships. With this experience, Henry brings proven leadership and technical expertise to guide teams toward high-level competition such as the American Rocketry Challenge.', 0),
-  ('matthew', 'Matthew Heng', 'Cofounder', 'Matthew Heng is driven by a deep interest in physics and the mechanics of flight. He is a Gold Medalist at the Calico Hackathon (a top-35 finisher out of ~500 participants) and is currently authoring a research paper on AI. Matthew leverages these computer science skills to build the technical foundation of Max Apogee. He combines this expertise with his teaching experience to break down complex concepts, ensuring students turn their curiosity into practical engineering skills.', 1),
-  ('brady', 'Brady Chen', 'Cofounder', 'Brady Chen is an accomplished competitive programmer and student developer focused on high-impact problem solving. He is a 1st Place winner of the Congressional App Challenge, a Silver Division competitor in the USA Computing Olympiad (USACO), and a top-35 finisher out of 500 participants in the Calico Competition. With this competitive background, Brady brings strong technical skill and focus to help teams succeed.', 2)
+  ('matthew', 'Matthew Heng', 'Co-founder', '', 0),
+  ('felix', 'Felix Yin', 'Co-founder', '', 1),
+  ('brady', 'Brady Chen', 'Co-founder', '', 2),
+  ('oscar', 'Oscar Gao', 'Co-founder', '', 3)
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================

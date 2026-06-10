@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Menu, X, Users, Heart, LayoutDashboard, Handshake } from 'lucide-react'
+import { Menu, X, Users, Heart, LayoutDashboard, Handshake, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { NavLink } from '@/components/ui/nav-link'
 import {
@@ -23,6 +23,7 @@ const NAV_ITEMS_PUBLIC = [
 
 const NAV_ITEMS_LOGGED_IN = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/missions', label: 'Missions', icon: Zap },
   { href: '/about', label: 'About', icon: Users },
   { href: '/mission', label: 'Our Mission', icon: Heart },
   { href: '/get-involved', label: 'Get Involved', icon: Handshake },

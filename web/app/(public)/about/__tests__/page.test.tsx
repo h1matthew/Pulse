@@ -30,8 +30,8 @@ beforeAll(() => {
 
 const TEST_FOUNDERS: Founder[] = [
   {
-    id: 'felix',
-    name: 'Felix Oscar Gao',
+    id: 'matthew',
+    name: 'Matthew Heng',
     role: 'Co-founder',
     bio: '',
     image_url: null,
@@ -41,8 +41,8 @@ const TEST_FOUNDERS: Founder[] = [
     display_order: 0,
   },
   {
-    id: 'matthew',
-    name: 'Matthew Heng',
+    id: 'felix',
+    name: 'Felix Yin',
     role: 'Co-founder',
     bio: '',
     image_url: null,
@@ -51,19 +51,52 @@ const TEST_FOUNDERS: Founder[] = [
     image_zoom: 1,
     display_order: 1,
   },
+  {
+    id: 'brady',
+    name: 'Brady Chen',
+    role: 'Co-founder',
+    bio: '',
+    image_url: null,
+    image_offset_x: 50,
+    image_offset_y: 50,
+    image_zoom: 1,
+    display_order: 2,
+  },
+  {
+    id: 'oscar',
+    name: 'Oscar Gao',
+    role: 'Co-founder',
+    bio: '',
+    image_url: null,
+    image_offset_x: 50,
+    image_offset_y: 50,
+    image_zoom: 1,
+    display_order: 3,
+  },
 ]
 
 describe('AboutPage', () => {
-  it('renders both founder names', () => {
+  it('renders all founder names', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    expect(screen.getByText('Felix Oscar Gao')).toBeInTheDocument()
     expect(screen.getByText('Matthew Heng')).toBeInTheDocument()
+    expect(screen.getByText('Felix Yin')).toBeInTheDocument()
+    expect(screen.getByText('Brady Chen')).toBeInTheDocument()
+    expect(screen.getByText('Oscar Gao')).toBeInTheDocument()
+  })
+
+  it('renders founders in display order', () => {
+    render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
+    const names = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent)
+      .filter((name) => TEST_FOUNDERS.some((f) => f.name === name))
+    expect(names).toEqual(['Matthew Heng', 'Felix Yin', 'Brady Chen', 'Oscar Gao'])
   })
 
   it('renders Co-founder role for each founder', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
     const roles = screen.getAllByText('Co-founder')
-    expect(roles).toHaveLength(2)
+    expect(roles).toHaveLength(4)
   })
 
   it('renders the Why We Started section', () => {
@@ -97,8 +130,8 @@ describe('AboutPage', () => {
 
   it('renders the founder count as a mono stat', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    const count = screen.getByLabelText('2 founders')
-    expect(count).toHaveTextContent('02')
+    const count = screen.getByLabelText('4 founders')
+    expect(count).toHaveTextContent('04')
     expect(count).toHaveClass('font-mono')
   })
 

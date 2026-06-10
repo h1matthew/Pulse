@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useState, useRef, useLayoutEffect } from 'react'
-import { LogOut, Shield, Users, LayoutDashboard, Store, MapPin, Tag } from 'lucide-react'
+import { LogOut, Shield, Users, LayoutDashboard, Store, MapPin, Tag, Zap } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { NavLink } from '@/components/ui/nav-link'
 import { PulseLogo } from '@/components/ui/PulseLogo'
@@ -23,6 +23,7 @@ const NAV_ITEMS_PUBLIC = [
 const NAV_ITEMS_LOGGED_IN = [
   { href: '/discover', label: 'Discover', icon: Store },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/missions', label: 'Missions', icon: Zap },
   { href: '/deals', label: 'Deals', icon: Tag },
   { href: '/about', label: 'About', icon: Users },
 ]
