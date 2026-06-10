@@ -12,6 +12,35 @@ import { ChatMessage, type AssistantChatMessage } from "./ChatMessage";
 const WELCOME_TEXT =
   "Hi there! I'm your Pulse local guide — ask me for nearby food, shops, or services.";
 
+const CHAT_SIZE_KEY = "pulse-chat-size";
+const DEFAULT_SIZE = { width: 380, height: 600 };
+
+function clampSize(width: number, height: number) {
+  const maxWidth =
+    typeof window !== "undefined" ? Math.min(680, window.innerWidth - 32) : 680;
+  const maxHeight =
+    typeof window !== "undefined" ? Math.max(420, window.innerHeight - 96) : 800;
+  return {
+    width: Math.round(Math.min(Math.max(width, 320), maxWidth)),
+    height: Math.round(Math.min(Math.max(height, 420), maxHeight)),
+  };
+}
+
+function loadStoredSize() {
+  try {
+    const raw = window.localStorage.getItem(CHAT_SIZE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.width === "number" && typeof parsed?.height === "number") {
+        return clampSize(parsed.width, parsed.height);
+      }
+    }
+  } catch {
+    // Ignore storage failures — fall back to the default size.
+  }
+  return DEFAULT_SIZE;
+}
+
 function createWelcomeMessage(): AssistantChatMessage {
   return {
     id: "welcome",
@@ -29,6 +58,40 @@ export function ChatWidget() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  // Panel size — user-resizable via the top-left grip, persisted per device.
+  const [size, setSize] = useState(DEFAULT_SIZE);
+
+  useEffect(() => {
+    setSize(loadStoredSize());
+  }, []);
+
+  const handleResizeStart = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const start = size;
+
+    const onMove = (ev: PointerEvent) => {
+      // Anchored bottom-right: dragging the grip up/left grows the panel.
+      setSize(
+        clampSize(start.width + (startX - ev.clientX), start.height + (startY - ev.clientY))
+      );
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setSize((current) => {
+        try {
+          window.localStorage.setItem(CHAT_SIZE_KEY, JSON.stringify(current));
+        } catch {
+          // Ignore storage failures.
+        }
+        return current;
+      });
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
 
   const scrollEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -181,13 +244,22 @@ export function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)]"
+            className="fixed bottom-6 right-6 z-50 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)]"
+            style={{ width: size.width, height: size.height }}
           >
             <div
               role="dialog"
               aria-label="Pulse Assistant"
-              className="bg-background border border-border rounded-xl shadow-lg overflow-hidden flex flex-col max-h-[600px]"
+              className="relative bg-background border border-border rounded-xl shadow-lg overflow-hidden flex h-full flex-col"
             >
+              {/* Resize grip — drag the top-left corner to grow/shrink */}
+              <div
+                role="separator"
+                aria-label="Resize chat window"
+                title="Drag to resize"
+                onPointerDown={handleResizeStart}
+                className="absolute left-0 top-0 z-10 h-5 w-5 cursor-nwse-resize rounded-tl-xl border-l-2 border-t-2 border-primary-foreground/50 hover:border-primary-foreground"
+              />
               {/* Header */}
               <div className="bg-primary p-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -225,7 +297,7 @@ export function ChatWidget() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto max-h-[420px]">
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 <div className="p-4 space-y-3">
                   {messages.map((message, index) => {
                     const isLatest = index === messages.length - 1;
