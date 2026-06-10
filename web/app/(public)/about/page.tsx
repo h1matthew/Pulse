@@ -7,17 +7,6 @@ import type { Founder } from '@/components/features/about/FounderCard'
 
 const FALLBACK_FOUNDERS: Founder[] = [
   {
-    id: 'oscar',
-    name: 'Oscar Gao',
-    role: 'Co-founder',
-    bio: '',
-    image_url: null,
-    image_offset_x: 50,
-    image_offset_y: 50,
-    image_zoom: 1,
-    display_order: 0,
-  },
-  {
     id: 'matthew',
     name: 'Matthew Heng',
     role: 'Co-founder',
@@ -26,7 +15,7 @@ const FALLBACK_FOUNDERS: Founder[] = [
     image_offset_x: 50,
     image_offset_y: 50,
     image_zoom: 1,
-    display_order: 1,
+    display_order: 0,
   },
   {
     id: 'felix',
@@ -37,7 +26,29 @@ const FALLBACK_FOUNDERS: Founder[] = [
     image_offset_x: 50,
     image_offset_y: 50,
     image_zoom: 1,
+    display_order: 1,
+  },
+  {
+    id: 'brady',
+    name: 'Brady Chen',
+    role: 'Co-founder',
+    bio: '',
+    image_url: null,
+    image_offset_x: 50,
+    image_offset_y: 50,
+    image_zoom: 1,
     display_order: 2,
+  },
+  {
+    id: 'oscar',
+    name: 'Oscar Gao',
+    role: 'Co-founder',
+    bio: '',
+    image_url: null,
+    image_offset_x: 50,
+    image_offset_y: 50,
+    image_zoom: 1,
+    display_order: 3,
   },
 ]
 

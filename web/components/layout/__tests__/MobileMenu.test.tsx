@@ -18,6 +18,20 @@ describe('MobileMenu NAV_ITEMS', () => {
     expect(content).toContain("href: '/dashboard'")
   })
 
+  it('includes Missions in the logged-in nav items only', () => {
+    const file = path.join(__dirname, '..', 'MobileMenu.tsx')
+    const content = fs.readFileSync(file, 'utf-8')
+
+    expect(content).toContain("label: 'Missions'")
+    expect(content).toContain("href: '/missions'")
+    // Missions must not appear in the public list
+    const publicSection = content.slice(
+      content.indexOf('NAV_ITEMS_PUBLIC'),
+      content.indexOf('NAV_ITEMS_LOGGED_IN')
+    )
+    expect(publicSection).not.toContain("href: '/missions'")
+  })
+
   it('does not have Flashcards as a separate nav item', () => {
     const file = path.join(__dirname, '..', 'MobileMenu.tsx')
     const content = fs.readFileSync(file, 'utf-8')

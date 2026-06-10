@@ -80,6 +80,21 @@ describe('Header', () => {
     expect(screen.getByText('Deals')).toBeInTheDocument()
   })
 
+  it('shows Missions nav item when logged in', () => {
+    mockIsLoggedIn.mockReturnValue(true)
+    render(<Header />)
+
+    const missionsLink = screen.getByText('Missions').closest('a')
+    expect(missionsLink).toHaveAttribute('href', '/missions')
+  })
+
+  it('does not show Missions nav item when logged out', () => {
+    mockIsLoggedIn.mockReturnValue(false)
+    render(<Header />)
+
+    expect(screen.queryByText('Missions')).not.toBeInTheDocument()
+  })
+
   it('shows Sign in button when logged out', () => {
     mockIsLoggedIn.mockReturnValue(false)
     render(<Header />)

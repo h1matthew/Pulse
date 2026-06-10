@@ -11,7 +11,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth') ||
     pathname.startsWith('/about') ||
-    pathname.startsWith('/mission') ||
+    // Exact match so the auth-gated /missions page isn't caught by this prefix
+    pathname === '/mission' ||
     pathname.startsWith('/get-involved') ||
     pathname.startsWith('/volunteer') ||
     pathname.startsWith('/contact') ||
@@ -19,7 +20,6 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/categories') ||
     pathname.startsWith('/deals') ||
     pathname.startsWith('/business') ||
-    pathname.startsWith('/missions') ||
     pathname.startsWith('/reviews') ||
     pathname.startsWith('/leaderboard') ||
     // Guests see their device-local bookmarks; the page itself renders a
