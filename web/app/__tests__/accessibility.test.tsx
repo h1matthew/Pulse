@@ -28,6 +28,15 @@ vi.mock('@/components/features/home/CommunityStatsIsland', () => ({
   CommunityPulseCard: () => <div data-testid="community-pulse-card">Pulse Card</div>,
 }))
 
+vi.mock('@/components/features/home/HeroPreview', () => ({
+  HeroPreview: () => <div data-testid="hero-preview">Today near you</div>,
+}))
+
+// FeatureTabs uses React Query (live nearby rows) — mock it like HeroPreview
+vi.mock('@/components/features/home/FeatureTabs', () => ({
+  FeatureTabs: () => <div data-testid="feature-tabs">Local snapshot</div>,
+}))
+
 describe('Home Page Accessibility', () => {
   it('has aria-label on hero section', () => {
     render(<Home />)
@@ -39,14 +48,14 @@ describe('Home Page Accessibility', () => {
   it('has aria-label on features section', () => {
     render(<Home />)
 
-    const featuresSection = document.querySelector('section[aria-label="Features"]')
+    const featuresSection = document.querySelector('section[aria-label="Product snapshot"]')
     expect(featuresSection).toBeInTheDocument()
   })
 
   it('has aria-label on community pulse section', () => {
     render(<Home />)
 
-    const communitySection = document.querySelector('section[aria-label="Community Pulse"]')
+    const communitySection = document.querySelector('section[aria-label="Community stats"]')
     expect(communitySection).toBeInTheDocument()
   })
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { usePathname } from "next/navigation";
 import {
   HelpCircle,
   Store,
@@ -90,8 +89,6 @@ interface HelpMenuProps {
 
 export function HelpMenu({ compact = false }: HelpMenuProps) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-  const isHomepage = pathname === "/";
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -113,7 +110,7 @@ export function HelpMenu({ compact = false }: HelpMenuProps) {
         </Button>
       </DialogTrigger>
       <DialogContent
-        className={cn("max-w-sm max-h-[60vh] flex flex-col overflow-hidden p-4", isHomepage && "dark bg-background text-foreground")}
+        className="max-w-sm max-h-[60vh] flex flex-col overflow-hidden p-4"
         aria-describedby="help-menu-description"
       >
         <DialogHeader className="pb-2">

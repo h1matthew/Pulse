@@ -112,6 +112,9 @@
   /* Brand — single blue accent */
   --primary: oklch(0.55 0.2 260);
   --primary-foreground: oklch(0.99 0 0);
+  /* Primary action buttons render this gradient (left → right) */
+  --btn-gradient-from: #207ee3;
+  --btn-gradient-to: #225dec;
 
   /* Secondary */
   --secondary: oklch(0.96 0.005 260);
@@ -166,6 +169,9 @@
   /* Brand — blue accent */
   --primary: oklch(0.62 0.18 260);
   --primary-foreground: oklch(0.99 0 0);
+  /* Primary action buttons render this gradient (left → right) */
+  --btn-gradient-from: #207ee3;
+  --btn-gradient-to: #225dec;
 
   /* Secondary */
   --secondary: oklch(0.14 0.005 260);
@@ -482,6 +488,36 @@
 .card-lift:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px oklch(0 0 0 / 0.15);
+}
+
+/* Primary action button — soft "jelly" blue: gradient core with a radial
+   top highlight, inner bevel (light rim above, shade below), and an ambient
+   blue glow. Built on the --btn-gradient tokens. */
+.btn-primary {
+  background-image:
+    radial-gradient(
+      85% 100% at 50% 50%,
+      color-mix(in srgb, var(--btn-gradient-from) 80%, white 20%) 0%,
+      color-mix(in srgb, var(--btn-gradient-from) 92%, white 8%) 45%,
+      transparent 75%
+    ),
+    linear-gradient(to right, var(--btn-gradient-from), var(--btn-gradient-to));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.3),
+    inset 0 -2px 6px rgba(13, 47, 155, 0.3),
+    0 6px 18px rgba(34, 93, 236, 0.35);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.07);
+}
+
+.btn-primary:active {
+  filter: brightness(0.97);
+  box-shadow:
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.4),
+    inset 0 -1px 4px rgba(13, 47, 155, 0.3),
+    0 3px 10px rgba(34, 93, 236, 0.3);
 }
 
 /* Gradient text utility */

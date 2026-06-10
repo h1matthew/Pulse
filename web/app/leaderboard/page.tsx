@@ -52,7 +52,7 @@ export default function LeaderboardPage() {
     : null;
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <Header />
 
       <div className="pt-20 pb-12">

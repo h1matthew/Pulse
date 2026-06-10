@@ -3,5 +3,5 @@
  */
 
 export { ChatWidget } from './ChatWidget'
-export { ChatMessage } from './ChatMessage'
+export { ChatMessage, type AssistantChatMessage } from './ChatMessage'
 export { SuggestedQuestions } from './SuggestedQuestions'

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AppBackground } from "@/components/layout/AppBackground";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AccessibilityProvider } from "@/components/providers/AccessibilityProvider";
@@ -18,6 +19,12 @@ const fallbackFontVars: CSSProperties = {
   ["--font-geist-mono" as string]:
     'ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace',
 };
+
+// No-flash theme init: applies the saved theme class before the page paints.
+// Server-rendered (not inside a client component), so it does not trigger
+// React 19's "script tag in client component" warning. Keep the storage key
+// in sync with THEME_STORAGE_KEY in components/providers/theme-provider.tsx.
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('pulse-theme');if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})();`
 
 export const metadata: Metadata = {
   title: "Pulse - Discover Local Businesses",
@@ -39,6 +46,9 @@ export default function RootLayout({
         style={fallbackFontVars}
         suppressHydrationWarning
       >
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Ambient drifting-orb background, shared by every page (fixed, -z-10) */}
+        <AppBackground />
         {/* Skip to main content link for keyboard/screen reader accessibility */}
         <a
           href="#main-content"
@@ -46,12 +56,7 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider defaultTheme="light">
           <QueryProvider>
             <AuthProvider>
               <AccessibilityProvider>

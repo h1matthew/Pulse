@@ -1,13 +1,11 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Search, SlidersHorizontal, MapPin, Star, Heart, Loader2, LocateFixed, Navigation, MapPinned, Clock, TrendingUp, Store, RefreshCw, Minus, Plus } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import { AlertCircle, Clock, Heart, MapPin, Minus, Navigation, Plus, RefreshCw, Search, ShieldCheck, Star, Store } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
@@ -17,7 +15,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { CATEGORY_FILTERS } from '@/lib/constants/navigation'
-import { AnimatedSection } from '@/components/features/home/AnimatedSection'
 // BusinessCard and BusinessCardSkeleton are defined locally below
 import { LocationPrompt } from '@/components/features/discover/LocationPrompt'
 import { useNearbyBusinesses } from '@/hooks/useBusinesses'
@@ -27,16 +24,16 @@ import {
   useToggleBookmark,
   useBookmarkedIds,
 } from "@/hooks/useBookmarks";
-import { useAuth } from "@/components/providers/AuthProvider";
 import { toast } from "sonner";
 import {
   buildBusinessFallbackImageUrl,
   buildBusinessPhotoUrl,
-  buildBusinessSummary,
   getBusinessReviewLabel,
 } from "@/lib/business/display";
 import { NavLink } from "@/components/ui/nav-link";
 import { getCachedLocation, geocodeZipCode, cacheLocation, cacheLocationSource, getCachedLocationSource } from "@/lib/location";
+import { isOpenNow } from "@/lib/business/hours";
+import { isChainBusiness } from "@/lib/business/classify";
 import { ChangeLocationDialog } from "@/components/features/discover/ChangeLocationDialog";
 import { cn } from "@/lib/utils";
 import type { BusinessWithCategory } from "@/types/business";
@@ -52,25 +49,65 @@ const RADIUS_OPTIONS = [
 // Default location: Diamond Bar, CA
 const DIAMOND_BAR_DEFAULT: LatLng = { lat: 34.0286, lng: -117.8208 };
 
+const PRICE_LEVELS = [1, 2, 3, 4] as const;
+
+/**
+ * Independent vs. chain: prefer the server-populated `is_chain` flag when it
+ * is a definite boolean; fall back to name-based classification when null or
+ * undefined (older rows that have not been backfilled yet).
+ */
+function isIndependentBusiness(business: BusinessWithCategory): boolean {
+  if (business.is_chain === true) return false;
+  if (business.is_chain === false) return true;
+  return !isChainBusiness({ name: business.name, tags: business.tags ?? undefined });
+}
+
+interface FilterChipProps {
+  active: boolean;
+  onClick: () => void;
+  ariaLabel?: string;
+  children: ReactNode;
+}
+
+function FilterChip({ active, onClick, ariaLabel, children }: FilterChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      aria-label={ariaLabel}
+      className={cn(
+        "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
+        active
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : "border-border text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 /**
  * ============================================================================
  * UX DESIGN: Discover Page — Business Discovery Feed
  * ============================================================================
  *
  * USER JOURNEY:
- *   1. User lands on Discover → sees hero stats + location prompt (if no cached location)
+ *   1. User lands on Discover -> sees location context + compact filters
  *   2. Location resolves (GPS or zip) → businesses load in a responsive card grid
  *   3. User filters by category buttons or searches by keyword
  *   4. User sorts results by distance, rating, review count, or name
  *   5. User clicks a card → navigates to /business/[id] detail page
- *   6. User bookmarks directly from the card via heart icon (auth required)
+ *   6. User bookmarks directly from the card via heart icon — signed-in users
+ *      sync to their account; guests save on this device (localStorage) with
+ *      a toast nudging them to sign in to sync across devices
  *
  * DESIGN RATIONALE:
- *   - Category filter pills use toggle (aria-pressed) for clear active state
- *   - Sort dropdown defaults to "Highest Rated" to showcase the best businesses first
- *   - Skeleton loading grid (6 cards) matches final layout to prevent CLS
- *   - Frosted-glass hero card anchors the page and provides at-a-glance stats
- *   - Staggered fade-up animations add perceived polish without blocking interaction
+ *   - Category filter pills use toggle (aria-pressed) for clear active state.
+ *   - Sort dropdown defaults to "Highest Rated" to showcase the best businesses first.
+ *   - Directory-style cards prioritize factual scan data over generated copy.
+ *   - Skeleton loading grid (6 cards) matches final layout to prevent CLS.
  *
  * ACCESSIBILITY FEATURES:
  *   - role="search" on the search bar with aria-label
@@ -84,14 +121,11 @@ const DIAMOND_BAR_DEFAULT: LatLng = { lat: 34.0286, lng: -117.8208 };
 
 function BusinessCard({
   business,
-  index,
   userLocation,
 }: {
   business: BusinessWithCategory;
-  index: number;
   userLocation?: LatLng | null;
 }) {
-  const { user } = useAuth();
   const { data: isBookmarked } = useIsBookmarked(business.id);
   const toggleBookmark = useToggleBookmark();
   const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
@@ -124,37 +158,34 @@ function BusinessCard({
     data_source: business.data_source,
     review_count: business.review_count,
   });
-  const summary = buildBusinessSummary({
-    name: business.name,
-    short_description: business.short_description,
-    description: business.description,
-    categoryName: business.category?.name,
-    city: business.city,
-    state: business.state,
-    tags: business.tags,
-  });
+  const locationLine = [business.city, business.state].filter(Boolean).join(", ");
+  const independent = isIndependentBusiness(business);
+  const openNow = isOpenNow(business.hours) === true;
 
   const handleBookmark = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!user) {
-      toast.error("Sign in required", {
-        description: "Please sign in to bookmark businesses",
-      });
-      return;
-    }
-
     try {
-      await toggleBookmark.mutateAsync({
+      const result = await toggleBookmark.mutateAsync({
         businessId: business.id,
         isBookmarked: isBookmarked || false,
       });
-      toast.success(isBookmarked ? "Bookmark removed" : "Business bookmarked", {
-        description: isBookmarked
-          ? "Removed from your saved businesses"
-          : "Added to your saved businesses",
-      });
+      if (result.local) {
+        // Guest: saved in this browser only — be honest about the scope.
+        toast.success(
+          result.bookmarked ? "Saved on this device" : "Removed from this device",
+          {
+            description: "Sign in to sync bookmarks across devices.",
+          }
+        );
+      } else {
+        toast.success(isBookmarked ? "Bookmark removed" : "Business bookmarked", {
+          description: isBookmarked
+            ? "Removed from your saved businesses"
+            : "Added to your saved businesses",
+        });
+      }
     } catch {
       toast.error("Error", {
         description: "Failed to update bookmark",
@@ -163,188 +194,131 @@ function BusinessCard({
   };
 
   return (
-    <AnimatedSection animation="fade-up" delay={0.05 * (index % 6)}>
-      <NavLink href={`/business/${business.id}`}>
-        <Card className="h-full cursor-pointer group overflow-hidden border border-border/60 bg-card/90 backdrop-blur-sm shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-          <CardContent className="p-0">
-            {/* Image / Hero */}
-            <div className="relative h-48 overflow-hidden">
-              {showPhoto ? (
-                <>
-                  <Image
-                    src={photoUrl}
-                    alt={business.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    unoptimized
-                    onError={() => setPhotoLoadFailed(true)}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                </>
-              ) : (
-                <>
-                  <Image
-                    src={fallbackImageUrl}
-                    alt={`${business.name} default cover`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    unoptimized
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/10" />
-                </>
-              )}
+    <article className="group relative h-64 overflow-hidden rounded-lg border border-border bg-muted transition-all hover:border-primary/40 hover:shadow-md">
+      {/* Full-bleed image */}
+      {showPhoto ? (
+        <Image
+          src={photoUrl}
+          alt={business.name}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          unoptimized
+          onError={() => setPhotoLoadFailed(true)}
+        />
+      ) : (
+        <Image
+          src={fallbackImageUrl}
+          alt={`${business.name} default cover`}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          unoptimized
+        />
+      )}
 
-              {/* Overlaid badges */}
-              <div className="absolute top-3 left-3 flex gap-2">
-                {business.is_featured && (
-                  <Badge className="bg-chart-2 text-white border-0 shadow-lg text-xs font-semibold">
-                    Featured
-                  </Badge>
-                )}
-                {business.is_verified && (
-                  <Badge className="bg-primary text-primary-foreground border-0 shadow-lg text-xs font-semibold">
-                    Verified
-                  </Badge>
-                )}
-              </div>
+      {/* Scrim: keeps overlaid text readable over any photo */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/0"
+        aria-hidden="true"
+      />
 
-              {/* Bookmark button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-3 right-3 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white border-0 h-8 w-8"
-                onClick={handleBookmark}
-                disabled={toggleBookmark.isPending}
-              >
-                <Heart
-                  className={`h-4 w-4 ${
-                    isBookmarked ? "fill-red-400 text-red-400" : "text-white"
-                  }`}
-                />
-              </Button>
+      {/* Top-left badges (visual only — clicks fall through to the card link) */}
+      <div className="pointer-events-none absolute left-3 top-3 z-20 flex flex-wrap gap-1.5">
+        {independent ? (
+          <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+            Independent
+          </span>
+        ) : (
+          <span className="rounded-full bg-black/30 px-2 py-0.5 text-xs font-medium text-white/90 backdrop-blur-sm">
+            Chain
+          </span>
+        )}
+        {business.sba_certified && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+            <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+            SBA
+          </span>
+        )}
+      </div>
 
-              {/* Bottom overlay info (on photo cards) */}
-              {showPhoto && (
-                <div className="absolute bottom-3 left-3 right-3">
-                  <h3 className="font-bold text-lg text-white drop-shadow-md leading-tight">
-                    {business.name}
-                  </h3>
-                  <p className="text-white/80 text-sm drop-shadow-md">
-                    {business.category?.name}
-                  </p>
-                </div>
-              )}
-            </div>
+      {/* Bookmark (interactive — sits above the card link) */}
+      <Button
+        variant="secondary"
+        size="icon-sm"
+        className="absolute right-3 top-3 z-30 bg-black/35 text-white shadow-sm backdrop-blur-sm hover:bg-black/55"
+        onClick={handleBookmark}
+        disabled={toggleBookmark.isPending}
+        aria-label={isBookmarked ? "Remove bookmark" : "Bookmark business"}
+      >
+        <Heart
+          className={cn("h-4 w-4", isBookmarked ? "fill-white text-white" : "text-white")}
+          aria-hidden="true"
+        />
+      </Button>
 
-            {/* Content */}
-            <div className="p-4">
-              {/* Name + category (only when no photo) */}
-              {!showPhoto && (
-                <div className="mb-2">
-                  <h3 className="font-bold text-lg group-hover:text-primary transition-colors leading-tight">
-                    {business.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {business.category?.name}
-                  </p>
-                </div>
-              )}
-
-              {/* Rating row */}
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center gap-1 bg-chart-5/10 px-2 py-0.5 rounded-full">
-                  <Star className="h-3.5 w-3.5 fill-chart-5 text-chart-5" />
-                  <span className="font-semibold text-sm">{business.average_rating || "New"}</span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {reviewLabel}
-                </span>
-                {business.data_source === "google" && business.review_count > 0 && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/40 text-primary">
-                    Google
-                  </Badge>
-                )}
-                {business.price_range && (
-                  <>
-                    <span className="text-muted-foreground text-xs">·</span>
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {getPriceRange(business.price_range)}
-                    </span>
-                  </>
-                )}
-              </div>
-
-              {/* Description */}
-              <p className="text-sm text-foreground/80 line-clamp-2 mb-3 leading-relaxed">
-                {summary}
-              </p>
-
-              {/* Location + distance */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                <span className="flex items-center gap-1 truncate">
-                  <MapPin className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{business.address}</span>
-                </span>
-                {distance && (
-                  <span className="flex items-center gap-1 text-primary font-medium whitespace-nowrap">
-                    <Navigation className="h-3 w-3" />
-                    {distance}
-                  </span>
-                )}
-              </div>
-
-              {/* Tags */}
-              {business.tags && business.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-2 border-t border-border/50">
-                  {business.tags.slice(0, 3).map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                  {business.tags.length > 3 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      +{business.tags.length - 3}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Clickable overlay with the business details anchored to the bottom */}
+      <NavLink
+        href={`/business/${business.id}`}
+        className="absolute inset-0 z-10 flex flex-col justify-end p-4"
+        aria-label={`View ${business.name}`}
+      >
+        <h3 className="truncate text-lg font-semibold tracking-tight text-white">
+          {business.name}
+        </h3>
+        <p className="mt-0.5 truncate text-sm text-white/70">
+          {business.category?.name ?? "Local business"}
+          {locationLine ? ` · ${locationLine}` : ""}
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/90">
+          <span className="inline-flex items-center gap-1 font-medium">
+            <Star className="h-3.5 w-3.5 fill-white text-white" aria-hidden="true" />
+            {business.average_rating || "New"}
+          </span>
+          <span className="text-white/60">{reviewLabel}</span>
+          {business.price_range && (
+            <span className="font-medium text-white/80">{getPriceRange(business.price_range)}</span>
+          )}
+          {openNow && (
+            <span className="inline-flex items-center gap-1 font-medium text-white">
+              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+              Open now
+            </span>
+          )}
+          {distance && (
+            <span className="inline-flex items-center gap-1 font-medium text-white">
+              <Navigation className="h-3.5 w-3.5" aria-hidden="true" />
+              {distance}
+            </span>
+          )}
+        </div>
       </NavLink>
-    </AnimatedSection>
+    </article>
   );
 }
 
 function BusinessCardSkeleton() {
   return (
-    <Card className="h-full">
-      <CardContent className="p-0">
-        <Skeleton className="h-40 w-full" />
-        <div className="p-5 space-y-3">
-          <Skeleton className="h-6 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-4 w-full" />
-          <div className="flex gap-1">
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="relative h-64 overflow-hidden rounded-lg border border-border bg-card">
+      <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
+      <div className="absolute inset-x-0 bottom-0 space-y-2 p-4">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+    </div>
   );
 }
 
 export default function DiscoverPage() {
-  const [nearbyMode, setNearbyMode] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('rating')
   const [searchQuery, setSearchQuery] = useState('')
+  const [independentOnly, setIndependentOnly] = useState(false)
+  const [openNowOnly, setOpenNowOnly] = useState(false)
+  const [selectedPrices, setSelectedPrices] = useState<number[]>([])
+  const [highRatedOnly, setHighRatedOnly] = useState(false)
+  const [sbaOnly, setSbaOnly] = useState(false)
   const [radius, setRadius] = useState(10000)
   const [location, setLocation] = useState<LatLng | null>(null)
   const [locationSource, setLocationSource] = useState<'gps' | 'zip' | null>(null)
@@ -475,8 +449,71 @@ export default function DiscoverPage() {
       filtered = filtered.filter(b => b.category?.slug === selectedCategory);
     }
 
+    // Independent only: definite is_chain wins, name-based classification as fallback
+    if (independentOnly) {
+      filtered = filtered.filter(isIndependentBusiness)
+    }
+
+    // Open now: only businesses we can positively determine are open right now.
+    // Rows with unparseable/missing hours (null) are excluded while active.
+    if (openNowOnly) {
+      filtered = filtered.filter(b => isOpenNow(b.hours) === true)
+    }
+
+    // Price: multi-select — any selected level matches
+    if (selectedPrices.length > 0) {
+      filtered = filtered.filter(
+        b => b.price_range !== null && selectedPrices.includes(b.price_range)
+      )
+    }
+
+    // Rating: 4.0 and up
+    if (highRatedOnly) {
+      filtered = filtered.filter(b => (b.average_rating ?? 0) >= 4)
+    }
+
+    // SBA certified
+    if (sbaOnly) {
+      filtered = filtered.filter(b => b.sba_certified === true)
+    }
+
     return filtered;
-  }, [businesses, searchQuery, selectedCategory, bookmarkedIds]);
+  }, [businesses, searchQuery, selectedCategory, bookmarkedIds, independentOnly, openNowOnly, selectedPrices, highRatedOnly, sbaOnly]);
+
+  // Number of independents in the current result set (shown inline on the chip)
+  const independentCount = useMemo(
+    () => processedBusinesses.filter(isIndependentBusiness).length,
+    [processedBusinesses]
+  )
+
+  // Only offer the SBA filter when it can actually do something
+  const hasSbaBusinesses = useMemo(
+    () => (businesses ?? []).some(b => b.sba_certified === true),
+    [businesses]
+  )
+
+  const hasExtraFilters =
+    independentOnly || openNowOnly || selectedPrices.length > 0 || highRatedOnly || sbaOnly
+
+  const resetExtraFilters = useCallback(() => {
+    setIndependentOnly(false)
+    setOpenNowOnly(false)
+    setSelectedPrices([])
+    setHighRatedOnly(false)
+    setSbaOnly(false)
+  }, [])
+
+  const clearAllFilters = useCallback(() => {
+    resetExtraFilters()
+    setSearchQuery('')
+    setSelectedCategory('all')
+  }, [resetExtraFilters])
+
+  const togglePrice = useCallback((level: number) => {
+    setSelectedPrices((prev) =>
+      prev.includes(level) ? prev.filter((p) => p !== level) : [...prev, level]
+    )
+  }, [])
 
   // INPUT VALIDATION: Sanitize search query — strip angle brackets and cap length
   // to prevent XSS in reflected output and limit payload size (syntactical).
@@ -536,126 +573,96 @@ export default function DiscoverPage() {
           }, 0) / sortedBusinesses.length
         ).toFixed(1)
       : "0.0";
-  const featuredCount = sortedBusinesses.filter((business) => business.is_featured).length;
-  const googleCount = sortedBusinesses.filter((business) => business.data_source === "google").length;
-
-  const handleNearbyClick = async () => {
-    if (!nearbyMode) {
-      // Turning on nearby mode
-      if (!location && permission !== 'denied') {
-        toast.info("Requesting location...", {
-          description: "Please allow location access to find businesses near you.",
-        });
-        requestLocation();
-      }
-      setNearbyMode(true);
-    } else {
-      // Turning off nearby mode
-      setNearbyMode(false);
-    }
-  };
 
   const isLoading = locationLoading || businessesLoading || isLoadingZip
   const hasLocation = !!location
   const showLocationPrompt = !hasLocation && !locationLoading
+  const resultCountLabel = isLoading
+    ? 'Finding places'
+    : `${sortedBusinesses.length} ${sortedBusinesses.length === 1 ? 'place' : 'places'}`
+  const ratingSummaryLabel = isLoading ? 'Avg -' : `Avg ${averageVisibleRating}`
+  const locationSummary =
+    locationSource === 'gps'
+      ? 'Current location'
+      : locationLabel
+        ? `Near ${locationLabel}`
+        : 'Near Diamond Bar'
+  const locationControlLabel =
+    locationSource === 'gps' ? 'Current location' : locationLabel || 'Diamond Bar'
+  const categoryLabel =
+    selectedCategory === 'bookmarks'
+      ? 'Bookmarks'
+      : CATEGORY_FILTERS.find((category) => category.id === selectedCategory)?.name ?? 'All'
 
   return (
-    <div className="relative min-h-screen bg-background">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-gradient-to-b from-primary/10 via-chart-2/5 to-transparent" />
-      <div className="pointer-events-none absolute -top-20 right-4 h-72 w-72 rounded-full bg-chart-2/10 blur-3xl" />
-      <div className="pointer-events-none absolute top-10 -left-16 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
+    <div className="min-h-screen">
       <Header />
 
-      {/* Hero Section */}
-      <section className="relative px-6 pt-24 pb-8">
-        <div className="mx-auto max-w-6xl">
-          <AnimatedSection animation="fade-up">
-            <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/85 backdrop-blur-sm p-6 md:p-8 shadow-xl shadow-primary/5">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-chart-2/8" />
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    {nearbyMode ? "Businesses Near You" : "Discover Local Businesses"}
-                  </h1>
-                  {nearbyMode && (
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-primary" />
-                    </span>
-                  )}
-                </div>
-                <p className="text-muted-foreground mb-6 text-lg">
-                  {nearbyMode
-                    ? "Live places pulled from Google around your current location."
-                    : "Find standout neighborhood spots with real rating signals and community feedback."}
+      <main className="px-4 pb-12 pt-24 sm:px-6">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <section aria-labelledby="discover-heading">
+            <div className="flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <p className="mb-2 text-sm font-medium text-primary">{locationSummary}</p>
+                <h1 id="discover-heading" className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Discover places nearby
+                </h1>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+                  Search local spots, compare the basics, and save what looks good.
                 </p>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-xl border border-border/50 bg-background/70 px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" />
-                      Businesses
-                    </div>
-                    <p className="text-2xl font-semibold mt-1">{sortedBusinesses.length}</p>
-                  </div>
-                  <div className="rounded-xl border border-border/50 bg-background/70 px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                      <Star className="h-3.5 w-3.5" />
-                      Avg Rating
-                    </div>
-                    <p className="text-2xl font-semibold mt-1">{averageVisibleRating}</p>
-                  </div>
-                  <div className="rounded-xl border border-border/50 bg-background/70 px-4 py-3">
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-                      {nearbyMode ? <Clock className="h-3.5 w-3.5" /> : <TrendingUp className="h-3.5 w-3.5" />}
-                      {nearbyMode ? "Google Sources" : "Featured Picks"}
-                    </div>
-                    <p className="text-2xl font-semibold mt-1">{nearbyMode ? googleCount : featuredCount}</p>
-                  </div>
-                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 text-sm">
+                <span className="rounded-md border border-border bg-card px-3 py-2 font-medium">
+                  {resultCountLabel}
+                </span>
+                <span className="rounded-md border border-border bg-card px-3 py-2 text-muted-foreground">
+                  {ratingSummaryLabel}
+                </span>
+                <span className="rounded-md border border-border bg-card px-3 py-2 text-muted-foreground">
+                  {radius / 1000} km
+                </span>
               </div>
             </div>
-          </AnimatedSection>
+          </section>
 
           {/* Location Prompt */}
           {showLocationPrompt && (
-            <AnimatedSection animation="fade-up" delay={0.1}>
-              <div className="mb-8">
-                <LocationPrompt
-                  onAllowLocation={handleAllowLocation}
-                  onSearchZip={handleZipSearch}
-                  permission={permission}
-                  isLoading={locationLoading}
-                />
-              </div>
-            </AnimatedSection>
+            <LocationPrompt
+              onAllowLocation={handleAllowLocation}
+              onSearchZip={handleZipSearch}
+              permission={permission}
+              isLoading={locationLoading}
+            />
           )}
 
           {/* Search and Filters */}
           {hasLocation && (
-            <AnimatedSection animation="fade-up" delay={0.1}>
-              <div className="space-y-4 mb-6">
-                {/* Main search row */}
-                <div className="flex flex-col sm:flex-row gap-3" role="search" aria-label="Search businesses">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <section
+              aria-label="Search and filters"
+              className="rounded-lg border border-border bg-card p-3 shadow-sm sm:p-4"
+            >
+                <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+                  <div role="search" aria-label="Search businesses" className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                     <Input
-                      placeholder="Search businesses by name, description, or tags..."
+                      placeholder="Search by name, food, or service"
                       className="pl-10"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       aria-label="Search businesses"
                     />
                   </div>
+
                   <div className="flex gap-2">
                     <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-                      <SelectTrigger className="w-[150px]" aria-label="Sort businesses by">
+                      <SelectTrigger className="min-w-36 flex-1 sm:w-[152px]" aria-label="Sort businesses by">
                         <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="distance">Nearest</SelectItem>
-                        <SelectItem value="rating">Highest Rated</SelectItem>
-                        <SelectItem value="review_count">Most Reviewed</SelectItem>
-                        <SelectItem value="name">Name (A-Z)</SelectItem>
+                        <SelectItem value="rating">Top rated</SelectItem>
+                        <SelectItem value="review_count">Most reviewed</SelectItem>
+                        <SelectItem value="name">A-Z</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Refresh business results">
@@ -664,215 +671,211 @@ export default function DiscoverPage() {
                   </div>
                 </div>
 
-                {/* Category filters */}
-                <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by category">
+                <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by category">
                   {CATEGORY_FILTERS.map((category) => (
                     <Button
                       key={category.id}
-                      variant={selectedCategory === category.id ? 'default' : 'outline'}
+                      variant="ghost"
                       size="sm"
                       onClick={() => setSelectedCategory(category.id)}
                       aria-pressed={selectedCategory === category.id}
                       aria-label={`Filter by ${category.name}`}
                       className={cn(
-                        'gap-1.5',
-                        selectedCategory === category.id && 'shadow-md'
+                        "h-8 rounded-md border border-transparent px-3 text-muted-foreground",
+                        selectedCategory === category.id && "border-border bg-secondary text-foreground"
                       )}
                     >
-                      <span aria-hidden="true">{category.icon}</span>
                       {category.name}
                     </Button>
                   ))}
                   <Button
-                    variant={selectedCategory === 'bookmarks' ? 'default' : 'outline'}
+                    variant="ghost"
                     size="sm"
                     onClick={() => setSelectedCategory('bookmarks')}
                     aria-pressed={selectedCategory === 'bookmarks'}
                     aria-label="Show bookmarked businesses"
                     className={cn(
-                      'gap-1.5',
-                      selectedCategory === 'bookmarks' && 'shadow-md'
+                      "h-8 rounded-md border border-transparent px-3 text-muted-foreground",
+                      selectedCategory === 'bookmarks' && "border-border bg-secondary text-foreground"
                     )}
                   >
-                    <span aria-hidden="true"><Heart className="h-3.5 w-3.5" /></span>
+                    <Heart className="h-3.5 w-3.5" aria-hidden="true" />
                     Bookmarks
                   </Button>
                 </div>
 
-                {/* Location info and radius */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <span>
-                      {locationSource === 'gps'
-                        ? 'Using your current location'
-                        : locationLabel
-                          ? `Near ${locationLabel}`
-                          : 'Using zip code location'}
-                    </span>
-                    <Badge variant="secondary" className="text-xs">
-                      {processedBusinesses.length} businesses
-                    </Badge>
+                <div
+                  className="mt-2 flex flex-wrap items-center gap-1.5"
+                  role="group"
+                  aria-label="More filters"
+                >
+                  <FilterChip
+                    active={independentOnly}
+                    onClick={() => setIndependentOnly((v) => !v)}
+                  >
+                    <Store className="h-3.5 w-3.5" aria-hidden="true" />
+                    {independentOnly ? `Independent (${independentCount})` : 'Independent'}
+                  </FilterChip>
+                  <FilterChip
+                    active={openNowOnly}
+                    onClick={() => setOpenNowOnly((v) => !v)}
+                  >
+                    <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                    Open now
+                  </FilterChip>
+                  {PRICE_LEVELS.map((level) => (
+                    <FilterChip
+                      key={level}
+                      active={selectedPrices.includes(level)}
+                      onClick={() => togglePrice(level)}
+                      ariaLabel={`Price ${'$'.repeat(level)}`}
+                    >
+                      <span className="font-mono">{'$'.repeat(level)}</span>
+                    </FilterChip>
+                  ))}
+                  <FilterChip
+                    active={highRatedOnly}
+                    onClick={() => setHighRatedOnly((v) => !v)}
+                  >
+                    <Star className="h-3.5 w-3.5" aria-hidden="true" />
+                    4.0+
+                  </FilterChip>
+                  {hasSbaBusinesses && (
+                    <FilterChip
+                      active={sbaOnly}
+                      onClick={() => setSbaOnly((v) => !v)}
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                      SBA certified
+                    </FilterChip>
+                  )}
+                  {hasExtraFilters && (
                     <Button
                       variant="ghost"
                       size="xs"
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                      onClick={resetExtraFilters}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-col gap-3 border-t border-border pt-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
+                    <span>Location</span>
+                    <span className="font-medium text-foreground">{locationControlLabel}</span>
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="text-muted-foreground hover:text-foreground"
                       onClick={() => setChangeLocationOpen(true)}
                       aria-label="Change location"
                     >
                       Change
                     </Button>
                   </div>
+
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Radius:</span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setRadius((r) => Math.max(10000, r - 5000))}
-                        disabled={radius <= 10000}
-                        aria-label="Decrease search radius"
-                      >
-                        <Minus className="h-3 w-3" aria-hidden="true" />
-                      </Button>
-                      <Select value={radius.toString()} onValueChange={(v) => setRadius(Number(v))}>
-                        <SelectTrigger className="w-[100px] h-8" aria-label="Search radius">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {RADIUS_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value.toString()}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setRadius((r) => Math.min(25000, r + 5000))}
-                        disabled={radius >= 25000}
-                        aria-label="Increase search radius"
-                      >
-                        <Plus className="h-3 w-3" aria-hidden="true" />
-                      </Button>
-                    </div>
+                    <span className="text-muted-foreground">Radius</span>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => setRadius((r) => Math.max(10000, r - 5000))}
+                      disabled={radius <= 10000}
+                      aria-label="Decrease search radius"
+                    >
+                      <Minus className="h-3 w-3" aria-hidden="true" />
+                    </Button>
+                    <Select value={radius.toString()} onValueChange={(v) => setRadius(Number(v))}>
+                      <SelectTrigger className="h-8 w-[96px]" aria-label="Search radius">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RADIUS_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value.toString()}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => setRadius((r) => Math.min(25000, r + 5000))}
+                      disabled={radius >= 25000}
+                      aria-label="Increase search radius"
+                    >
+                      <Plus className="h-3 w-3" aria-hidden="true" />
+                    </Button>
                   </div>
                 </div>
+            </section>
+          )}
+
+          {/* Business Grid */}
+          {hasLocation && (
+            <section aria-label="Business results" aria-live="polite" aria-atomic="false">
+              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-sm font-medium">Results</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {sanitizedSearch ? `Matching "${sanitizedSearch}"` : categoryLabel}
+                  </p>
+                </div>
               </div>
-            </AnimatedSection>
+
+              {isLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Loading businesses">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <BusinessCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : businessesError ? (
+                <div className="rounded-lg border border-border bg-card p-8 text-center" role="alert">
+                  <AlertCircle className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden="true" />
+                  <h3 className="text-base font-semibold">Could not load places</h3>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{businessesError.message}</p>
+                  <Button className="mt-4" onClick={() => refetch()}>Try again</Button>
+                </div>
+              ) : sortedBusinesses.length === 0 ? (
+                <div className="rounded-lg border border-border bg-card p-8 text-center">
+                  <Search className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden="true" />
+                  <h3 className="text-base font-semibold">No places found</h3>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                    {hasExtraFilters
+                      ? 'No places match the current filters.'
+                      : searchQuery
+                        ? 'Try another keyword.'
+                        : `Try a larger radius or a different category.`}
+                  </p>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                    {(hasExtraFilters || !!sanitizedSearch || selectedCategory !== 'all') && (
+                      <Button variant="outline" onClick={clearAllFilters}>
+                        Clear filters
+                      </Button>
+                    )}
+                    {!searchQuery && radius < 25000 && (
+                      <Button onClick={() => setRadius(25000)}>Use 25 km</Button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {sortedBusinesses.map((business) => (
+                    <BusinessCard
+                      key={business.id}
+                      business={business}
+                      userLocation={location}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
           )}
         </div>
-      </section>
-
-      {/* Business Grid */}
-      {hasLocation && (
-        <section aria-label="Business results" className="relative px-6 pb-12">
-          <div className="mx-auto max-w-6xl" aria-live="polite" aria-atomic="false">
-            {isLoading ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6" aria-busy="true" aria-label="Loading businesses">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <BusinessCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : businessesError ? (
-              <div className="text-center py-16" role="alert">
-                <div className="text-4xl mb-4" aria-hidden="true">⚠️</div>
-                <h3 className="text-lg font-semibold mb-2">Error loading businesses</h3>
-                <p className="text-muted-foreground mb-4">{businessesError.message}</p>
-                <Button onClick={() => refetch()}>Try Again</Button>
-              </div>
-            ) : sortedBusinesses.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-4xl mb-4" aria-hidden="true">🔍</div>
-                <h3 className="text-lg font-semibold mb-2">No businesses found</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                  {searchQuery
-                    ? 'No businesses match your search. Try different keywords.'
-                    : `No businesses found within ${radius / 1000}km. Try expanding your search radius or selecting a different category.`}
-                </p>
-                {!searchQuery && radius < 25000 && (
-                  <Button onClick={() => setRadius(25000)}>Expand to 25 km</Button>
-                )}
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortedBusinesses.map((business, index) => (
-                  <BusinessCard
-                    key={business.id}
-                    business={business}
-                    index={index}
-                    userLocation={location}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* How It Works Section — first-time visitor guide */}
-      <section aria-label="How it works" className="relative px-6 py-16 bg-muted/30">
-        <div className="mx-auto max-w-6xl">
-          <AnimatedSection animation="fade-up">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl font-bold tracking-tight mb-2">How Pulse Works</h2>
-              <p className="text-muted-foreground max-w-lg mx-auto">
-                Discover, engage, and track your impact on the local economy in three easy steps.
-              </p>
-            </div>
-          </AnimatedSection>
-          <div className="grid md:grid-cols-3 gap-6">
-            <AnimatedSection animation="fade-up" delay={0.1}>
-              <Card className="h-full text-center card-lift">
-                <CardContent className="p-6">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <Store className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="text-xs font-medium text-primary mb-1">Step 1</div>
-                  <h3 className="text-lg font-semibold mb-2">Discover</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Search for local businesses near you by category, rating, or name.
-                    All data comes from real Google Places listings.
-                  </p>
-                </CardContent>
-              </Card>
-            </AnimatedSection>
-            <AnimatedSection animation="fade-up" delay={0.15}>
-              <Card className="h-full text-center card-lift">
-                <CardContent className="p-6">
-                  <div className="h-12 w-12 rounded-xl bg-chart-2/10 flex items-center justify-center mx-auto mb-4">
-                    <Heart className="h-6 w-6 text-chart-2" />
-                  </div>
-                  <div className="text-xs font-medium text-chart-2 mb-1">Step 2</div>
-                  <h3 className="text-lg font-semibold mb-2">Engage</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Leave reviews, bookmark favorites, claim deals, and check in
-                    to show your support for local businesses.
-                  </p>
-                </CardContent>
-              </Card>
-            </AnimatedSection>
-            <AnimatedSection animation="fade-up" delay={0.2}>
-              <Card className="h-full text-center card-lift">
-                <CardContent className="p-6">
-                  <div className="h-12 w-12 rounded-xl bg-chart-3/10 flex items-center justify-center mx-auto mb-4">
-                    <TrendingUp className="h-6 w-6 text-chart-3" />
-                  </div>
-                  <div className="text-xs font-medium text-chart-3 mb-1">Step 3</div>
-                  <h3 className="text-lg font-semibold mb-2">Track Impact</h3>
-                  <p className="text-sm text-muted-foreground">
-                    See your personal economic impact dashboard — dollars kept local,
-                    jobs supported, and your community rank.
-                  </p>
-                </CardContent>
-              </Card>
-            </AnimatedSection>
-          </div>
-        </div>
-      </section>
+      </main>
 
       <ChangeLocationDialog
         open={changeLocationOpen}

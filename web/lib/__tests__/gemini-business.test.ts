@@ -231,7 +231,7 @@ describe('generateBusinessDescription', () => {
     })
   })
 
-  it('uses gemini-2.0-flash model', async () => {
+  it('uses gemini-2.5-flash-lite model', async () => {
     const business = { name: 'Test Cafe', city: 'Portland', state: 'OR' }
     const reviewSummary = {
       averageRating: 0,
@@ -241,7 +241,7 @@ describe('generateBusinessDescription', () => {
       sampleReviews: [] as string[],
     }
     await generateBusinessDescription(business, null, reviewSummary)
-    expect(mockGetGenerativeModel).toHaveBeenCalledWith({ model: 'gemini-2.0-flash' })
+    expect(mockGetGenerativeModel).toHaveBeenCalledWith({ model: 'gemini-2.5-flash-lite' })
   })
 
   it('includes business name, city, and website content in prompt', async () => {

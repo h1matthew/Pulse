@@ -1,28 +1,18 @@
-'use client'
-
-import { useTheme } from 'next-themes'
-import { useEffect, useState, type ReactNode } from 'react'
-import { cn } from '@/lib/utils'
+import type { ReactNode } from 'react'
 
 interface HomeWrapperProps {
   children: ReactNode
 }
 
+/**
+ * Marketing homepage shell. Theme-agnostic: it renders against the semantic
+ * background/foreground tokens, so it follows the app's light theme (and would
+ * track dark too) with identical SSR/client markup — no hydration mismatch.
+ */
 export function HomeWrapper({ children }: HomeWrapperProps) {
-  const { resolvedTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => setMounted(true), [])
-
+  // No opaque background — the root layout's AppBackground shows through.
   return (
-    <div
-      className={cn(
-        'relative min-h-screen overflow-hidden transition-colors duration-300',
-        !mounted || resolvedTheme === 'dark'
-          ? 'dark bg-[#0a0c10] text-white'
-          : 'bg-white text-gray-900'
-      )}
-    >
+    <div className="relative min-h-screen overflow-hidden text-foreground">
       {children}
     </div>
   )

@@ -176,7 +176,7 @@ export default function MissionsPage() {
   const inProgressCount = userActive?.filter((m) => m.progress.current_count > 0).length ?? 0;
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <Header />
 
       <div className="pt-20 pb-12">

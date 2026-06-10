@@ -153,7 +153,7 @@ export default function AssistantPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <Header />
 
       <div className="pt-16 pb-8 h-[calc(100vh-4rem)]">

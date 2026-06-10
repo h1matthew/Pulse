@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const securityHeaders = [
   {
@@ -43,9 +45,12 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // Pin the workspace root to this app directory so Next doesn't infer the
+  // parent dir (a stray root lockfile triggers the multi-lockfile warning).
+  outputFileTracingRoot: path.dirname(fileURLToPath(import.meta.url)),
   transpilePackages: ['three'],
-  // Allow ngrok and other dev origins
-  allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.io', '192.168.*.*'],
+  // Allow ngrok/cloudflared tunnels and LAN dev origins
+  allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.io', '*.trycloudflare.com', '192.168.*.*'],
   images: {
     remotePatterns: [
       {
@@ -71,11 +76,16 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // Security headers apply in every environment. The aggressive immutable
+    // asset caching below must NOT run in development: it makes the browser
+    // serve stale /_next/static chunks across rebuilds/upgrades, which breaks
+    // the App Router (e.g. "OuterLayoutRouter ... reading 'get' of undefined").
+    const securityOnly = [{ source: '/(.*)', headers: securityHeaders }]
+    if (process.env.NODE_ENV !== 'production') {
+      return securityOnly
+    }
     return [
-      {
-        source: '/(.*)',
-        headers: securityHeaders,
-      },
+      ...securityOnly,
       // Static asset caching - immutable for hashed files
       {
         source: '/_next/static/(.*)',

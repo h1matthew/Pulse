@@ -64,7 +64,7 @@ export function AnimatedSection({
         case 'scale-out':
           return 'animate-scale-out'
         default:
-          return 'opacity-0'
+          return 'opacity-100'
       }
     }
 

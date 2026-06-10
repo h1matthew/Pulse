@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   Tag,
-  Clock,
+  Gift,
   MapPin,
   Star,
   ChevronRight,
@@ -11,17 +11,17 @@ import {
   AlertCircle,
   Check,
   Copy,
+  Clock,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { Header } from "@/components/layout/Header";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RefreshCw } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useAvailableDeals, useClaimDeal, useUserClaims, useScrapeDeals } from "@/hooks/useDeals";
 import { toast } from "sonner";
@@ -43,19 +43,19 @@ function formatDiscount(
 }
 
 function formatExpiry(endDate: string | null): string {
-  if (!endDate) return "No expiration";
+  if (!endDate) return "no expiration";
   const end = new Date(endDate);
   const now = new Date();
   const diffMs = end.getTime() - now.getTime();
-  if (diffMs <= 0) return "Expired";
+  if (diffMs <= 0) return "expired";
 
   const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
   const totalDays = Math.floor(totalHours / 24);
 
   if (totalDays > 0) {
-    return `${totalDays} day${totalDays === 1 ? "" : "s"} left`;
+    return `ends in ${totalDays} day${totalDays === 1 ? "" : "s"}`;
   }
-  return `${totalHours} hour${totalHours === 1 ? "" : "s"} left`;
+  return `ends in ${totalHours} hour${totalHours === 1 ? "" : "s"}`;
 }
 
 function formatClaimedAt(value: string): string {
@@ -64,12 +64,29 @@ function formatClaimedAt(value: string): string {
   return date.toLocaleDateString();
 }
 
-function getBusinessIcon(claim: DealClaimWithDeal["deal"]): string {
-  return claim.business?.category?.icon || "🏪";
+/** Loading placeholder matching the deal card layout (prevents CLS). */
+function DealCardSkeleton() {
+  return (
+    <div className="rounded-lg border border-border bg-card p-6">
+      <div className="flex flex-col gap-6 md:flex-row md:items-center">
+        <Skeleton className="h-12 w-12 shrink-0 rounded-lg" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-4 w-full max-w-md" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <div className="flex flex-col items-start gap-2 md:items-end">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-9 w-28 rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function DealsPage() {
-  const { isLoggedIn, userId } = useAuth();
+  const { isLoggedIn } = useAuth();
 
   const {
     data: availableDeals = [],
@@ -131,118 +148,127 @@ export default function DealsPage() {
   const isError = availableError || (isLoggedIn && claimsError);
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="min-h-screen">
       <Header />
 
-      <div className="pt-20 pb-12">
-        <div className="mx-auto max-w-6xl px-6">
+      <main className="px-6 pb-12 pt-24">
+        <div className="mx-auto max-w-6xl">
           <AnimatedSection animation="fade-up">
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-6 w-6 text-chart-2" />
-                  <h1 className="text-3xl font-bold tracking-tight">Deals & Offers</h1>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={scrapeDeals.isPending}
-                  onClick={async () => {
-                    try {
-                      const result = await scrapeDeals.mutateAsync(undefined);
-                      if (result.dealsFound > 0) {
-                        toast.success(`Found ${result.dealsFound} new deal${result.dealsFound === 1 ? "" : "s"}`, {
-                          description: `Scanned ${result.scraped} business website${result.scraped === 1 ? "" : "s"}`,
-                        });
-                      } else {
-                        toast.info("No new deals found", {
-                          description: result.scraped > 0
-                            ? `Scanned ${result.scraped} business website${result.scraped === 1 ? "" : "s"}`
-                            : "No businesses to scan right now",
-                        });
-                      }
-                    } catch {
-                      toast.error("Failed to scan for deals");
-                    }
-                  }}
-                >
-                  {scrapeDeals.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Scanning...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Scan for Deals
-                    </>
-                  )}
-                </Button>
+            <div className="mb-8 flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Deals &amp; Offers
+                </p>
+                <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Deals & Offers
+                </h1>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+                  Live offers and mission rewards from local businesses
+                </p>
               </div>
-              <p className="text-muted-foreground">
-                Live offers and mission rewards from local businesses
-              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={scrapeDeals.isPending}
+                onClick={async () => {
+                  try {
+                    const result = await scrapeDeals.mutateAsync(undefined);
+                    if (result.dealsFound > 0) {
+                      toast.success(`Found ${result.dealsFound} new deal${result.dealsFound === 1 ? "" : "s"}`, {
+                        description: `Scanned ${result.scraped} business website${result.scraped === 1 ? "" : "s"}`,
+                      });
+                    } else {
+                      toast.info("No new deals found", {
+                        description: result.scraped > 0
+                          ? `Scanned ${result.scraped} business website${result.scraped === 1 ? "" : "s"}`
+                          : "No businesses to scan right now",
+                      });
+                    }
+                  } catch {
+                    toast.error("Failed to scan for deals");
+                  }
+                }}
+              >
+                {scrapeDeals.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Scanning...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Scan for Deals
+                  </>
+                )}
+              </Button>
             </div>
           </AnimatedSection>
 
           <AnimatedSection animation="fade-up" delay={0.1}>
-            <div className="grid sm:grid-cols-3 gap-4 mb-8">
-              <Card>
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-chart-2/10 flex items-center justify-center">
-                    <Tag className="h-6 w-6 text-chart-2" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold" data-testid="stat-available">
+            <div className="mb-8 grid gap-4 sm:grid-cols-3">
+              <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Tag className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  {isLoading ? (
+                    <Skeleton className="mb-1 h-7 w-10" />
+                  ) : (
+                    <div className="font-mono text-2xl font-semibold" data-testid="stat-available">
                       {availableDeals.length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Available Deals</div>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                  <div className="text-xs text-muted-foreground">Available Deals</div>
+                </div>
+              </div>
 
-              <Card>
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-chart-3/10 flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-chart-3" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold" data-testid="stat-flash">
+              <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Clock className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  {isLoading ? (
+                    <Skeleton className="mb-1 h-7 w-10" />
+                  ) : (
+                    <div className="font-mono text-2xl font-semibold" data-testid="stat-flash">
                       {flashCount}
                     </div>
-                    <div className="text-xs text-muted-foreground">Flash Deals</div>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                  <div className="text-xs text-muted-foreground">Flash Deals</div>
+                </div>
+              </div>
 
-              <Card>
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-chart-5/10 flex items-center justify-center">
-                    <Star className="h-6 w-6 text-chart-5" />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold" data-testid="stat-claimed">
+              <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Gift className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  {isLoading ? (
+                    <Skeleton className="mb-1 h-7 w-10" />
+                  ) : (
+                    <div className="font-mono text-2xl font-semibold" data-testid="stat-claimed">
                       {visibleClaims.length}
                     </div>
-                    <div className="text-xs text-muted-foreground">Claimed</div>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                  <div className="text-xs text-muted-foreground">Claimed</div>
+                </div>
+              </div>
             </div>
           </AnimatedSection>
 
           {isLoading && (
-            <div className="py-12 text-center">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-3 text-muted-foreground" />
-              <p className="text-muted-foreground">Loading deals...</p>
+            <div className="space-y-4" data-testid="deals-skeleton" aria-busy="true" aria-label="Loading deals">
+              {[0, 1, 2, 3].map((i) => (
+                <DealCardSkeleton key={i} />
+              ))}
             </div>
           )}
 
           {!isLoading && isError && (
             <div className="py-12 text-center">
-              <AlertCircle className="h-6 w-6 mx-auto mb-3 text-destructive" />
+              <AlertCircle className="mx-auto mb-3 h-6 w-6 text-destructive" />
               <p className="font-medium">Could not load deals</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Try refreshing in a moment.
               </p>
             </div>
@@ -258,9 +284,11 @@ export default function DealsPage() {
 
                 <TabsContent value="available" className="space-y-4">
                   {availableDeals.length === 0 && (
-                    <div className="text-center py-16">
-                      <div className="text-4xl mb-4">🏷️</div>
-                      <h2 className="text-lg font-semibold mb-2">
+                    <div className="rounded-lg border border-border bg-card py-16 text-center">
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                        <Tag className="h-6 w-6 text-primary" aria-hidden="true" />
+                      </div>
+                      <h2 className="mb-2 text-lg font-semibold">
                         No available deals right now
                       </h2>
                       <p className="text-muted-foreground">
@@ -285,99 +313,104 @@ export default function DealsPage() {
                         animation="fade-up"
                         delay={0.05 * (index + 1)}
                       >
-                        <Card className="group">
-                          <CardContent className="p-6">
-                            <div className="flex flex-col md:flex-row md:items-center gap-6">
-                              <div className="text-5xl">
-                                {deal.business?.category?.icon || "🏪"}
+                        <div className="rounded-lg border border-border bg-card p-6">
+                          <div className="flex flex-col gap-6 md:flex-row md:items-center">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                              <Tag className="h-6 w-6 text-primary" aria-hidden="true" />
+                            </div>
+
+                            <div className="flex-1">
+                              <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <h2 className="text-lg font-semibold">
+                                  {businessHref ? (
+                                    <Link href={businessHref} className="hover:text-primary hover:underline">
+                                      {deal.title}
+                                    </Link>
+                                  ) : (
+                                    deal.title
+                                  )}
+                                </h2>
+                                {deal.deal_type === "boost_mission" && (
+                                  <Badge variant="secondary">Boost Mission</Badge>
+                                )}
+                                {deal.deal_type === "flash" && (
+                                  <Badge variant="outline" className="border-primary/40 text-primary">
+                                    Flash Deal
+                                  </Badge>
+                                )}
+                                {deal.source === "scraped" && (
+                                  <Badge variant="outline">From website</Badge>
+                                )}
                               </div>
 
-                              <div className="flex-1">
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  <h2 className="text-lg font-semibold">
-                                    {businessHref ? (
-                                      <Link href={businessHref} className="text-primary hover:underline">
-                                        {deal.title}
-                                      </Link>
-                                    ) : (
-                                      deal.title
-                                    )}
-                                  </h2>
-                                  {deal.deal_type === "boost_mission" && (
-                                    <Badge className="bg-chart-3 text-white">Boost Mission</Badge>
-                                  )}
-                                  {deal.deal_type === "flash" && (
-                                    <Badge className="bg-destructive text-white">
-                                      Flash Deal
-                                    </Badge>
-                                  )}
-                                  {deal.source === "scraped" && (
-                                    <Badge variant="outline">From website</Badge>
-                                  )}
-                                  {deal.business?.category?.name && (
-                                    <Badge variant="secondary">
-                                      {deal.business.category.name}
-                                    </Badge>
-                                  )}
-                                </div>
+                              <p className="mb-2 text-sm leading-6 text-muted-foreground">
+                                {deal.description}
+                              </p>
 
-                                <p className="text-muted-foreground mb-2">{deal.description}</p>
-
-                                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {businessHref ? (
-                                      <Link href={businessHref} className="text-primary hover:underline">
-                                        {deal.business?.name || "Local business"}
-                                      </Link>
-                                    ) : (
-                                      deal.business?.name || "Local business"
-                                    )}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Star className="h-3 w-3 fill-chart-5 text-chart-5" />
-                                    {deal.business?.average_rating || "New"} (
-                                    {deal.business?.review_count || 0} reviews)
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {formatExpiry(deal.end_date)}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="flex flex-col items-end gap-2">
-                                <div className="text-2xl font-bold text-chart-2">
-                                  {formatDiscount(deal.discount_type, deal.discount_value)}
-                                </div>
-                                {isDemoDeal && businessHref ? (
-                                  <Link href={businessHref} className="inline-block">
-                                    <Button className="group" size="sm">
-                                      View Business
-                                      <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                    </Button>
-                                  </Link>
-                                ) : (
-                                  <Button
-                                    className="group"
-                                    size="sm"
-                                    disabled={deal.isClaimed || isClaiming}
-                                    onClick={() => handleClaim(deal.id, deal.isClaimed)}
-                                  >
-                                    {isClaiming ? "Claiming..." : actionLabel}
-                                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                  </Button>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1 font-medium text-foreground">
+                                  <MapPin className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                                  {businessHref ? (
+                                    <Link href={businessHref} className="hover:text-primary hover:underline">
+                                      {deal.business?.name || "Local business"}
+                                    </Link>
+                                  ) : (
+                                    deal.business?.name || "Local business"
+                                  )}
+                                </span>
+                                {deal.business?.category?.name && (
+                                  <>
+                                    <span aria-hidden="true">&middot;</span>
+                                    <span>{deal.business.category.name}</span>
+                                  </>
                                 )}
-                                {deal.code && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Code:{" "}
-                                    <span className="font-mono font-medium">{deal.code}</span>
-                                  </div>
-                                )}
+                                <span aria-hidden="true">&middot;</span>
+                                <span className="flex items-center gap-1">
+                                  <Star className="h-3.5 w-3.5" aria-hidden="true" />
+                                  <span className="font-mono">
+                                    {deal.business?.average_rating || "New"}
+                                  </span>
+                                  ({deal.business?.review_count || 0} reviews)
+                                </span>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
+
+                            <div className="flex flex-col items-start gap-2 md:items-end">
+                              <div className="font-mono text-2xl font-semibold text-primary">
+                                {formatDiscount(deal.discount_type, deal.discount_value)}
+                              </div>
+                              <span className="font-mono text-xs text-muted-foreground">
+                                {formatExpiry(deal.end_date)}
+                              </span>
+                              {isDemoDeal && businessHref ? (
+                                <Link href={businessHref} className="inline-block">
+                                  <Button className="group" size="sm">
+                                    View Business
+                                    <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                  </Button>
+                                </Link>
+                              ) : (
+                                <Button
+                                  className="group"
+                                  size="sm"
+                                  disabled={deal.isClaimed || isClaiming}
+                                  onClick={() => handleClaim(deal.id, deal.isClaimed)}
+                                >
+                                  {isClaiming ? "Claiming..." : actionLabel}
+                                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                </Button>
+                              )}
+                              {deal.code && (
+                                <div className="text-xs text-muted-foreground">
+                                  Code:{" "}
+                                  <span className="rounded bg-muted px-2 py-0.5 font-mono font-medium">
+                                    {deal.code}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </AnimatedSection>
                     );
                   })}
@@ -385,9 +418,11 @@ export default function DealsPage() {
 
                 <TabsContent value="claimed" className="space-y-4">
                   {visibleClaims.length === 0 && (
-                    <div className="text-center py-16">
-                      <div className="text-4xl mb-4">🎁</div>
-                      <h2 className="text-lg font-semibold mb-2">No claimed deals yet</h2>
+                    <div className="rounded-lg border border-border bg-card py-16 text-center">
+                      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                        <Gift className="h-6 w-6 text-primary" aria-hidden="true" />
+                      </div>
+                      <h2 className="mb-2 text-lg font-semibold">No claimed deals yet</h2>
                       <p className="text-muted-foreground">
                         Claim an offer to see it here.
                       </p>
@@ -400,55 +435,56 @@ export default function DealsPage() {
                       animation="fade-up"
                       delay={0.05 * (index + 1)}
                     >
-                      <Card className="bg-muted/30">
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-6">
-                            <div className="text-5xl opacity-70">
-                              {getBusinessIcon(claim.deal)}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h2 className="text-lg font-semibold">
-                                  {claim.deal.business?.id ? (
-                                    <Link href={`/business/${claim.deal.business.id}`} className="text-primary hover:underline">
-                                      {claim.deal.title}
-                                    </Link>
-                                  ) : (
-                                    claim.deal.title
-                                  )}
-                                </h2>
-                                <Badge variant="outline">
-                                  {claim.redeemed_at ? "Used" : "Claimed"}
-                                </Badge>
-                              </div>
-                              <p className="text-muted-foreground text-sm">
-                                {claim.deal.description}
-                              </p>
-                              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                <span>
-                                  {claim.deal.business?.id ? (
-                                    <Link href={`/business/${claim.deal.business.id}`} className="text-primary hover:underline">
-                                      {claim.deal.business?.name || "Local business"}
-                                    </Link>
-                                  ) : (
-                                    claim.deal.business?.name || "Local business"
-                                  )}
-                                </span>
-                                <span>Claimed {formatClaimedAt(claim.claimed_at)}</span>
-                                {claim.redeemed_code && (
-                                  <span className="font-mono">{claim.redeemed_code}</span>
+                      <div className="rounded-lg border border-border bg-card p-6">
+                        <div className="flex items-center gap-6">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                            <Gift className="h-6 w-6 text-primary" aria-hidden="true" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="mb-1 flex items-center gap-2">
+                              <h2 className="text-lg font-semibold">
+                                {claim.deal.business?.id ? (
+                                  <Link href={`/business/${claim.deal.business.id}`} className="hover:text-primary hover:underline">
+                                    {claim.deal.title}
+                                  </Link>
+                                ) : (
+                                  claim.deal.title
                                 )}
-                              </div>
+                              </h2>
+                              <Badge variant="outline">
+                                {claim.redeemed_at ? "Used" : "Claimed"}
+                              </Badge>
                             </div>
-                            <div className="text-xl font-bold text-muted-foreground">
-                              {formatDiscount(
-                                claim.deal.discount_type,
-                                claim.deal.discount_value
+                            <p className="text-sm text-muted-foreground">
+                              {claim.deal.description}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                              <span>
+                                {claim.deal.business?.id ? (
+                                  <Link href={`/business/${claim.deal.business.id}`} className="hover:text-primary hover:underline">
+                                    {claim.deal.business?.name || "Local business"}
+                                  </Link>
+                                ) : (
+                                  claim.deal.business?.name || "Local business"
+                                )}
+                              </span>
+                              <span aria-hidden="true">&middot;</span>
+                              <span>Claimed {formatClaimedAt(claim.claimed_at)}</span>
+                              {claim.redeemed_code && (
+                                <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs">
+                                  {claim.redeemed_code}
+                                </span>
                               )}
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
+                          <div className="font-mono text-xl font-semibold text-muted-foreground">
+                            {formatDiscount(
+                              claim.deal.discount_type,
+                              claim.deal.discount_value
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </AnimatedSection>
                   ))}
                 </TabsContent>
@@ -456,22 +492,22 @@ export default function DealsPage() {
             </AnimatedSection>
           )}
         </div>
-      </div>
+      </main>
 
       {/* Claim Success Dialog */}
       <Dialog open={!!claimedDeal} onOpenChange={handleCloseDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Deal Claimed! 🎉</DialogTitle>
+            <DialogTitle>Deal claimed</DialogTitle>
             <DialogDescription>
               {claimedDeal?.deal?.title} at {claimedDeal?.deal?.business?.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Your redemption code:</p>
+              <p className="mb-2 text-sm text-muted-foreground">Your redemption code:</p>
               <div className="flex items-center justify-center gap-2">
-                <code className="text-2xl font-bold bg-muted px-4 py-2 rounded-lg">
+                <code className="rounded-lg bg-muted px-4 py-2 font-mono text-2xl font-semibold">
                   {claimedDeal?.redeemed_code}
                 </code>
                 <Button
@@ -484,12 +520,12 @@ export default function DealsPage() {
                 </Button>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-center text-xs text-muted-foreground">
               Show this code to the business to redeem your deal.
             </p>
           </div>
           <Button onClick={handleCloseDialog} className="w-full">
-            Got it!
+            Got it
           </Button>
         </DialogContent>
       </Dialog>

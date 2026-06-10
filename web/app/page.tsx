@@ -1,272 +1,202 @@
 /**
- * Homepage — Pulse Landing Page
+ * Homepage - Pulse landing page.
  *
- * GitHub-inspired editorial landing page. Forces dark mode on the marketing
- * surface while respecting user theme preference on all other pages.
- * Server Component shell with client islands that hydrate independently.
+ * Quiet public entry point focused on local discovery, deals, and impact.
+ * Light, refined theme driven entirely by semantic tokens (warm paper canvas,
+ * ink text, a single bronze-amber accent, crisp hairline borders).
  */
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Store, Tag, TrendingUp } from "lucide-react"
 import { Header } from "@/components/layout/Header"
 import { HomeWrapper } from "@/components/features/home/HomeWrapper"
 import { AnimatedSection } from "@/components/features/home/AnimatedSection"
 import { HeroStats } from "@/components/features/home/CommunityStatsIsland"
+import { HeroPreview } from "@/components/features/home/HeroPreview"
 import { FeatureTabs } from "@/components/features/home/FeatureTabs"
-import { ParallaxGlow } from "@/components/features/home/ParallaxGlow"
-
 import { PulseLogo } from "@/components/ui/PulseLogo"
 import { NavLink } from "@/components/ui/nav-link"
+
+const VALUE_POINTS = [
+  {
+    icon: Store,
+    title: "Places",
+    text: "Useful lists, ratings, and hours.",
+  },
+  {
+    icon: Tag,
+    title: "Deals",
+    text: "Simple offers you can actually use.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Impact",
+    text: "A clean record of what stays local.",
+  },
+]
+
+const FOOTER_LINKS = [
+  { href: "/discover", label: "Browse" },
+  { href: "/deals", label: "Deals" },
+  { href: "/missions", label: "Missions" },
+  { href: "/about", label: "About" },
+]
 
 export default function Home() {
   return (
     <HomeWrapper>
       <Header />
 
-      {/* ── Hero ── */}
       <section
         aria-label="Hero"
-        className="relative isolate flex min-h-[95vh] flex-col items-center justify-center px-6 pt-20 pb-16"
+        className="relative px-6 pb-16 pt-32 sm:pt-36 lg:pb-20"
       >
-        {/* Parallax glows — move slower than scroll to create depth */}
-        <div className="absolute inset-0 -z-10">
-          <ParallaxGlow
-            speed={0.15}
-            className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] rounded-full bg-teal-500/[0.07] blur-[150px]"
-          />
-          <ParallaxGlow
-            speed={0.25}
-            className="absolute top-1/3 left-1/3 w-[400px] h-[400px] rounded-full bg-purple-500/[0.04] blur-[120px]"
-          />
-        </div>
-
-        <div className="mx-auto max-w-4xl text-center">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
           <AnimatedSection animation="fade-up">
-            <h1 className="text-5xl sm:text-6xl lg:text-[4.5rem] font-bold tracking-tight leading-[1.1] text-white mb-6">
-              Every dollar you spend locally creates{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-teal-200">
-                real impact
-              </span>
-            </h1>
-          </AnimatedSection>
-
-          <AnimatedSection animation="fade-up" delay={0.1}>
-            <p className="mx-auto max-w-xl text-lg text-white/50 leading-relaxed mb-10">
-              Discover small businesses in your community, leave verified reviews,
-              claim exclusive deals, and see exactly how your support strengthens
-              the local economy.
-            </p>
-          </AnimatedSection>
-
-          <AnimatedSection animation="fade-up" delay={0.2}>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <NavLink href="/discover">
-                <button className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-[#0a0c10] hover:bg-white/90 transition-colors">
-                  Explore Businesses
+            <div className="max-w-2xl">
+              <p className="mb-5 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">Pulse local guide</p>
+              <h1 className="text-5xl font-semibold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+                Find good places nearby.
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
+                Local shops, deals, and a simple view of what your support keeps in town.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <NavLink
+                  href="/discover"
+                  className="inline-flex h-11 items-center justify-center gap-2 btn-primary rounded-xl px-5 text-sm font-semibold text-primary-foreground transition-all"
+                >
+                  Browse places
                   <ArrowRight className="h-4 w-4" />
-                </button>
-              </NavLink>
-              <NavLink href="/mission">
-                <button className="inline-flex items-center gap-2 rounded-lg border border-white/15 px-6 py-3 text-sm font-medium text-white hover:border-white/30 hover:bg-white/5 transition-all">
-                  How It Works
-                </button>
-              </NavLink>
+                </NavLink>
+                <NavLink
+                  href="/deals"
+                  className="inline-flex h-11 items-center justify-center rounded-md border border-border px-5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  See deals
+                </NavLink>
+              </div>
             </div>
+          </AnimatedSection>
+
+          <AnimatedSection animation="fade-up" delay={0.08}>
+            <HeroPreview />
           </AnimatedSection>
         </div>
       </section>
 
-      {/* ── Feature Tabs (interactive product demo) ── */}
-      <section aria-label="Features" className="relative px-6 pb-24">
+      <section aria-label="Product snapshot" className="px-6 py-14">
         <AnimatedSection animation="fade-up">
           <FeatureTabs />
         </AnimatedSection>
       </section>
 
-      {/* ── Stats Strip ── */}
-      <section aria-label="Community stats" className="border-y border-white/[0.06] py-16 px-6">
+      <section aria-label="Community stats" className="border-y border-border bg-card/40 px-6 py-12">
         <AnimatedSection animation="fade-up">
           <HeroStats />
         </AnimatedSection>
       </section>
 
-      {/* ── Deep Feature: Discover ── */}
-      <section aria-label="Discover businesses" className="px-6 py-24 sm:py-32">
-        <div className="mx-auto max-w-5xl">
+      <section aria-label="Local discovery" className="px-6 py-20 sm:py-24">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <AnimatedSection animation="fade-up">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div>
-                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-5">
-                  Find businesses your neighbors love
-                </h2>
-                <p className="text-white/50 text-lg leading-relaxed mb-6">
-                  Browse by category, sort by reviews, or let our AI recommendation
-                  engine match you with spots based on your ratings and bookmarks.
-                  Powered by Google Places — real data, not a static list.
-                </p>
-                <NavLink
-                  href="/discover"
-                  className="inline-flex items-center gap-1.5 text-teal-400 font-medium hover:underline underline-offset-4 transition-colors"
-                >
-                  Start discovering <ArrowRight className="h-4 w-4" />
-                </NavLink>
-              </div>
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
-                <div className="rounded-lg bg-gradient-to-br from-teal-500/10 to-purple-500/5 p-6 space-y-3">
-                  <div className="flex gap-2">
-                    {["All", "Food & Drink", "Retail", "Services"].map((c) => (
-                      <span key={c} className={`text-xs px-2.5 py-1 rounded-full ${c === "All" ? "bg-teal-500/20 text-teal-300" : "border border-white/10 text-white/40"}`}>{c}</span>
-                    ))}
-                  </div>
-                  {[
-                    { name: "Harkins Theatres", cat: "Entertainment", rating: "4.6", reviews: "3.1K" },
-                    { name: "The Boiling Crab", cat: "Food & Drink", rating: "4.6", reviews: "3.4K" },
-                    { name: "Round1 Arcade", cat: "Entertainment", rating: "4.3", reviews: "3.1K" },
-                  ].map((b) => (
-                    <div key={b.name} className="flex items-center gap-3 bg-white/[0.03] rounded-lg p-3">
-                      <div className="h-10 w-10 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400 text-sm font-bold flex-shrink-0">
-                        {b.rating}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white/80 truncate">{b.name}</div>
-                        <div className="text-xs text-white/30">{b.cat} · {b.reviews} reviews</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* ── Deep Feature: Impact (reversed) ── */}
-      <section aria-label="Track your impact" className="px-6 py-24 sm:py-32 border-t border-white/[0.06]">
-        <div className="mx-auto max-w-5xl">
-          <AnimatedSection animation="fade-up">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div className="order-2 lg:order-1 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1">
-                <div className="rounded-lg bg-gradient-to-br from-purple-500/10 to-teal-500/5 p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { label: "Kept Local", value: "$1,840", color: "text-teal-400" },
-                      { label: "Businesses", value: "14", color: "text-white/70" },
-                      { label: "Jobs Impacted", value: "2", color: "text-white/70" },
-                      { label: "Carbon Saved", value: "13 lbs", color: "text-white/70" },
-                    ].map((m) => (
-                      <div key={m.label} className="bg-white/[0.03] rounded-lg p-3">
-                        <div className={`text-lg font-bold ${m.color}`}>{m.value}</div>
-                        <div className="text-xs text-white/30">{m.label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="bg-white/[0.03] rounded-lg p-3 flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 text-xs">🏆</div>
-                    <div>
-                      <div className="text-sm font-medium text-white/70">Pulse Champion</div>
-                      <div className="text-xs text-white/30">$1,000+ kept local</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="order-1 lg:order-2">
-                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-5">
-                  See where your money goes
-                </h2>
-                <p className="text-white/50 text-lg leading-relaxed mb-6">
-                  Your personal dashboard tracks dollars kept local, businesses
-                  supported, jobs impacted, and carbon saved. Export customizable
-                  reports as CSV or print them — filter by date range and category.
-                </p>
-                <NavLink
-                  href="/dashboard"
-                  className="inline-flex items-center gap-1.5 text-teal-400 font-medium hover:underline underline-offset-4 transition-colors"
-                >
-                  View your dashboard <ArrowRight className="h-4 w-4" />
-                </NavLink>
-              </div>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section aria-label="Call to action" className="relative px-6 py-24 sm:py-32">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <ParallaxGlow
-            speed={-0.1}
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full bg-teal-500/[0.05] blur-[140px]"
-          />
-        </div>
-        <div className="mx-auto max-w-2xl text-center">
-          <AnimatedSection animation="fade-up">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-5">
-              Your community is already here
-            </h2>
-            <p className="text-white/50 text-lg leading-relaxed mb-8">
-              Join thousands of people discovering local businesses and tracking
-              the real economic impact of their everyday choices.
-            </p>
-            <NavLink href="/discover">
-              <button className="inline-flex items-center gap-2 rounded-lg bg-white px-8 py-3.5 text-sm font-semibold text-[#0a0c10] hover:bg-white/90 transition-colors">
-                Start Exploring
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </NavLink>
-          </AnimatedSection>
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer role="contentinfo" aria-label="Site footer" className="border-t border-white/[0.06] px-6 py-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <PulseLogo className="h-5 w-5 text-white" />
-                <span className="font-semibold text-white">Pulse</span>
-              </div>
-              <p className="text-sm text-white/40 leading-relaxed">
-                Discover local businesses and see your real economic impact.
+              <h2 className="max-w-lg text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                Pick a place without the pitch.
+              </h2>
+              <p className="mt-4 max-w-md text-base leading-7 text-muted-foreground">
+                Browse what is open, nearby, and worth a visit. No long setup. No forced account.
               </p>
             </div>
-            <nav aria-label="Discover links">
-              <h2 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">Discover</h2>
-              <ul className="space-y-2 text-sm text-white/40">
-                <li><NavLink href="/discover" className="hover:text-white transition-colors">All Businesses</NavLink></li>
-                <li><NavLink href="/categories" className="hover:text-white transition-colors">Categories</NavLink></li>
-                <li><NavLink href="/deals" className="hover:text-white transition-colors">Deals</NavLink></li>
-                <li><NavLink href="/missions" className="hover:text-white transition-colors">Boost Missions</NavLink></li>
-              </ul>
-            </nav>
-            <nav aria-label="Community links">
-              <h2 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">Community</h2>
-              <ul className="space-y-2 text-sm text-white/40">
-                <li><NavLink href="/dashboard" className="hover:text-white transition-colors">Your Impact</NavLink></li>
-                <li><NavLink href="/leaderboard" className="hover:text-white transition-colors">Leaderboard</NavLink></li>
-                <li><NavLink href="/bookmarks" className="hover:text-white transition-colors">Bookmarks</NavLink></li>
-                <li><NavLink href="/reviews" className="hover:text-white transition-colors">Your Reviews</NavLink></li>
-              </ul>
-            </nav>
-            <nav aria-label="About links">
-              <h2 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-4">About</h2>
-              <ul className="space-y-2 text-sm text-white/40">
-                <li><NavLink href="/mission" className="hover:text-white transition-colors">Our Mission</NavLink></li>
-                <li><NavLink href="/get-involved" className="hover:text-white transition-colors">Get Involved</NavLink></li>
-                <li><NavLink href="/about" className="hover:text-white transition-colors">Team</NavLink></li>
-              </ul>
-            </nav>
-          </div>
-          <div className="pt-8 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-white/30">
-              © 2025 Pulse. Strengthening local economies, one discovery at a time.
-            </p>
-            <div className="flex items-center gap-4 text-xs text-white/30">
-              <NavLink href="/privacy" className="hover:text-white/60 transition-colors">Privacy</NavLink>
-              <NavLink href="/terms" className="hover:text-white/60 transition-colors">Terms</NavLink>
+          </AnimatedSection>
+
+          <AnimatedSection animation="fade-up" delay={0.08}>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {VALUE_POINTS.map((point) => {
+                const Icon = point.icon
+                return (
+                  <div key={point.title} className="rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/30">
+                    <Icon className="h-4 w-4 text-primary" />
+                    <h3 className="mt-4 text-sm font-semibold text-foreground">{point.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{point.text}</p>
+                  </div>
+                )
+              })}
             </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
+      <section aria-label="Simple impact" className="border-t border-border px-6 py-20 sm:py-24">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-2">
+          <AnimatedSection animation="fade-up">
+            <div className="rounded-lg border border-border bg-card">
+              {[
+                ["This month", "$184 kept local"],
+                ["Places supported", "7"],
+                ["Deals used", "3"],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between border-b border-border px-5 py-4 last:border-b-0">
+                  <span className="text-sm text-muted-foreground">{label}</span>
+                  <span className="text-base font-mono font-semibold text-foreground">{value}</span>
+                </div>
+              ))}
+            </div>
+          </AnimatedSection>
+
+          <AnimatedSection animation="fade-up" delay={0.08}>
+            <div>
+              <h2 className="max-w-lg text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                Keep the signal. Drop the noise.
+              </h2>
+              <p className="mt-4 max-w-md text-base leading-7 text-muted-foreground">
+                Pulse shows the basics clearly: where you went, what you saved, and what stayed local.
+              </p>
+              <NavLink
+                href="/dashboard"
+                className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline underline-offset-4"
+              >
+                View dashboard <ArrowRight className="h-4 w-4" />
+              </NavLink>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
+      <section aria-label="Call to action" className="px-6 py-20">
+        <AnimatedSection animation="fade-up">
+          <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 border-t border-border pt-10 sm:flex-row sm:items-center">
+            <div>
+              <h2 className="text-3xl font-semibold tracking-tight text-foreground">Start with what is close.</h2>
+              <p className="mt-3 text-base text-muted-foreground">Find a place for today. Save the rest for later.</p>
+            </div>
+            <NavLink
+              href="/discover"
+              className="inline-flex h-11 items-center justify-center gap-2 btn-primary rounded-xl px-5 text-sm font-semibold text-primary-foreground transition-all"
+            >
+              Browse places
+              <ArrowRight className="h-4 w-4" />
+            </NavLink>
           </div>
+        </AnimatedSection>
+      </section>
+
+      <footer role="contentinfo" aria-label="Site footer" className="border-t border-border px-6 py-10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <PulseLogo className="h-5 w-5 text-foreground" />
+              <span className="font-semibold text-foreground">Pulse</span>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">Local discovery, kept simple.</p>
+          </div>
+          <nav aria-label="Footer links" className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            {FOOTER_LINKS.map((link) => (
+              <NavLink key={link.href} href={link.href} className="hover:text-foreground transition-colors">
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
         </div>
       </footer>
-
     </HomeWrapper>
   )
 }

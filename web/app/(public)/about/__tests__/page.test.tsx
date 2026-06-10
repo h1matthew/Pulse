@@ -28,17 +28,6 @@ beforeAll(() => {
   global.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver
 })
 
-// Mock lucide-react icons
-vi.mock('lucide-react', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('lucide-react')>()
-  return {
-    ...actual,
-    Rocket: () => <span data-testid="rocket-icon" />,
-    Heart: () => <span data-testid="heart-icon" />,
-    Sparkles: () => <span data-testid="sparkles-icon" />,
-  }
-})
-
 const TEST_FOUNDERS: Founder[] = [
   {
     id: 'felix',
@@ -83,18 +72,49 @@ describe('AboutPage', () => {
     expect(screen.getByText(/Our Story/)).toBeInTheDocument()
   })
 
-  it('renders the Meet the Team heading', () => {
+  it('renders the Meet the Team h1 heading', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    expect(screen.getByText(/Meet the/)).toBeInTheDocument()
-    expect(screen.getByText('Team')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Meet the Team' })
+    ).toBeInTheDocument()
   })
 
   it('renders description text', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
     expect(
       screen.getByText(
-        /A passionate team on a mission to strengthen local communities through business discovery\./
+        /A passionate team on a mission to strengthen local communities through business\s+discovery\./
       )
     ).toBeInTheDocument()
+  })
+
+  it('renders the mono eyebrow labels for each section', () => {
+    render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
+    expect(screen.getByText('About Pulse')).toHaveClass('font-mono')
+    expect(screen.getByText('The Founders')).toHaveClass('font-mono')
+    expect(screen.getByText('Our Story')).toHaveClass('font-mono')
+  })
+
+  it('renders the founder count as a mono stat', () => {
+    render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
+    const count = screen.getByLabelText('2 founders')
+    expect(count).toHaveTextContent('02')
+    expect(count).toHaveClass('font-mono')
+  })
+
+  it('contains no emoji characters', () => {
+    const { container } = render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
+    const emojiPattern = /[\u{1F300}-\u{1FAFF}]|[\u{2600}-\u{27BF}]|\u{FE0F}/u
+    expect(emojiPattern.test(container.textContent ?? '')).toBe(false)
+  })
+
+  it('contains no gradient text or blur/glow decoration classes', () => {
+    const { container } = render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
+    const html = container.innerHTML
+    expect(html).not.toContain('bg-clip-text')
+    expect(html).not.toContain('text-transparent')
+    expect(html).not.toContain('backdrop-blur')
+    expect(html).not.toContain('blur-3xl')
+    expect(html).not.toContain('animate-glow')
   })
 })

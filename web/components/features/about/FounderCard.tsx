@@ -18,10 +18,16 @@ interface FounderCardProps {
 export function FounderCard({ founder, index }: FounderCardProps) {
   return (
     <div
-      className="animate-fade-in-up flex flex-col items-center text-center"
+      className="animate-fade-in-up rounded-lg border border-border bg-card p-6 transition-colors hover:border-primary/30"
       style={{ animationDelay: `${0.1 + index * 0.15}s` }}
     >
-      <h2 className="text-xl font-bold text-foreground">{founder.name}</h2>
+      <p
+        className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground"
+        aria-hidden="true"
+      >
+        {String(index + 1).padStart(2, '0')}
+      </p>
+      <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground">{founder.name}</h2>
       <p className="mt-1 text-sm font-medium text-primary">{founder.role}</p>
     </div>
   )

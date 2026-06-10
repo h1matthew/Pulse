@@ -1,5 +1,4 @@
 import { Header } from '@/components/layout/Header'
-import { AppBackground } from '@/components/layout/AppBackground'
 
 export default function PublicLayout({
   children,
@@ -8,7 +7,7 @@ export default function PublicLayout({
 }) {
   return (
     <div className="relative min-h-screen">
-      <AppBackground />
+      {/* AppBackground renders once in the root layout */}
       <Header />
       {/* Spacer for fixed header */}
       <div className="h-24" />

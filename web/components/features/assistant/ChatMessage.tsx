@@ -1,98 +1,124 @@
 /**
  * Chat Message Component
  *
- * Displays a single message in the chat interface
+ * Displays a single message in the chat interface.
+ * Handles user/assistant alignment, degraded-source notices,
+ * and a retry affordance for failed requests.
  */
 
-import { User, Bot } from "lucide-react";
+import { Info, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { cn } from "@/lib/utils";
 
-interface Message {
+export interface AssistantChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   suggestions?: string[];
+  /** True when the reply came from the database fallback instead of the LLM */
+  degraded?: boolean;
+  /** True when the request failed and the message is a retry prompt */
+  error?: boolean;
   timestamp: Date;
 }
 
 interface ChatMessageProps {
-  message: Message;
+  message: AssistantChatMessage;
+  /** Resends the last user message; rendered as "Try again" on error messages */
+  onRetry?: () => void;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, onRetry }: ChatMessageProps) {
   const isUser = message.role === "user";
 
   return (
-    <div
-      className={cn(
-        "flex gap-3",
-        isUser ? "flex-row-reverse" : "flex-row"
-      )}
-    >
-      {/* Avatar */}
+    <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0",
+          "max-w-[85%] rounded-lg px-3.5 py-2.5 text-sm leading-relaxed",
           isUser
             ? "bg-primary text-primary-foreground"
-            : "bg-gradient-to-br from-chart-2 to-chart-3 text-white"
+            : "bg-secondary border border-border text-foreground"
         )}
       >
+        {/* Degraded-source notice — informational, not an error */}
+        {message.degraded && (
+          <div className="mb-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Info className="h-3 w-3 shrink-0" aria-hidden="true" />
+            <span>Quick results from the local directory</span>
+          </div>
+        )}
+
         {isUser ? (
-          <User className="h-4 w-4" />
+          <p className="m-0 whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <Bot className="h-4 w-4" />
+          <ReactMarkdown
+            // singleDollarTextMath off: "$100 ... $68" money talk must never
+            // parse as math — formulas use $$...$$ delimiters instead.
+            remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: false }]]}
+            rehypePlugins={[[rehypeKatex, { throwOnError: false }]]}
+            components={{
+              p: ({ children }) => (
+                <p className="m-0 mb-2 last:mb-0 leading-relaxed">{children}</p>
+              ),
+              ul: ({ children }) => (
+                <ul className="m-0 mb-2 list-disc pl-4 last:mb-0 space-y-1">{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="m-0 mb-2 list-decimal pl-4 last:mb-0 space-y-1">{children}</ol>
+              ),
+              li: ({ children }) => <li className="mb-0">{children}</li>,
+              strong: ({ children }) => (
+                <strong className="font-semibold text-foreground">{children}</strong>
+              ),
+              em: ({ children }) => <em className="not-italic text-muted-foreground">{children}</em>,
+              code: ({ children }) => (
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{children}</code>
+              ),
+              h1: ({ children }) => <p className="m-0 mb-1.5 font-semibold">{children}</p>,
+              h2: ({ children }) => <p className="m-0 mb-1.5 font-semibold">{children}</p>,
+              h3: ({ children }) => <p className="m-0 mb-1.5 font-semibold">{children}</p>,
+              table: ({ children }) => (
+                <div className="mb-2 overflow-x-auto last:mb-0">
+                  <table className="w-full border-collapse text-xs">{children}</table>
+                </div>
+              ),
+              th: ({ children }) => (
+                <th className="border-b border-border px-2 py-1 text-left font-semibold">{children}</th>
+              ),
+              td: ({ children }) => (
+                <td className="border-b border-border/50 px-2 py-1">{children}</td>
+              ),
+              a: ({ href, children }) => (
+                <a
+                  href={href}
+                  className="text-primary underline underline-offset-2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {children}
+                </a>
+              ),
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
         )}
-      </div>
 
-      {/* Message Content */}
-      <div
-        className={cn(
-          "max-w-[80%] rounded-2xl px-4 py-3",
-          isUser
-            ? "bg-primary text-primary-foreground rounded-br-sm"
-            : "bg-muted rounded-bl-sm"
+        {/* Retry affordance for failed requests */}
+        {message.error && onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+          >
+            <RotateCcw className="h-3 w-3" aria-hidden="true" />
+            Try again
+          </button>
         )}
-      >
-        <div
-          className={cn(
-            "prose prose-sm max-w-none",
-            isUser ? "prose-invert" : ""
-          )}
-        >
-          {isUser ? (
-            <p className="m-0 whitespace-pre-wrap leading-relaxed">
-              {message.content}
-            </p>
-          ) : (
-            <ReactMarkdown
-              components={{
-                p: ({ children }) => <p className="m-0 mb-2 last:mb-0 leading-relaxed">{children}</p>,
-                ul: ({ children }) => <ul className="m-0 mb-2 pl-4 list-disc">{children}</ul>,
-                ol: ({ children }) => <ol className="m-0 mb-2 pl-4 list-decimal">{children}</ol>,
-                li: ({ children }) => <li className="mb-0.5">{children}</li>,
-                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                a: ({ href, children }) => <a href={href} className="text-primary underline" target="_blank" rel="noopener noreferrer">{children}</a>,
-              }}
-            >
-              {message.content}
-            </ReactMarkdown>
-          )}
-        </div>
-
-        {/* Timestamp */}
-        <p
-          className={cn(
-            "text-xs mt-1",
-            isUser ? "text-primary-foreground/60" : "text-muted-foreground"
-          )}
-        >
-          {message.timestamp.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </p>
       </div>
     </div>
   );

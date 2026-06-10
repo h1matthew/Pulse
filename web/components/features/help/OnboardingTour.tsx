@@ -35,8 +35,8 @@ import {
   Heart,
   ArrowRight,
   Check,
-  Sparkles,
 } from 'lucide-react'
+import { PulseLogo } from '@/components/ui/PulseLogo'
 import { useAccessibility } from '@/components/providers/AccessibilityProvider'
 
 /** LocalStorage key for tracking onboarding completion */
@@ -56,7 +56,7 @@ const tourSteps: TourStep[] = [
     title: 'Welcome to Pulse',
     description:
       'Pulse helps you discover local businesses and see how your engagement strengthens your community. Every visit, review, and bookmark makes a difference!',
-    icon: <Sparkles className="h-6 w-6" />,
+    icon: <PulseLogo className="h-6 w-6" />,
     color: 'bg-primary',
   },
   {
@@ -188,13 +188,11 @@ export function OnboardingTour() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="dark sm:max-w-md bg-background text-foreground" aria-describedby="tour-description">
+      <DialogContent className="sm:max-w-md" aria-describedby="tour-description">
         <DialogHeader className="text-center">
           <div className="mx-auto mb-4">
-            <div
-              className={`h-16 w-16 rounded-full ${currentStepData.color} flex items-center justify-center mx-auto`}
-            >
-              <div className="text-white">{currentStepData.icon}</div>
+            <div className="h-16 w-16 rounded-2xl border border-primary/20 bg-primary/10 flex items-center justify-center mx-auto">
+              <div className="text-primary">{currentStepData.icon}</div>
             </div>
           </div>
           <DialogTitle className="text-xl">{currentStepData.title}</DialogTitle>

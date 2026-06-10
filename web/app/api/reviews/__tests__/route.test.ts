@@ -19,6 +19,10 @@ vi.mock('@/lib/captcha', () => ({
   verifyCaptcha: (...args: unknown[]) => mockVerifyCaptcha(...args),
 }))
 
+vi.mock('@/lib/ensure-profile', () => ({
+  ensureProfile: vi.fn(() => Promise.resolve()),
+}))
+
 import { POST } from '../route'
 
 function makeChain(finalResult: unknown = { data: null, error: null }) {

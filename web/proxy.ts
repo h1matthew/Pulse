@@ -21,7 +21,10 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/business') ||
     pathname.startsWith('/missions') ||
     pathname.startsWith('/reviews') ||
-    pathname.startsWith('/leaderboard')
+    pathname.startsWith('/leaderboard') ||
+    // Guests see their device-local bookmarks; the page itself renders a
+    // sign-in prompt when there are none, so no middleware gate is needed.
+    pathname.startsWith('/bookmarks')
 
   if (isPublicPage) {
     return NextResponse.next({ request })

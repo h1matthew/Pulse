@@ -40,16 +40,23 @@ describe("GET /api/businesses/nearby", () => {
 
     const existingBusinesses = [...validBusinesses, school];
 
-    const query = {
+    // The route runs two bounding-box queries against the `businesses` table:
+    // an initial query, then a re-query after attempting to backfill/sync from
+    // external APIs. With no API key configured in the test env, no new places
+    // are synced, so both queries resolve to the same set. The production
+    // `isRealBusinessRecord` filter must strip the school from each result set.
+    const makeQuery = () => ({
       select: vi.fn().mockReturnThis(),
       gte: vi.fn().mockReturnThis(),
       lte: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
       limit: vi
         .fn()
-        .mockResolvedValueOnce({ data: existingBusinesses, error: null }),
-    };
+        .mockResolvedValue({ data: existingBusinesses, error: null }),
+    });
 
-    mockFrom.mockReturnValueOnce(query);
+    mockFrom.mockImplementation(() => makeQuery());
 
     const request = new NextRequest(
       "http://localhost/api/businesses/nearby?lat=37.77&lng=-122.42&radius=2000"

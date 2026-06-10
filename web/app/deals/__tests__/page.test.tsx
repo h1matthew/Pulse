@@ -143,7 +143,7 @@ describe("DealsPage", () => {
     expect(screen.getByText("Happy Hour")).toBeInTheDocument();
   });
 
-  it("renders loading state while queries are in flight", () => {
+  it("renders skeleton placeholders while queries are in flight", () => {
     mockUseAvailableDeals.mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -155,8 +155,18 @@ describe("DealsPage", () => {
       isError: false,
     });
 
-    render(<DealsPage />);
-    expect(screen.getByText("Loading deals...")).toBeInTheDocument();
+    const { container } = render(<DealsPage />);
+
+    // Card-shaped skeletons instead of a spinner
+    const skeletonList = screen.getByTestId("deals-skeleton");
+    expect(skeletonList).toBeInTheDocument();
+    expect(skeletonList.querySelectorAll(".animate-pulse").length).toBeGreaterThan(0);
+
+    // Stats must NOT flash "0" while loading — numbers are skeletons too
+    expect(screen.queryByTestId("stat-available")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("stat-flash")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("stat-claimed")).not.toBeInTheDocument();
+    expect(container.textContent).not.toContain("Loading deals...");
   });
 
   it("shows API error state", () => {
@@ -243,5 +253,96 @@ describe("DealsPage", () => {
     fireEvent.mouseDown(claimedTab);
     fireEvent.click(claimedTab);
     expect(screen.getByText("No claimed deals yet")).toBeInTheDocument();
+  });
+
+  describe("design language", () => {
+    const emojiPattern = /\p{Extended_Pictographic}/u;
+
+    it("renders a mono uppercase eyebrow above the heading", () => {
+      render(<DealsPage />);
+
+      const labels = screen.getAllByText(/^deals & offers$/i);
+      const eyebrow = labels.find(
+        (el) =>
+          el.classList.contains("font-mono") && el.classList.contains("uppercase")
+      );
+      expect(eyebrow).toBeDefined();
+      expect(eyebrow?.tagName).not.toBe("H1");
+    });
+
+    it("renders the discount value in mono primary text", () => {
+      render(<DealsPage />);
+
+      const discount = screen.getByText("50% OFF");
+      expect(discount).toHaveClass("font-mono");
+      expect(discount).toHaveClass("text-primary");
+    });
+
+    it("renders stat numbers in mono", () => {
+      render(<DealsPage />);
+
+      expect(screen.getByTestId("stat-available")).toHaveClass("font-mono");
+      expect(screen.getByTestId("stat-flash")).toHaveClass("font-mono");
+      expect(screen.getByTestId("stat-claimed")).toHaveClass("font-mono");
+    });
+
+    it("renders expiry as quiet mono text", () => {
+      render(<DealsPage />);
+
+      const expiry = screen.getByText(/ends in \d+ days?/);
+      expect(expiry).toHaveClass("font-mono");
+      expect(expiry).toHaveClass("text-muted-foreground");
+      expect(screen.getByText("no expiration")).toHaveClass("font-mono");
+    });
+
+    it("shows business name and category on the deal card", () => {
+      render(<DealsPage />);
+
+      expect(screen.getByText("Corner Bistro")).toBeInTheDocument();
+      expect(screen.getAllByText("Food & Drink").length).toBeGreaterThan(0);
+    });
+
+    it("renders the redemption code as a mono chip on claimed cards", () => {
+      render(<DealsPage />);
+      const claimedTab = screen.getByRole("tab", { name: /^claimed$/i });
+      fireEvent.mouseDown(claimedTab);
+      fireEvent.click(claimedTab);
+
+      const codeChip = screen.getByText("ABCD1234");
+      expect(codeChip).toHaveClass("font-mono");
+      expect(codeChip).toHaveClass("bg-muted");
+    });
+
+    it("renders no emoji even when category data contains emoji icons", () => {
+      const { container } = render(<DealsPage />);
+
+      expect(container.textContent ?? "").not.toMatch(emojiPattern);
+
+      const claimedTab = screen.getByRole("tab", { name: /^claimed$/i });
+      fireEvent.mouseDown(claimedTab);
+      fireEvent.click(claimedTab);
+      expect(container.textContent ?? "").not.toMatch(emojiPattern);
+    });
+
+    it("renders no emoji in the empty states", () => {
+      mockUseAvailableDeals.mockReturnValue({
+        data: [],
+        isLoading: false,
+        isError: false,
+      });
+      mockUseUserClaims.mockReturnValue({
+        data: [],
+        isLoading: false,
+        isError: false,
+      });
+
+      const { container } = render(<DealsPage />);
+      expect(container.textContent ?? "").not.toMatch(emojiPattern);
+
+      const claimedTab = screen.getByRole("tab", { name: /^claimed$/i });
+      fireEvent.mouseDown(claimedTab);
+      fireEvent.click(claimedTab);
+      expect(container.textContent ?? "").not.toMatch(emojiPattern);
+    });
   });
 });

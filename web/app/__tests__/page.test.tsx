@@ -50,11 +50,15 @@ vi.mock('@/components/features/home/ParallaxGlow', () => ({
 }))
 
 vi.mock('@/components/features/home/FeatureTabs', () => ({
-  FeatureTabs: () => <div data-testid="feature-tabs">Feature Tabs</div>,
+  FeatureTabs: () => <div data-testid="feature-tabs">Local Snapshot</div>,
 }))
 
 vi.mock('@/components/features/home/CommunityStatsIsland', () => ({
   HeroStats: () => <div data-testid="hero-stats">Community Stats</div>,
+}))
+
+vi.mock('@/components/features/home/HeroPreview', () => ({
+  HeroPreview: () => <div data-testid="hero-preview">Today near you</div>,
 }))
 
 vi.mock('@/components/features/help/OnboardingTour', () => ({
@@ -84,22 +88,29 @@ describe('Home Page', () => {
 
   it('renders hero section main heading', () => {
     render(<Home />)
-    expect(screen.getByText(/Every dollar you spend locally creates/)).toBeInTheDocument()
+    expect(screen.getByText('Find good places nearby.')).toBeInTheDocument()
   })
 
   it('renders hero description', () => {
     render(<Home />)
-    expect(screen.getByText(/Discover small businesses in your community/)).toBeInTheDocument()
+    expect(
+      screen.getByText('Local shops, deals, and a simple view of what your support keeps in town.')
+    ).toBeInTheDocument()
   })
 
-  it('renders primary CTA button', () => {
+  it('renders primary CTA link', () => {
     render(<Home />)
-    expect(screen.getByText('Explore Businesses')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /Browse places/i }).length).toBeGreaterThan(0)
   })
 
-  it('renders secondary CTA button', () => {
+  it('renders secondary CTA link', () => {
     render(<Home />)
-    expect(screen.getByText('How It Works')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /See deals/i })).toBeInTheDocument()
+  })
+
+  it('does not nest buttons inside links', () => {
+    const { container } = render(<Home />)
+    expect(container.querySelector('a button')).toBeNull()
   })
 
   it('renders feature tabs section', () => {
@@ -114,17 +125,17 @@ describe('Home Page', () => {
 
   it('renders discover businesses section', () => {
     render(<Home />)
-    expect(screen.getByText('Find businesses your neighbors love')).toBeInTheDocument()
+    expect(screen.getByText('Pick a place without the pitch.')).toBeInTheDocument()
   })
 
   it('renders impact section', () => {
     render(<Home />)
-    expect(screen.getByText('See where your money goes')).toBeInTheDocument()
+    expect(screen.getByText('Keep the signal. Drop the noise.')).toBeInTheDocument()
   })
 
   it('renders final CTA section', () => {
     render(<Home />)
-    expect(screen.getByText('Your community is already here')).toBeInTheDocument()
+    expect(screen.getByText('Start with what is close.')).toBeInTheDocument()
   })
 
   it('renders footer brand name', () => {
@@ -135,13 +146,20 @@ describe('Home Page', () => {
   it('renders footer tagline', () => {
     render(<Home />)
     expect(
-      screen.getByText(/Strengthening local economies, one discovery at a time/)
+      screen.getByText(/Local discovery, kept simple/)
     ).toBeInTheDocument()
   })
 
   it('renders footer navigation links', () => {
     render(<Home />)
-    expect(screen.getByText('All Businesses')).toBeInTheDocument()
-    expect(screen.getByText('Our Mission')).toBeInTheDocument()
+    expect(screen.getByText('Browse')).toBeInTheDocument()
+    expect(screen.getByText('About')).toBeInTheDocument()
+  })
+
+  it('does not render AI-heavy marketing copy', () => {
+    render(<Home />)
+    expect(screen.queryByText(/AI recommendation engine/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Powered by Google Places/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Every dollar you spend locally creates/i)).not.toBeInTheDocument()
   })
 })
