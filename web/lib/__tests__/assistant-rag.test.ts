@@ -43,7 +43,7 @@ const mockCreateClient = vi.fn(() =>
 )
 
 vi.mock('@/lib/supabase/server', () => ({
-  createClient: (...args: unknown[]) => mockCreateClient(...args),
+  createClient: () => mockCreateClient(),
 }))
 
 import {

@@ -129,6 +129,39 @@ describe('detectCategorySlug', () => {
   })
 })
 
+describe('generateFallbackResponse intent routing', () => {
+  it('answers product questions with curated copy, never a business list', async () => {
+    const missions = await generateFallbackResponse('What are Boost Missions?', {})
+    expect(missions.text).toContain('**Boost Missions**')
+    expect(missions.text).not.toContain('Top-rated local spots')
+    expect(mockFrom).not.toHaveBeenCalled()
+
+    const deals = await generateFallbackResponse('How do deals work?', {})
+    expect(deals.text).toContain('**Deals**')
+    expect(deals.text).toContain('/deals')
+  })
+
+  it('answers impact questions with the multiplier explanation', async () => {
+    const result = await generateFallbackResponse('Why should I support local businesses?', {})
+    expect(result.text).toContain('$68 of every $100')
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  it('returns generic guidance (not businesses) for unrelated questions', async () => {
+    const result = await generateFallbackResponse('Tell me about Pulse', {})
+    expect(result.text).toContain('Discover page')
+    expect(result.text).not.toContain('Top-rated local spots')
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+
+  it('still lists businesses for category questions that mention a topic word', async () => {
+    // "deal" topic word present, but the category intent (food) wins
+    const result = await generateFallbackResponse('find a restaurant with good deals', {})
+    expect(result.text).toContain('Top-rated local spots')
+    expect(mockFrom).toHaveBeenCalledWith('businesses')
+  })
+})
+
 describe('generateFallbackResponse', () => {
   it('returns degraded top-rated picks from the database', async () => {
     const result = await generateFallbackResponse('where should I eat dinner?', {})
