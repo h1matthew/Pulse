@@ -87,6 +87,16 @@ const contactLimiter = isUpstashConfigured
     })
   : null
 
+// Login attempts: 10 per 10 minutes (per IP and per account email)
+const loginLimiter = isUpstashConfigured
+  ? new Ratelimit({
+      redis: redis!,
+      limiter: Ratelimit.slidingWindow(10, '10 m'),
+      prefix: 'ratelimit:login',
+      analytics: true,
+    })
+  : null
+
 // Auth/destructive operations: 3 requests per hour (very restrictive)
 const authLimiter = isUpstashConfigured
   ? new Ratelimit({
@@ -105,7 +115,7 @@ export interface RateLimitResult {
   reset: number // Timestamp when the rate limit window resets
 }
 
-export type RateLimitCategory = 'ai' | 'ai-tutor' | 'admin-ai' | 'progress' | 'general' | 'contact' | 'auth'
+export type RateLimitCategory = 'ai' | 'ai-tutor' | 'admin-ai' | 'progress' | 'general' | 'contact' | 'auth' | 'login'
 
 // Get the appropriate limiter based on category
 function getLimiter(category: RateLimitCategory): Ratelimit | null {
@@ -122,6 +132,8 @@ function getLimiter(category: RateLimitCategory): Ratelimit | null {
       return contactLimiter
     case 'auth':
       return authLimiter
+    case 'login':
+      return loginLimiter
     case 'general':
     default:
       return generalLimiter
@@ -142,6 +154,8 @@ function getLimitForCategory(category: RateLimitCategory): number {
       return 5
     case 'auth':
       return 3
+    case 'login':
+      return 10
     case 'general':
     default:
       return 60
@@ -155,6 +169,8 @@ function getWindowDurationMs(category: RateLimitCategory): number {
     case 'auth':
     case 'ai-tutor':
       return 3600000 // 1 hour
+    case 'login':
+      return 600000 // 10 minutes
     default:
       return 60000 // 60 seconds
   }

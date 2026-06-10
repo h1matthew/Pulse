@@ -33,7 +33,25 @@
       "Bash(grep:*)",
       "WebFetch(domain:rapidapi.com)",
       "Bash(nslookup:*)",
-      "Bash(NODE_OPTIONS=\"--dns-result-order=verbatim\" npm run db:migrate:*)"
+      "Bash(NODE_OPTIONS=\"--dns-result-order=verbatim\" npm run db:migrate:*)",
+      "Read(//Users/felixyin/Downloads/**)",
+      "Bash(sips -g pixelWidth -g pixelHeight -g hasAlpha pulse_logo_signal.png)",
+      "Bash(sed -n '120,185p' /Users/felixyin/Pulse/Pulse/web/lib/assistant.ts)",
+      "Bash(sed -n '115,135p;220,265p' /Users/felixyin/Pulse/Pulse/web/lib/assistant/rag.ts)",
+      "Bash(sed -n '185,210p' /Users/felixyin/Pulse/Pulse/web/lib/assistant.ts)",
+      "Bash(sed -n '115,135p' /Users/felixyin/Pulse/Pulse/web/lib/assistant/rag.ts)",
+      "Bash(sed -n '215,265p' /Users/felixyin/Pulse/Pulse/web/lib/assistant/rag.ts)",
+      "Bash(sed -n '40,90p' /Users/felixyin/Pulse/Pulse/web/app/api/businesses/nearby/route.ts)",
+      "Bash(sed -n '425,470p' /Users/felixyin/Pulse/Pulse/web/app/api/businesses/nearby/route.ts)",
+      "Bash(sed -n '1,70p' \"/Users/felixyin/Pulse/Pulse/web/app/api/businesses/[id]/checkin/__tests__/route.test.ts\")",
+      "Bash(sed -n '1,60p' /Users/felixyin/Pulse/Pulse/web/__tests__/mocks/next.mock.ts)",
+      "Bash(python3 *)",
+      "Bash(npx -y playwright@latest install webkit)",
+      "Bash(npx -y playwright@latest screenshot --browser=webkit --wait-for-timeout=5000 --viewport-size=1440,900 http://localhost:3000 /tmp/hero-webkit.png)",
+      "Bash(cp /tmp/hero-webkit.png /tmp/wk.png)",
+      "Bash(sips --cropOffset 240 60 -c 110 520 /tmp/wk.png)",
+      "Bash(sips -z 330 1560 /tmp/wk.png)",
+      "Bash(npm run *)"
     ]
   }
 }

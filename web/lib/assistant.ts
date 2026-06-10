@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { sanitizeForPrompt } from '@/lib/gemini-business'
 import { createClient } from '@/lib/supabase/server'
 import { isOpenNow } from '@/lib/business/hours'
+import { isChainBusiness } from '@/lib/business/classify'
 
 export interface StreamChunk {
   type: 'chunk' | 'suggestions'
@@ -152,6 +153,11 @@ export async function retrieveBusinessContext(
     const rows = data as unknown as RetrievedBusinessRow[]
     const mapped: RetrievedBusiness[] = rows
       .filter((row) => typeof row.name === 'string' && row.name.length > 0)
+      .filter(
+        (row) =>
+          row.is_chain !== true &&
+          (row.is_chain === false || !isChainBusiness({ name: row.name }))
+      )
       .map((row) => {
         const category = Array.isArray(row.categories)
           ? row.categories[0]?.name ?? null

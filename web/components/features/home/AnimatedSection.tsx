@@ -3,13 +3,49 @@
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
+type AnimationName =
+  | 'fade-up'
+  | 'rise-up'
+  | 'fade-in'
+  | 'fade-in-down'
+  | 'fade-in-up'
+  | 'slide-left'
+  | 'slide-right'
+  | 'scale-in'
+  | 'fade-out-down'
+  | 'fade-out-up'
+  | 'scale-out'
+
 interface AnimatedSectionProps {
   children: React.ReactNode
-  animation?: 'fade-up' | 'fade-in' | 'fade-in-down' | 'fade-in-up' | 'slide-left' | 'slide-right' | 'scale-in' | 'fade-out-down' | 'fade-out-up' | 'scale-out'
+  animation?: AnimationName
   delay?: number
   className?: string
   once?: boolean
 }
+
+/**
+ * Scroll reveal used across all pages. Content starts in its hidden pose and
+ * transitions into place when it enters the viewport — a single smooth
+ * transition instead of replaying a keyframe animation, so sections never
+ * flash visible-then-hidden while scrolling.
+ */
+const HIDDEN_CLASSES: Record<AnimationName, string> = {
+  'fade-up': 'opacity-0 translate-y-10',
+  // Pronounced bottom-up entrance: content climbs from well below its slot
+  'rise-up': 'opacity-0 translate-y-24',
+  'fade-in-up': 'opacity-0 translate-y-10',
+  'fade-in-down': 'opacity-0 -translate-y-6',
+  'fade-in': 'opacity-0',
+  'slide-left': 'opacity-0 -translate-x-12',
+  'slide-right': 'opacity-0 translate-x-12',
+  'scale-in': 'opacity-0 scale-95',
+  'fade-out-down': 'opacity-0 translate-y-10',
+  'fade-out-up': 'opacity-0 -translate-y-10',
+  'scale-out': 'opacity-0 scale-95',
+}
+
+const VISIBLE_CLASSES = 'opacity-100 translate-x-0 translate-y-0 scale-100'
 
 export function AnimatedSection({
   children,
@@ -22,8 +58,16 @@ export function AnimatedSection({
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReducedMotion) {
+    if (
+      typeof IntersectionObserver === 'undefined' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setIsVisible(true)
+      return
+    }
+
+    const element = ref.current
+    if (!element) {
       setIsVisible(true)
       return
     }
@@ -32,73 +76,32 @@ export function AnimatedSection({
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true)
-          if (once && ref.current) {
-            observer.unobserve(ref.current)
+          if (once) {
+            observer.unobserve(element)
           }
         } else if (!once) {
           setIsVisible(false)
         }
       },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+      // Reveal only once ~12% of the viewport height has passed under the
+      // element, so the transition is actually visible while scrolling
+      // instead of finishing off-screen.
+      { threshold: 0.15, rootMargin: '0px 0px -12% 0px' }
     )
 
-    if (ref.current) {
-      observer.observe(ref.current)
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current)
-      }
-    }
+    observer.observe(element)
+    return () => observer.disconnect()
   }, [once])
-
-  const getAnimationClass = () => {
-    if (!isVisible) {
-      // Exit animations when scrolling out of view
-      switch (animation) {
-        case 'fade-out-down':
-          return 'animate-fade-out-down'
-        case 'fade-out-up':
-          return 'animate-fade-out-up'
-        case 'scale-out':
-          return 'animate-scale-out'
-        default:
-          return 'opacity-100'
-      }
-    }
-
-    switch (animation) {
-      case 'fade-up':
-        return 'animate-fade-in-up'
-      case 'fade-in-up':
-        return 'animate-fade-in-up'
-      case 'fade-in-down':
-        return 'animate-fade-in-down'
-      case 'fade-in':
-        return 'animate-fade-in'
-      case 'slide-left':
-        return 'animate-slide-in-left'
-      case 'slide-right':
-        return 'animate-slide-in-right'
-      case 'scale-in':
-        return 'animate-scale-in'
-      case 'fade-out-down':
-        return 'animate-fade-in-up'
-      case 'fade-out-up':
-        return 'animate-fade-in-up'
-      case 'scale-out':
-        return 'animate-scale-in'
-      default:
-        return 'animate-fade-in-up'
-    }
-  }
 
   return (
     <div
       ref={ref}
-      className={cn(getAnimationClass(), className)}
-      style={{ animationDelay: `${delay}s` }}
+      className={cn(
+        'transition-[opacity,transform] duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
+        isVisible ? VISIBLE_CLASSES : HIDDEN_CLASSES[animation],
+        className
+      )}
+      style={delay ? { transitionDelay: `${delay}s` } : undefined}
     >
       {children}
     </div>

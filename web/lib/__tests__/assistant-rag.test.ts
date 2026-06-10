@@ -113,7 +113,8 @@ describe('retrieveBusinessContext', () => {
   it('maps database rows into retrieved businesses with joined category names', async () => {
     const result = await retrieveBusinessContext('where should I eat?')
 
-    expect(result).toHaveLength(3)
+    // Subway (chain) is excluded — only independents are retrieved
+    expect(result).toHaveLength(2)
     const skewer = result.find((b) => b.name === 'Little Skewer')
     expect(skewer).toMatchObject({
       category: 'Food & Drink',
@@ -125,21 +126,19 @@ describe('retrieveBusinessContext', () => {
     })
   })
 
-  it('ranks by distance from the user location, unknown coordinates last', async () => {
+  it('ranks by distance from the user location', async () => {
     const result = await retrieveBusinessContext('dinner spots', USER_LOCATION)
 
     expect(result.map((b) => b.name)).toEqual([
       'Little Skewer', // ~0.06 mi
       'Far Famous Bistro', // ~7 mi
-      'Subway', // no coords -> Infinity
     ])
     expect(result[0].distanceMiles).not.toBeNull()
     expect(result[0].distanceMiles as number).toBeLessThan(1)
     expect(result[1].distanceMiles as number).toBeGreaterThan(5)
-    expect(result[2].distanceMiles).toBeNull()
   })
 
-  it('ranks a high-rated independent above the chain next door', async () => {
+  it('excludes chains from retrieval entirely', async () => {
     mockLimit.mockResolvedValueOnce({
       data: [
         {
@@ -173,7 +172,7 @@ describe('retrieveBusinessContext', () => {
     })
 
     const result = await retrieveBusinessContext('dinner spots', USER_LOCATION)
-    expect(result.map((b) => b.name)).toEqual(['Corner Bistro', 'Subway'])
+    expect(result.map((b) => b.name)).toEqual(['Corner Bistro'])
   })
 
   it('keeps the rating order from the database when no location is given', async () => {
@@ -181,7 +180,6 @@ describe('retrieveBusinessContext', () => {
     expect(result.map((b) => b.name)).toEqual([
       'Far Famous Bistro',
       'Little Skewer',
-      'Subway',
     ])
   })
 

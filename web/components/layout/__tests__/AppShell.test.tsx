@@ -23,9 +23,6 @@ vi.mock('../sidebar/MobileSidebar', () => ({
   ),
 }))
 
-vi.mock('../AppBackground', () => ({
-  AppBackground: () => <div data-testid="app-background">Background</div>,
-}))
 
 describe('AppShell', () => {
   it('renders children content', () => {
@@ -38,14 +35,14 @@ describe('AppShell', () => {
     expect(screen.getByTestId('child')).toHaveTextContent('Child Content')
   })
 
-  it('renders the app background', () => {
-    render(
+  it('does not render its own background (root layout owns AppBackground)', () => {
+    const { container } = render(
       <AppShell>
         <div>Content</div>
       </AppShell>
     )
 
-    expect(screen.getByTestId('app-background')).toBeInTheDocument()
+    expect(container.querySelector('.animate-ink-drop')).toBeNull()
   })
 
   it('renders desktop sidebar', () => {

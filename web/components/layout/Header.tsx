@@ -275,7 +275,7 @@ export function Header() {
             <PulseLogo
               className={cn(
                 "transition-all duration-300 text-foreground",
-                isCompact ? "h-6 w-6" : "h-7 w-7"
+                isCompact ? "h-8 w-8" : "h-9 w-9"
               )}
             />
             <span

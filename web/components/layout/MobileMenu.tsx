@@ -58,7 +58,7 @@ export function MobileMenu() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PulseLogo className="h-8 w-8 text-foreground" />
+              <PulseLogo className="h-10 w-10 text-foreground" />
               <span className="font-semibold">Pulse</span>
             </div>
             <div className="flex items-center gap-1">
