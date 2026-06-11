@@ -57,10 +57,36 @@ function TabsContent({
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
-      className={cn("flex-1 outline-none", className)}
+      // Quick fade on activation — feedback that the panel changed without
+      // reading as a page load. Callers passing their own animate-* class
+      // override it via tailwind-merge.
+      className={cn(
+        "flex-1 outline-none data-[state=active]:animate-fade-in data-[state=active]:[animation-duration:250ms]",
+        className
+      )}
       {...props}
     />
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }
+/**
+ * Editorial underline variant — pass to TabsList / TabsTrigger className to
+ * render the tab row as a ruled line under the content header instead of a
+ * floating segmented pill. Used by content pages (business detail, deals,
+ * missions, settings); keep the default pill style for compact binary
+ * switches like the login form.
+ */
+const underlineTabsListClass =
+  "h-auto w-full justify-start gap-7 rounded-none border-b border-border bg-transparent p-0"
+
+const underlineTabsTriggerClass =
+  "h-auto flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-1 pb-3 pt-1.5 text-sm font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none dark:data-[state=active]:border-primary dark:data-[state=active]:bg-transparent dark:data-[state=active]:text-foreground"
+
+export {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  underlineTabsListClass,
+  underlineTabsTriggerClass,
+}

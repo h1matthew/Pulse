@@ -102,4 +102,18 @@ describe('QueryProvider', () => {
     // We can verify this through the component not crashing and rendering correctly
     expect(screen.getByTestId('staleTime')).toBeInTheDocument()
   })
+
+  it('renders the same provider tree during server rendering', async () => {
+    // Regression: the provider used to render PersistQueryClientProvider on
+    // the client but plain QueryClientProvider on the server (a typeof-window
+    // branch), contributing to hydration mismatches. Server rendering must
+    // work with the unified persist provider (no-op persister).
+    const { renderToString } = await import('react-dom/server')
+    const html = renderToString(
+      <QueryProvider>
+        <span data-testid="ssr-child">ssr-child</span>
+      </QueryProvider>
+    )
+    expect(html).toContain('ssr-child')
+  })
 })

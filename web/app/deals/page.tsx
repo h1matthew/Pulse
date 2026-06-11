@@ -20,7 +20,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  underlineTabsListClass,
+  underlineTabsTriggerClass,
+} from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useAvailableDeals, useClaimDeal, useUserClaims, useScrapeDeals } from "@/hooks/useDeals";
@@ -151,13 +159,13 @@ export default function DealsPage() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="px-6 pb-12 pt-24">
+      <main className="px-6 pb-12 pt-32">
         <div className="mx-auto max-w-6xl">
           <AnimatedSection animation="fade-up">
             <div className="mb-8 flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
               <div className="max-w-2xl">
                 <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  Deals &amp; Offers
+                  Save local
                 </p>
                 <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
                   Deals & Offers
@@ -277,9 +285,13 @@ export default function DealsPage() {
           {!isLoading && !isError && (
             <AnimatedSection animation="fade-up" delay={0.15}>
               <Tabs defaultValue="available" className="w-full">
-                <TabsList className="mb-6">
-                  <TabsTrigger value="available">Available Deals</TabsTrigger>
-                  <TabsTrigger value="claimed">Claimed</TabsTrigger>
+                <TabsList className={cn(underlineTabsListClass, "mb-6")}>
+                  <TabsTrigger value="available" className={underlineTabsTriggerClass}>
+                    Available Deals
+                  </TabsTrigger>
+                  <TabsTrigger value="claimed" className={underlineTabsTriggerClass}>
+                    Claimed
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="available" className="space-y-4">

@@ -25,7 +25,14 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  underlineTabsListClass,
+  underlineTabsTriggerClass,
+} from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
@@ -461,7 +468,7 @@ export default function BusinessDetailPage({
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-20 pb-12">
+        <div className="pt-28 pb-12">
           <div className="mx-auto max-w-6xl px-6">
             <Skeleton className="h-64 w-full mb-6" />
             <Skeleton className="h-8 w-1/3 mb-4" />
@@ -483,7 +490,7 @@ export default function BusinessDetailPage({
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-20 pb-12">
+        <div className="pt-28 pb-12">
           <div className="mx-auto max-w-6xl px-6 text-center">
             <div className="text-6xl mb-4">🔍</div>
             <h1 className="text-2xl font-bold mb-2">Business not found</h1>
@@ -603,12 +610,11 @@ export default function BusinessDetailPage({
     <div className="relative min-h-screen">
       <Header />
 
-      {/* Hero area with subtle gradient */}
-      <div className="bg-gradient-to-b from-primary/5 via-background to-background pt-20 pb-6">
+      {/* Immersive hero — identity and actions live on the photo itself */}
+      <div className="bg-gradient-to-b from-primary/5 via-background to-background pt-28 pb-8">
         <div className="mx-auto max-w-6xl px-6">
-          {/* Hero Image */}
           <AnimatedSection animation="fade-up">
-            <div className="h-64 md:h-80 rounded-2xl mb-6 relative overflow-hidden">
+            <div className="relative h-[24rem] md:h-[27rem] rounded-3xl overflow-hidden shadow-xl shadow-primary/5">
               {(() => {
                 const photoUrl = buildBusinessPhotoUrl(business.photos?.[0], {
                   maxWidth: 800,
@@ -616,106 +622,116 @@ export default function BusinessDetailPage({
                 });
                 const showPhoto = !!photoUrl && !heroPhotoFailed;
                 return showPhoto ? (
-                  <>
-                    <Image
-                      src={photoUrl}
-                      alt={business.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1200px) 100vw, 1152px"
-                      priority
-                      unoptimized
-                      onError={() => setHeroPhotoFailed(true)}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                  </>
+                  <Image
+                    src={photoUrl}
+                    alt={business.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1200px) 100vw, 1152px"
+                    priority
+                    unoptimized
+                    onError={() => setHeroPhotoFailed(true)}
+                  />
                 ) : (
-                  <>
-                    <Image
-                      src={fallbackHeroImageUrl}
-                      alt={`${business.name} default cover`}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1200px) 100vw, 1152px"
-                      priority
-                      unoptimized
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
-                  </>
+                  <Image
+                    src={fallbackHeroImageUrl}
+                    alt={`${business.name} default cover`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1200px) 100vw, 1152px"
+                    priority
+                    unoptimized
+                  />
                 );
               })()}
+              {/* Legibility scrims — source photos can be near-white, so the
+                  identity block always sits on its own dark gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-transparent" />
+
               {business.is_featured && (
-                <Badge className="absolute top-4 left-4 bg-chart-2 text-white border-0 shadow-lg">
+                <Badge className="absolute top-5 left-5 bg-white/15 text-white border border-white/25 backdrop-blur-md shadow-lg">
                   Featured
                 </Badge>
               )}
-            </div>
-          </AnimatedSection>
 
-          {/* Header */}
-          <AnimatedSection animation="fade-up" delay={0.1}>
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <h1 className="text-3xl font-bold">{business.name}</h1>
-                  {business.is_verified && (
-                    <Badge variant="secondary" className="gap-1">
-                      <CheckCircle className="h-3 w-3" />
-                      Verified
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <Star
-                        key={i}
-                        className={cn(
-                          "h-4 w-4",
-                          i < Math.round(business.average_rating)
-                            ? "fill-chart-5 text-chart-5"
-                            : "text-muted-foreground/30"
-                        )}
+              {/* Identity overlay */}
+              <div className="absolute inset-x-0 bottom-0 p-6 md:p-8">
+                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+                  <div className="min-w-0">
+                    <div className="mb-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs font-medium uppercase tracking-[0.14em] text-white/75">
+                      <span>{business.category?.name}</span>
+                      {business.price_range && (
+                        <>
+                          <span aria-hidden="true" className="text-white/40">·</span>
+                          <span className="tracking-normal">{getPriceRange(business.price_range)}</span>
+                        </>
+                      )}
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-white [text-wrap:balance]">
+                      {business.name}
+                    </h1>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-white/85">
+                      <span className="flex items-center gap-1">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "h-4 w-4",
+                              i < Math.round(business.average_rating)
+                                ? "fill-white text-white"
+                                : "text-white/35"
+                            )}
+                          />
+                        ))}
+                        <span className="font-semibold text-white ml-1.5">
+                          {business.average_rating}
+                        </span>
+                        <span className="text-white/70">({reviewLabel})</span>
+                      </span>
+                      {business.is_verified && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/15 border border-white/25 backdrop-blur-md px-2.5 py-0.5 text-xs font-medium text-white">
+                          <CheckCircle className="h-3 w-3" aria-hidden="true" />
+                          Verified
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "rounded-full border backdrop-blur-md transition-colors",
+                        isBookmarked
+                          ? "bg-primary/85 border-primary/60 text-white hover:bg-primary hover:text-white"
+                          : "bg-white/10 border-white/25 text-white hover:bg-white/25 hover:text-white"
+                      )}
+                      onClick={handleBookmark}
+                      disabled={toggleBookmark.isPending}
+                      aria-label={isBookmarked ? "Remove bookmark" : "Bookmark this business"}
+                    >
+                      <Heart
+                        className={cn("h-4 w-4", isBookmarked && "fill-white")}
+                        aria-hidden="true"
                       />
-                    ))}
-                    <span className="font-medium text-foreground ml-1">
-                      {business.average_rating}
-                    </span>
-                    <span>({reviewLabel})</span>
-                  </span>
-                  <span>•</span>
-                  <span>{business.category?.name}</span>
-                  {business.price_range && (
-                    <>
-                      <span>•</span>
-                      <span>{getPriceRange(business.price_range)}</span>
-                    </>
-                  )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full bg-white/10 border border-white/25 text-white backdrop-blur-md transition-colors hover:bg-white/25 hover:text-white"
+                      onClick={handleShare}
+                      aria-label="Share this business"
+                    >
+                      <Share2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                    <Button onClick={handleGetDirections} aria-label="Get directions to this business">
+                      <Navigation className="h-4 w-4 mr-2" aria-hidden="true" />
+                      Directions
+                    </Button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleBookmark}
-                  disabled={toggleBookmark.isPending}
-                  aria-label={isBookmarked ? "Remove bookmark" : "Bookmark this business"}
-                >
-                  <Heart
-                    className={`h-4 w-4 ${
-                      isBookmarked ? "fill-chart-5 text-chart-5" : ""
-                    }`}
-                    aria-hidden="true"
-                  />
-                </Button>
-                <Button variant="outline" size="icon" onClick={handleShare} aria-label="Share this business">
-                  <Share2 className="h-4 w-4" aria-hidden="true" />
-                </Button>
-                <Button onClick={handleGetDirections} aria-label="Get directions to this business">
-                  <Navigation className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Directions
-                </Button>
               </div>
             </div>
           </AnimatedSection>
@@ -729,12 +745,14 @@ export default function BusinessDetailPage({
             <div className="lg:col-span-2 space-y-6">
               <AnimatedSection animation="fade-up" delay={0.15}>
                 <Tabs defaultValue={defaultTab} className="w-full">
-                  <TabsList className="w-full justify-start">
-                    <TabsTrigger value="about">About</TabsTrigger>
-                    <TabsTrigger value="reviews">
+                  <TabsList className={underlineTabsListClass}>
+                    <TabsTrigger value="about" className={underlineTabsTriggerClass}>
+                      About
+                    </TabsTrigger>
+                    <TabsTrigger value="reviews" className={underlineTabsTriggerClass}>
                       Reviews ({reviewTabCount})
                     </TabsTrigger>
-                    <TabsTrigger value="deals">
+                    <TabsTrigger value="deals" className={underlineTabsTriggerClass}>
                       Deals ({business.deals?.length || 0})
                     </TabsTrigger>
                   </TabsList>
@@ -1287,45 +1305,45 @@ export default function BusinessDetailPage({
             </div>
 
             {/* Sidebar */}
-            <div className="space-y-6">
+            <div className="space-y-6 self-start lg:sticky lg:top-24">
               <AnimatedSection animation="fade-up" delay={0.2}>
                 <Card className="transition-shadow hover:shadow-md">
                   <CardHeader>
                     <CardTitle className="text-base">Quick Actions</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2.5">
                     <Button className="w-full" onClick={handleGetDirections}>
                       <Navigation className="h-4 w-4 mr-2" />
                       Get Directions
                     </Button>
-                    <Button
-                      variant={hasCheckedIn ? "secondary" : "outline"}
-                      className="w-full"
-                      onClick={handleCheckIn}
-                      disabled={isCheckingIn || hasCheckedIn}
-                    >
-                      {isCheckingIn ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : hasCheckedIn ? (
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                      ) : (
-                        <MapPinned className="h-4 w-4 mr-2" />
-                      )}
-                      {hasCheckedIn ? "Checked In Today" : "Check In"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={handleBookmark}
-                      disabled={toggleBookmark.isPending}
-                    >
-                      <Heart
-                        className={`h-4 w-4 mr-2 ${
-                          isBookmarked ? "fill-chart-5 text-chart-5" : ""
-                        }`}
-                      />
-                      {isBookmarked ? "Bookmarked" : "Bookmark"}
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <Button
+                        variant={hasCheckedIn ? "secondary" : "outline"}
+                        onClick={handleCheckIn}
+                        disabled={isCheckingIn || hasCheckedIn}
+                      >
+                        {isCheckingIn ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : hasCheckedIn ? (
+                          <CheckCircle className="h-4 w-4" />
+                        ) : (
+                          <MapPinned className="h-4 w-4" />
+                        )}
+                        {hasCheckedIn ? "Checked In" : "Check In"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleBookmark}
+                        disabled={toggleBookmark.isPending}
+                      >
+                        <Heart
+                          className={`h-4 w-4 ${
+                            isBookmarked ? "fill-primary text-primary" : ""
+                          }`}
+                        />
+                        {isBookmarked ? "Bookmarked" : "Bookmark"}
+                      </Button>
+                    </div>
                     {business.phone && (
                       <Button
                         variant="outline"
@@ -1348,25 +1366,37 @@ export default function BusinessDetailPage({
                   <CardHeader>
                     <CardTitle className="text-base">Community Impact</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Bookmarked by</span>
-                      <span className="font-medium">
+                  <CardContent className="divide-y divide-border/60">
+                    <div className="flex items-center justify-between gap-3 py-2.5 pt-0 text-sm">
+                      <span className="flex items-center gap-2.5 text-muted-foreground">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <Heart className="h-3.5 w-3.5" aria-hidden="true" />
+                        </span>
+                        Bookmarked by
+                      </span>
+                      <span className="font-semibold tabular-nums">
                         {business.bookmark_count} people
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">
+                    <div className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                      <span className="flex items-center gap-2.5 text-muted-foreground">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <Star className="h-3.5 w-3.5" aria-hidden="true" />
+                        </span>
                         {business.data_source === "google" ? "Total ratings" : "Total reviews"}
                       </span>
-                      <span className="font-medium">
+                      <span className="font-semibold tabular-nums">
                         {business.review_count}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Average rating</span>
-                      <span className="font-medium flex items-center gap-1">
-                        <Star className="h-3 w-3 fill-chart-5 text-chart-5" />
+                    <div className="flex items-center justify-between gap-3 py-2.5 pb-0 text-sm">
+                      <span className="flex items-center gap-2.5 text-muted-foreground">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                          <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
+                        </span>
+                        Average rating
+                      </span>
+                      <span className="font-semibold tabular-nums">
                         {business.average_rating}
                       </span>
                     </div>

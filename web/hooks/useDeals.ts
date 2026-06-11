@@ -29,7 +29,8 @@
  * ============================================================================
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useHydrationSafeQuery } from '@/hooks/useHydrationSafeQuery'
 import type { Deal, DealWithBusiness, DealClaimWithDeal } from '@/types/business'
 
 // ============================================================================
@@ -111,7 +112,7 @@ async function redeemDeal({ claimId, code }: RedeemDealParams): Promise<void> {
  * @param businessId - Business UUID
  */
 export function useBusinessDeals(businessId: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: dealKeys.business(businessId),
     queryFn: () => fetchBusinessDeals(businessId),
     enabled: !!businessId,
@@ -121,7 +122,7 @@ export function useBusinessDeals(businessId: string) {
 
 /** Fetch all currently available deals across all businesses. */
 export function useAvailableDeals() {
-  return useQuery<AvailableDeal[]>({
+  return useHydrationSafeQuery<AvailableDeal[]>({
     queryKey: dealKeys.available(),
     queryFn: fetchAvailableDeals,
     staleTime: 5 * 60 * 1000,
@@ -130,7 +131,7 @@ export function useAvailableDeals() {
 
 /** Fetch the current user's claimed deals (requires authentication). */
 export function useUserClaims() {
-  return useQuery<DealClaimWithDeal[]>({
+  return useHydrationSafeQuery<DealClaimWithDeal[]>({
     queryKey: dealKeys.userClaims('current'),
     queryFn: fetchUserClaims,
     staleTime: 2 * 60 * 1000,

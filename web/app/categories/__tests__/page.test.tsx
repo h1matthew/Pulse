@@ -191,6 +191,20 @@ describe('Categories Page', () => {
     }
   })
 
+  it('gives every card a hover heartbeat trace instead of a generic lift', async () => {
+    const { container } = await renderPage()
+    const cards = container.querySelectorAll('a[href^="/discover?category="]')
+    for (const card of cards) {
+      // The decorative EKG trace that draws along the divider on hover
+      const trace = card.querySelector('svg[aria-hidden="true"] path[pathLength]')
+      expect(trace).not.toBeNull()
+      expect(trace?.getAttribute('class') ?? '').toContain('stroke-dashoffset')
+      // The old generic hover (lift + heavy shadow) is gone
+      expect(card.className).not.toContain('card-lift')
+      expect(card.className).not.toContain('hover:-translate-y')
+    }
+  })
+
   it('renders no emoji anywhere (lucide icons only)', async () => {
     const { container } = await renderPage()
     expect(container.textContent ?? '').not.toMatch(EMOJI_REGEX)

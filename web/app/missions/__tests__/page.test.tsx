@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { BoostMissionWithCategory, MissionProgressDetails } from '@/types/mission'
@@ -51,6 +51,9 @@ let mockClaimedMissions: MissionProgressDetails[] = []
 let mockProgressLoading = false
 let mockAuthState = { isLoggedIn: false, userId: null as string | null, loading: false }
 
+const mockStartMutateAsync = vi.fn()
+let mockStartPending = false
+
 vi.mock('@/hooks/useMissions', () => ({
   useActiveMissions: () => ({
     data: mockMissionsData,
@@ -63,6 +66,14 @@ vi.mock('@/hooks/useMissions', () => ({
     claimedMissions: mockClaimedMissions,
     isLoading: mockProgressLoading,
   }),
+  useStartMission: () => ({
+    mutateAsync: mockStartMutateAsync,
+    isPending: mockStartPending,
+  }),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
 }))
 
 vi.mock('@/types/mission', async () => {
@@ -94,6 +105,8 @@ vi.mock('@/components/ui/tabs', () => ({
     <button role="tab" data-value={value}>{children}</button>
   ),
   TabsContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  underlineTabsListClass: '',
+  underlineTabsTriggerClass: '',
 }))
 
 function createQueryClient() {
@@ -124,6 +137,9 @@ describe('MissionsPage', () => {
     mockClaimedMissions = []
     mockProgressLoading = false
     mockAuthState = { isLoggedIn: false, userId: null, loading: false }
+    mockStartPending = false
+    mockStartMutateAsync.mockReset()
+    mockStartMutateAsync.mockResolvedValue({ id: 'progress-new' })
   })
 
   it('renders page header and title', () => {
@@ -268,6 +284,79 @@ describe('MissionsPage', () => {
     renderPage()
 
     expect(screen.getByText('Start')).toBeInTheDocument()
+  })
+
+  it('starts the mission when a signed-in user clicks Start', async () => {
+    mockMissionsData = [mockActiveMissions[0]]
+    mockAuthState = { isLoggedIn: true, userId: 'user-1', loading: false }
+    renderPage()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /start mission: coffee explorer/i })
+    )
+
+    await waitFor(() => {
+      expect(mockStartMutateAsync).toHaveBeenCalledWith('mission-1')
+    })
+  })
+
+  it('routes signed-out users to login instead of starting', () => {
+    mockMissionsData = [mockActiveMissions[0]]
+    renderPage()
+
+    const link = screen.getByRole('link', {
+      name: /sign in to start mission: coffee explorer/i,
+    })
+    expect(link).toHaveAttribute('href', '/login')
+    expect(mockStartMutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('exposes mission progress to assistive tech with an accessible name', () => {
+    mockMissionsData = [mockActiveMissions[0]]
+    mockAuthState = { isLoggedIn: true, userId: 'user-1', loading: false }
+    renderPage()
+
+    expect(
+      screen.getByRole('progressbar', { name: /coffee explorer progress: 0 of 3/i })
+    ).toBeInTheDocument()
+  })
+
+  it('announces loading state to screen readers', () => {
+    mockMissionsLoading = true
+    renderPage()
+
+    expect(screen.getAllByRole('status').length).toBeGreaterThan(0)
+    expect(screen.getByText('Loading missions…')).toBeInTheDocument()
+  })
+
+  it('counts started-but-unfinished missions as in progress', () => {
+    mockMissionsData = [mockActiveMissions[0]]
+    mockAuthState = { isLoggedIn: true, userId: 'user-1', loading: false }
+    mockActiveMissionsProgress = [
+      {
+        progress: {
+          id: 'progress-1',
+          mission_id: 'mission-1',
+          user_id: 'user-1',
+          current_count: 0,
+          is_completed: false,
+          completed_at: null,
+          reward_claimed: false,
+          reward_claimed_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          mission: mockActiveMissions[0],
+        },
+        percentageComplete: 0,
+        remainingCount: 3,
+        daysRemaining: null,
+      },
+    ]
+    renderPage()
+
+    // The freshly started 0/3 mission counts toward "In Progress"
+    const inProgressLabel = screen.getByText('In Progress')
+    expect(inProgressLabel.parentElement?.textContent).toContain('1')
   })
 
   it('renders tab triggers', () => {

@@ -599,7 +599,7 @@ export default function DiscoverPage() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="px-4 pb-12 pt-24 sm:px-6">
+      <main className="px-4 pb-12 pt-32 sm:px-6">
         <div className="mx-auto max-w-6xl space-y-6">
           <section aria-labelledby="discover-heading">
             <AnimatedSection animation="rise-up" className="flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">

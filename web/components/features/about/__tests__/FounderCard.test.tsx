@@ -42,10 +42,11 @@ describe('FounderCard', () => {
     expect(card.className).toContain('hover:border-primary/30')
   })
 
-  it('staggers the entrance animation by index', () => {
+  it('renders without entrance animations (no replay on every navigation)', () => {
     const { container } = render(<FounderCard founder={FOUNDER} index={1} />)
     const card = container.firstElementChild as HTMLElement
-    expect(card.style.animationDelay).toBe('0.25s')
+    expect(card.className).not.toContain('animate-')
+    expect(card.style.animationDelay).toBe('')
   })
 
   it('contains no emoji and no gradient or blur decoration classes', () => {

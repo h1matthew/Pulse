@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 type AnimationName =
@@ -47,6 +48,35 @@ const HIDDEN_CLASSES: Record<AnimationName, string> = {
 
 const VISIBLE_CLASSES = 'opacity-100 translate-x-0 translate-y-0 scale-100'
 
+// Entrance reveals are a first-impression device: they play only on the page
+// the document loaded on. Once the user navigates client-side, sections
+// render in place instantly — replaying reveals on every nav makes switching
+// pages feel like a full reload.
+let initialDocumentPath: string | null = null
+let entrancesDone = false
+
+function shouldAnimateEntrance(routerPath: string | null): boolean {
+  // The latch lives in browser module state only. On the server this module
+  // is shared across requests, so latching there would disable entrances for
+  // every later visitor — SSR (always the initial document load) animates.
+  if (typeof window === 'undefined') return true
+  // usePathname reflects the page being rendered during router transitions;
+  // window.location is the fallback outside an app router (tests).
+  const path = routerPath ?? window.location.pathname
+  if (initialDocumentPath === null) {
+    initialDocumentPath = path
+  } else if (path !== initialDocumentPath) {
+    entrancesDone = true
+  }
+  return !entrancesDone
+}
+
+/** Test-only: clears the navigation latch between test cases. */
+export function __resetEntranceLatchForTests() {
+  initialDocumentPath = null
+  entrancesDone = false
+}
+
 export function AnimatedSection({
   children,
   animation = 'fade-up',
@@ -55,9 +85,15 @@ export function AnimatedSection({
   once = true,
 }: AnimatedSectionProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const [isVisible, setIsVisible] = useState(false)
+  const pathname = usePathname()
+  // Decided once per mount; sections mounting after a client-side navigation
+  // skip the hidden pose entirely.
+  const [animateEntrance] = useState(() => shouldAnimateEntrance(pathname))
+  const [isVisible, setIsVisible] = useState(!animateEntrance)
 
   useEffect(() => {
+    if (!animateEntrance) return
+
     if (
       typeof IntersectionObserver === 'undefined' ||
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -91,7 +127,15 @@ export function AnimatedSection({
 
     observer.observe(element)
     return () => observer.disconnect()
-  }, [once])
+  }, [once, animateEntrance])
+
+  if (!animateEntrance) {
+    return (
+      <div ref={ref} className={className}>
+        {children}
+      </div>
+    )
+  }
 
   return (
     <div

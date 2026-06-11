@@ -22,7 +22,7 @@ describe('Root Template', () => {
     expect(content.parentElement).toHaveClass('animate-page-enter-delayed')
   })
 
-  it('skips the splash pause on subsequent navigations', async () => {
+  it('renders instantly with no entrance animation on subsequent navigations', async () => {
     const Template = (await import('../template')).default
     const first = render(
       <Template>
@@ -37,8 +37,10 @@ describe('Root Template', () => {
       </Template>
     )
 
+    // In-app navigation must not look like a page load — no entrance
+    // animation classes at all.
     const content = screen.getByText('Second page')
-    expect(content.parentElement).toHaveClass('animate-page-enter')
+    expect(content.parentElement).not.toHaveClass('animate-page-enter')
     expect(content.parentElement).not.toHaveClass('animate-page-enter-delayed')
   })
 })

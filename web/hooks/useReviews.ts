@@ -12,7 +12,8 @@
  */
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useHydrationSafeQuery } from '@/hooks/useHydrationSafeQuery'
 import type { Review, ReviewWithUser, ReviewCreateInput } from '@/types/business'
 
 // ============================================================================
@@ -91,7 +92,7 @@ async function markReviewHelpful(id: string): Promise<void> {
 // ============================================================================
 
 export function useBusinessReviews(businessId: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: reviewKeys.business(businessId),
     queryFn: () => fetchBusinessReviews(businessId),
     enabled: !!businessId,
@@ -100,7 +101,7 @@ export function useBusinessReviews(businessId: string) {
 }
 
 export function useUserReviews(userId: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: reviewKeys.user(userId),
     queryFn: () => fetchUserReviews(userId),
     enabled: !!userId,

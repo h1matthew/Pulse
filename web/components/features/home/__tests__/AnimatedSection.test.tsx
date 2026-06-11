@@ -4,7 +4,10 @@
 import React from "react";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
-import { AnimatedSection } from "../AnimatedSection";
+import {
+  AnimatedSection,
+  __resetEntranceLatchForTests,
+} from "../AnimatedSection";
 
 type IntersectionCallback = (
   entries: Array<Pick<IntersectionObserverEntry, "isIntersecting">>
@@ -52,6 +55,8 @@ describe("AnimatedSection", () => {
   beforeEach(() => {
     vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
     mockMatchMedia(false);
+    window.history.replaceState({}, "", "/");
+    __resetEntranceLatchForTests();
   });
 
   afterEach(() => {
@@ -156,5 +161,70 @@ describe("AnimatedSection", () => {
 
     const wrapper = screen.getByText("Reduced").parentElement;
     expect(wrapper).toHaveClass("opacity-100");
+  });
+
+  it("still animates sections that mount later on the initial page", () => {
+    // First section latches the initial document path
+    render(
+      <AnimatedSection>
+        <div>First</div>
+      </AnimatedSection>
+    );
+
+    // A section mounting later on the same page (e.g. after data loads)
+    render(
+      <AnimatedSection>
+        <div>Later</div>
+      </AnimatedSection>
+    );
+
+    expect(screen.getByText("Later").parentElement).toHaveClass("opacity-0");
+  });
+
+  it("renders instantly with no hidden pose after a client-side navigation", () => {
+    // Latch the initial document page
+    render(
+      <AnimatedSection>
+        <div>Initial page</div>
+      </AnimatedSection>
+    );
+
+    // Simulate the app router navigating to another page
+    window.history.pushState({}, "", "/discover");
+    render(
+      <AnimatedSection animation="rise-up">
+        <div>Navigated</div>
+      </AnimatedSection>
+    );
+
+    const wrapper = screen.getByText("Navigated").parentElement;
+    expect(wrapper).not.toHaveClass("opacity-0");
+    expect(wrapper).not.toHaveClass("translate-y-24");
+    expect(wrapper?.className ?? "").not.toContain("transition-[opacity,transform]");
+  });
+
+  it("never replays entrances after navigating, even back on the initial path", () => {
+    render(
+      <AnimatedSection>
+        <div>Initial page</div>
+      </AnimatedSection>
+    );
+
+    window.history.pushState({}, "", "/discover");
+    render(
+      <AnimatedSection>
+        <div>Away</div>
+      </AnimatedSection>
+    );
+
+    // Navigate back to the original path — reveals must not replay
+    window.history.pushState({}, "", "/");
+    render(
+      <AnimatedSection>
+        <div>Back home</div>
+      </AnimatedSection>
+    );
+
+    expect(screen.getByText("Back home").parentElement).not.toHaveClass("opacity-0");
   });
 });

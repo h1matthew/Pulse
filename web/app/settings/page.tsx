@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useHydrationSafeQuery } from "@/hooks/useHydrationSafeQuery";
 import {
   User,
   Bell,
@@ -18,7 +19,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  underlineTabsListClass,
+  underlineTabsTriggerClass,
+} from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
@@ -119,7 +128,7 @@ function ProfileSettings() {
 
 function PreferencesSettings() {
   const queryClient = useQueryClient();
-  const { data: preferences, isLoading } = useQuery({
+  const { data: preferences, isLoading } = useHydrationSafeQuery({
     queryKey: ["userPreferences"],
     queryFn: fetchPreferences,
   });
@@ -253,7 +262,7 @@ function PreferencesSettings() {
 
 function NotificationSettings() {
   const queryClient = useQueryClient();
-  const { data: preferences, isLoading } = useQuery({
+  const { data: preferences, isLoading } = useHydrationSafeQuery({
     queryKey: ["userPreferences"],
     queryFn: fetchPreferences,
   });
@@ -328,7 +337,7 @@ export default function SettingsPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-20 pb-12 flex items-center justify-center min-h-[60vh]">
+        <div className="pt-28 pb-12 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
@@ -339,7 +348,7 @@ export default function SettingsPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-20 pb-12">
+        <div className="pt-28 pb-12">
           <div className="mx-auto max-w-4xl px-6 text-center">
             <div className="text-6xl mb-4">🔒</div>
             <h1 className="text-2xl font-bold mb-2">Sign in required</h1>
@@ -354,27 +363,32 @@ export default function SettingsPage() {
   return (
     <div className="relative min-h-screen">
       <Header />
-      <div className="pt-20 pb-12">
+      <div className="pt-28 pb-12">
         <div className="mx-auto max-w-4xl px-6">
           <AnimatedSection animation="fade-up">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-              <p className="text-muted-foreground">Manage your account preferences.</p>
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Your account
+              </p>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Settings</h1>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+                Manage your account preferences.
+              </p>
             </div>
           </AnimatedSection>
 
           <AnimatedSection animation="fade-up" delay={0.1}>
             <Tabs defaultValue="profile" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-                <TabsTrigger value="profile" className="gap-2">
+              <TabsList className={underlineTabsListClass}>
+                <TabsTrigger value="profile" className={cn(underlineTabsTriggerClass, "gap-2")}>
                   <User className="h-4 w-4" />
                   <span className="hidden sm:inline">Profile</span>
                 </TabsTrigger>
-                <TabsTrigger value="preferences" className="gap-2">
+                <TabsTrigger value="preferences" className={cn(underlineTabsTriggerClass, "gap-2")}>
                   <Heart className="h-4 w-4" />
                   <span className="hidden sm:inline">Preferences</span>
                 </TabsTrigger>
-                <TabsTrigger value="notifications" className="gap-2">
+                <TabsTrigger value="notifications" className={cn(underlineTabsTriggerClass, "gap-2")}>
                   <Bell className="h-4 w-4" />
                   <span className="hidden sm:inline">Notifications</span>
                 </TabsTrigger>

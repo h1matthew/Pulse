@@ -30,7 +30,8 @@
  * ============================================================================
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useHydrationSafeQuery } from '@/hooks/useHydrationSafeQuery'
 import { useAnnouncer } from '@/hooks/useAnnouncer'
 import type { Business, BusinessWithCategory, BusinessWithDetails, BusinessSearchFilters, LatLng } from '@/types/business'
 
@@ -161,7 +162,7 @@ export function useBusinesses(
   page = 1,
   limit = 20
 ) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: businessKeys.list({ ...filters, page, limit }),
     queryFn: () => fetchBusinesses(filters, page, limit),
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -174,7 +175,7 @@ export function useBusinesses(
  * @returns React Query result with full business details
  */
 export function useBusiness(id: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: businessKeys.detail(id),
     queryFn: () => fetchBusiness(id),
     enabled: !!id,
@@ -192,7 +193,7 @@ export function useBusiness(id: string) {
 export function useBusinessSearch(query: string, location?: LatLng) {
   const { announceLoading, announceSuccess } = useAnnouncer()
 
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: businessKeys.search(query, location),
     queryFn: async () => {
       announceLoading('Searching businesses...')
@@ -210,7 +211,7 @@ export function useBusinessSearch(query: string, location?: LatLng) {
  * @param categorySlug - Category identifier (e.g., "food-drink", "retail")
  */
 export function useBusinessesByCategory(categorySlug: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: businessKeys.byCategory(categorySlug),
     queryFn: () => fetchBusinessesByCategory(categorySlug),
     enabled: !!categorySlug,
@@ -220,7 +221,7 @@ export function useBusinessesByCategory(categorySlug: string) {
 
 /** Fetch editorially featured businesses for the homepage spotlight. */
 export function useFeaturedBusinesses() {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: businessKeys.featured(),
     queryFn: fetchFeaturedBusinesses,
     staleTime: 10 * 60 * 1000,
@@ -238,7 +239,7 @@ export function useFeaturedBusinesses() {
 export function useNearbyBusinesses(location?: LatLng | null, radius = 10000, category?: string) {
   const { announceLoading, announceSuccess } = useAnnouncer()
 
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: businessKeys.nearby(location || { lat: 0, lng: 0 }, radius, category),
     queryFn: async () => {
       announceLoading('Finding nearby businesses...')

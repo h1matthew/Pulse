@@ -27,7 +27,7 @@ This is **Pulse** — a local business discovery platform that shows users how t
 **IMPORTANT:** All npm commands must be run from the `web/` directory:
 
 ```bash
-cd /Users/himatthew/Coding/Pulse/web    # Navigate to web directory first
+cd web    # Navigate to web directory first (from the repo root)
 npm run dev                                      # Dev server at localhost:3000
 npm run build                                    # Production build
 npm run lint                                     # ESLint
@@ -38,13 +38,13 @@ npx shadcn@latest add <component>                # Add shadcn component
 
 **Note:** The project root contains multiple subdirectories. The Next.js app is in `web/`, so all npm/package commands require being in that directory.
 
-**CRITICAL:** When using the Bash tool, always use the full path form:
+**CRITICAL:** When using the Bash tool, always chain the `cd` with the command:
 ```bash
-cd /Users/himatthew/Coding/Pulse/web && npm run build
+cd web && npm run build
 ```
 The Bash tool does not persist working directory between calls, so you must either:
-1. Use `cd /path/to/web && npm ...` for each command
-2. Or use absolute paths like `/Users/himatthew/Coding/Pulse/web/node_modules/.bin/vitest`
+1. Use `cd web && npm ...` for each command
+2. Or use paths relative to the repo root like `web/node_modules/.bin/vitest`
 
 ## Testing
 
