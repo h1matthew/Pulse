@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useHydrated } from '@/hooks/useHydrated'
 import type { User } from '@supabase/supabase-js'
 
 interface AuthContextType {
@@ -12,13 +13,17 @@ interface AuthContextType {
   user: User | null
 }
 
-const AuthContext = createContext<AuthContextType>({
+// The state every server render (and therefore every hydration render) must
+// agree on: signed out, still loading. Also the default for missing providers.
+const SERVER_AUTH_STATE: AuthContextType = {
   isLoggedIn: false,
   isAdmin: false,
   loading: true,
   userId: null,
   user: null,
-})
+}
+
+const AuthContext = createContext<AuthContextType>(SERVER_AUTH_STATE)
 
 interface AuthProviderProps {
   children: ReactNode
@@ -107,9 +112,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 }
 
 export function useAuth() {
+  const hydrated = useHydrated()
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
-  return context
+  // Supabase emits INITIAL_SESSION from storage in a root-commit effect,
+  // which can flip isLoggedIn before deferred Suspense boundaries hydrate —
+  // the same race as the persisted query cache. Until hydration finishes,
+  // report the signed-out/loading state the server HTML was rendered with.
+  return hydrated ? context : SERVER_AUTH_STATE
 }

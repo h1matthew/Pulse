@@ -29,7 +29,7 @@ import { useUserImpact, useImpactDisplay, useCommunityPulse } from "@/hooks/useI
 import { useMissionProgressDetails } from "@/hooks/useMissions";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useHydrationSafeQuery } from "@/hooks/useHydrationSafeQuery";
 import { useBusinesses } from "@/hooks/useBusinesses";
 import type { BusinessWithCategory } from "@/types/business";
 
@@ -131,12 +131,12 @@ export default function DashboardPage() {
   const impactDisplay = useImpactDisplay(userId);
   const { data: communityPulse, isLoading: pulseLoading } = useCommunityPulse(userId);
   const { activeMissions, isLoading: missionsLoading } = useMissionProgressDetails(userId);
-  const { data: recentActivity, isLoading: activityLoading } = useQuery({
+  const { data: recentActivity, isLoading: activityLoading } = useHydrationSafeQuery({
     queryKey: ['activity'],
     queryFn: fetchRecentActivity,
     enabled: !!userId,
   });
-  const { data: spotlightNearbyBusinesses } = useQuery({
+  const { data: spotlightNearbyBusinesses } = useHydrationSafeQuery({
     queryKey: ['dashboard', 'spotlight', 'nearby'],
     queryFn: fetchSpotlightBusinesses,
     staleTime: 5 * 60 * 1000,
@@ -218,7 +218,7 @@ export default function DashboardPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-20 pb-12 flex items-center justify-center min-h-[60vh]">
+        <div className="pt-28 pb-12 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
@@ -234,7 +234,7 @@ export default function DashboardPage() {
     <div className="relative min-h-screen">
       <Header />
 
-      <div className="pt-20 pb-12">
+      <div className="pt-28 pb-12">
         <div className="mx-auto max-w-6xl px-6">
           {/* Hero Section with Pulse Mission */}
           <AnimatedSection animation="fade-up">

@@ -20,7 +20,8 @@
  */
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useHydrationSafeQuery } from '@/hooks/useHydrationSafeQuery'
 import type {
   UserImpact,
   ImpactMetrics,
@@ -125,7 +126,7 @@ async function recalculateImpact(): Promise<void> {
  * @param userId - The user's UUID (used for cache keying; API uses session auth)
  */
 export function useUserImpact(userId: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: impactKeys.user(userId),
     queryFn: () => fetchUserImpact(userId),
     enabled: !!userId,
@@ -138,7 +139,7 @@ export function useUserImpact(userId: string) {
  * @param userId - The user's UUID (used for cache keying)
  */
 export function useImpactCalculation(userId: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: [...impactKeys.user(userId), 'calculation'],
     queryFn: () => fetchImpactCalculation(userId),
     enabled: !!userId,
@@ -152,7 +153,7 @@ export function useImpactCalculation(userId: string) {
  * @param timeframe - Time window: "all_time", "monthly", "weekly"
  */
 export function useLeaderboard(type = 'global', timeframe = 'all_time') {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: impactKeys.leaderboard(type, timeframe),
     queryFn: () => fetchLeaderboard(type, timeframe),
     staleTime: 5 * 60 * 1000,
@@ -161,7 +162,7 @@ export function useLeaderboard(type = 'global', timeframe = 'all_time') {
 
 /** Fetch aggregate community impact metrics (total dollars local, businesses supported, active users). */
 export function useCommunityPulse(userId?: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: impactKeys.community(userId),
     queryFn: fetchCommunityPulse,
     staleTime: 0,
@@ -174,7 +175,7 @@ export function useCommunityPulse(userId?: string) {
  * @param dateRange - Start and end dates for the report (ISO strings)
  */
 export function useImpactReport(dateRange: { from?: string; to: string }) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: impactKeys.report(dateRange.from, dateRange.to),
     queryFn: () => fetchImpactReport(dateRange),
     enabled: !!dateRange.to,

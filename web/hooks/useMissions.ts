@@ -13,7 +13,8 @@
  */
 'use client'
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useHydrationSafeQuery } from '@/hooks/useHydrationSafeQuery'
 import type {
   BoostMission,
   BoostMissionWithCategory,
@@ -31,7 +32,10 @@ const missionKeys = {
   all: ['missions'] as const,
   lists: () => [...missionKeys.all, 'list'] as const,
   active: () => [...missionKeys.lists(), 'active'] as const,
-  userProgress: (userId: string) => [...missionKeys.all, 'progress', userId] as const,
+  // Prefix covering every user's progress queries — invalidate this rather
+  // than userProgress('') (an empty id is its own key and matches nothing).
+  progress: () => [...missionKeys.all, 'progress'] as const,
+  userProgress: (userId: string) => [...missionKeys.progress(), userId] as const,
   detail: (id: string) => [...missionKeys.all, 'detail', id] as const,
 }
 
@@ -54,6 +58,17 @@ async function fetchUserMissionProgress(userId: string): Promise<UserMissionProg
 // ============================================================================
 // Mutations
 // ============================================================================
+
+async function startMission(missionId: string): Promise<UserMissionProgress> {
+  const response = await fetch(`/api/missions/${missionId}/start`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    throw new Error(body?.error || 'Failed to start mission')
+  }
+  return response.json()
+}
 
 async function claimMissionReward(missionId: string): Promise<void> {
   const response = await fetch(`/api/missions/${missionId}/claim`, {
@@ -113,7 +128,7 @@ function calculateProgressDetails(
 // ============================================================================
 
 export function useActiveMissions() {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: missionKeys.active(),
     queryFn: fetchActiveMissions,
     staleTime: 10 * 60 * 1000,
@@ -121,7 +136,7 @@ export function useActiveMissions() {
 }
 
 export function useUserMissionProgress(userId: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: missionKeys.userProgress(userId),
     queryFn: () => fetchUserMissionProgress(userId),
     enabled: !!userId,
@@ -148,13 +163,28 @@ export function useMissionProgressDetails(userId: string) {
   }
 }
 
+/**
+ * Enroll the signed-in user in a mission. Idempotent server-side, so firing
+ * twice (double-click, retry) is harmless.
+ */
+export function useStartMission() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: startMission,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: missionKeys.progress() })
+    },
+  })
+}
+
 export function useClaimMissionReward() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: claimMissionReward,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: missionKeys.userProgress('') })
+      queryClient.invalidateQueries({ queryKey: missionKeys.progress() })
       queryClient.invalidateQueries({ queryKey: ['impact'] })
     },
   })
@@ -167,7 +197,7 @@ export function useTrackMissionProgress() {
     mutationFn: ({ missionId, increment }: { missionId: string; increment: number }) =>
       trackMissionProgress(missionId, increment),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: missionKeys.userProgress('') })
+      queryClient.invalidateQueries({ queryKey: missionKeys.progress() })
     },
   })
 }

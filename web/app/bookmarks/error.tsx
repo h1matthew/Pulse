@@ -13,7 +13,7 @@ export default function BookmarksError({
   return (
     <div className="relative min-h-screen bg-background">
       <Header />
-      <div className="pt-20">
+      <div className="pt-28">
         <ErrorBoundaryContent
           error={error}
           reset={reset}

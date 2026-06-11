@@ -18,6 +18,9 @@ export function PulseLogo({ className }: PulseLogoProps) {
       height={40}
       className={className}
       aria-hidden="true"
+      // Always above the fold in the header — eager-load so Next.js doesn't
+      // warn about a lazy LCP image.
+      priority
     />
   )
 }

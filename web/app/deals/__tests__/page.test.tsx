@@ -261,13 +261,10 @@ describe("DealsPage", () => {
     it("renders a mono uppercase eyebrow above the heading", () => {
       render(<DealsPage />);
 
-      const labels = screen.getAllByText(/^deals & offers$/i);
-      const eyebrow = labels.find(
-        (el) =>
-          el.classList.contains("font-mono") && el.classList.contains("uppercase")
-      );
-      expect(eyebrow).toBeDefined();
-      expect(eyebrow?.tagName).not.toBe("H1");
+      const eyebrow = screen.getByText(/^save local$/i);
+      expect(eyebrow.classList.contains("font-mono")).toBe(true);
+      expect(eyebrow.classList.contains("uppercase")).toBe(true);
+      expect(eyebrow.tagName).not.toBe("H1");
     });
 
     it("renders the discount value in mono primary text", () => {

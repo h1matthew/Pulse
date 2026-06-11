@@ -52,6 +52,9 @@ export function MobileMenu() {
         <DialogContent
           className="fixed inset-y-0 right-0 left-auto top-0 h-full w-full max-w-xs translate-x-0 translate-y-0 rounded-none border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:hidden"
           showCloseButton={false}
+          // Pure navigation list — no description needed; opt out of the
+          // Radix aria-describedby warning.
+          aria-describedby={undefined}
         >
           <VisuallyHidden>
             <DialogTitle>Navigation Menu</DialogTitle>

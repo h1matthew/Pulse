@@ -142,7 +142,7 @@ export default async function CategoriesPage() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="px-4 pb-12 pt-24 sm:px-6">
+      <main className="px-4 pb-12 pt-32 sm:px-6">
         <div className="mx-auto max-w-6xl">
           {/* Page header */}
           <AnimatedSection animation="fade-up">
@@ -176,10 +176,10 @@ export default async function CategoriesPage() {
                   <NavLink
                     href={`/discover?category=${category.slug}`}
                     aria-label={`Explore ${category.name}`}
-                    className="card-lift group flex h-full flex-col rounded-lg border border-border bg-card p-6 transition-colors hover:border-primary/30"
+                    className="group relative flex h-full flex-col rounded-lg border border-border bg-card p-6 transition-colors duration-300 hover:border-primary/40"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors duration-300 group-hover:animate-heart-beat group-hover:bg-primary group-hover:text-primary-foreground">
                         <Icon className="h-5 w-5" aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -216,7 +216,26 @@ export default async function CategoriesPage() {
                       )}
                     </div>
 
-                    <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+                    <div className="relative mt-6 flex items-center justify-between border-t border-border pt-4">
+                      {/* The divider is a flatline — on hover a heartbeat
+                          trace draws itself along it, left to right. */}
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 300 24"
+                        fill="none"
+                        preserveAspectRatio="none"
+                        className="pointer-events-none absolute -top-3 left-0 h-6 w-full text-primary opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                      >
+                        <path
+                          d="M0 12 H112 L120 12 L126 3 L134 21 L140 12 H300"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          pathLength="1"
+                          className="[stroke-dasharray:1] [stroke-dashoffset:1] transition-[stroke-dashoffset] duration-700 ease-out group-hover:[stroke-dashoffset:0]"
+                        />
+                      </svg>
                       <span className="text-sm text-muted-foreground transition-colors group-hover:text-foreground">
                         Explore {category.name}
                       </span>

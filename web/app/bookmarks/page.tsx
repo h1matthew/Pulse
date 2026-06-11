@@ -12,7 +12,8 @@ import {
   Store,
   Bookmark,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useHydrationSafeQuery } from "@/hooks/useHydrationSafeQuery";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -206,7 +207,7 @@ export default function BookmarksPage() {
   const isGuest = !authLoading && !user;
 
   // Guest: on-device bookmark ids (same key + fn as useBookmarkedIds' guest scope)
-  const localIdsQuery = useQuery({
+  const localIdsQuery = useHydrationSafeQuery({
     queryKey: ["bookmarks", "ids", "local"],
     queryFn: () => getLocalBookmarkIds(),
     enabled: isGuest,
@@ -216,7 +217,7 @@ export default function BookmarksPage() {
   const hasLocalBookmarks = localIds.length > 0;
 
   // Guest: fetch the bookmarked businesses directly (public read RLS allows anon)
-  const guestBusinessesQuery = useQuery({
+  const guestBusinessesQuery = useHydrationSafeQuery({
     queryKey: ["bookmarks", "local", "businesses"],
     queryFn: async (): Promise<BusinessWithCategory[]> => {
       const ids = getLocalBookmarkIds();
@@ -277,7 +278,7 @@ export default function BookmarksPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-20 pb-12 flex items-center justify-center min-h-[60vh]">
+        <div className="pt-28 pb-12 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
@@ -288,7 +289,7 @@ export default function BookmarksPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-20 pb-12">
+        <div className="pt-28 pb-12">
           <div className="mx-auto max-w-6xl px-6 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
               <Lock className="h-6 w-6 text-primary" aria-hidden="true" />
@@ -314,18 +315,18 @@ export default function BookmarksPage() {
       <div className="relative min-h-screen">
         <Header />
 
-        <div className="pt-20 pb-12">
+        <div className="pt-28 pb-12">
           <div className="mx-auto max-w-6xl px-6">
             {/* Header */}
             <AnimatedSection animation="fade-up">
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-2">
-                  <Heart className="h-6 w-6 text-chart-5" />
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    Your Bookmarks
-                  </h1>
-                </div>
-                <p className="text-muted-foreground">
+              <div className="mb-8 border-b border-border pb-6">
+                <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  Saved places
+                </p>
+                <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                  Your Bookmarks
+                </h1>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
                   Businesses you&apos;ve saved to support later
                 </p>
               </div>
@@ -406,7 +407,7 @@ export default function BookmarksPage() {
     <div className="relative min-h-screen">
       <Header />
 
-      <div className="pt-20 pb-12">
+      <div className="pt-28 pb-12">
         <div className="mx-auto max-w-6xl px-6">
           {/* Header */}
           <AnimatedSection animation="fade-up">

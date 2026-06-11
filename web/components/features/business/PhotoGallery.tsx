@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -105,7 +106,15 @@ export function PhotoGallery({ photos, businessName, categoryIcon = "🏪" }: Ph
 
       {/* Lightbox Dialog */}
       <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-        <DialogContent className="max-w-5xl w-full h-[90vh] p-0 bg-black/95 border-none">
+        <DialogContent
+          className="max-w-5xl w-full h-[90vh] p-0 bg-black/95 border-none"
+          // Lightbox images are self-describing — opt out of the Radix
+          // aria-describedby warning.
+          aria-describedby={undefined}
+        >
+          <VisuallyHidden>
+            <DialogTitle>{businessName} photo gallery</DialogTitle>
+          </VisuallyHidden>
           <div className="relative h-full flex flex-col">
             {/* Close Button */}
             <Button

@@ -1,7 +1,8 @@
 "use client";
 
-import { Zap, Trophy, Clock, ChevronRight, LogIn } from "lucide-react";
+import { Zap, Trophy, Clock, ChevronRight, LogIn, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,20 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useActiveMissions, useMissionProgressDetails } from "@/hooks/useMissions";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  underlineTabsListClass,
+  underlineTabsTriggerClass,
+} from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
+import {
+  useActiveMissions,
+  useMissionProgressDetails,
+  useStartMission,
+} from "@/hooks/useMissions";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { MISSION_CONFIGS } from "@/types/mission";
 import type { MissionType, BoostMissionWithCategory, MissionProgressDetails } from "@/types/mission";
@@ -69,7 +82,8 @@ function MissionCardSkeleton() {
 
 function StatsSkeleton() {
   return (
-    <div className="grid sm:grid-cols-3 gap-4 mb-8">
+    <div className="grid sm:grid-cols-3 gap-4 mb-8" role="status" aria-busy="true">
+      <span className="sr-only">Loading mission stats…</span>
       {[1, 2, 3].map((i) => (
         <Card key={i}>
           <CardContent className="p-6 flex items-center gap-4">
@@ -89,9 +103,12 @@ interface ActiveMissionCardProps {
   mission: BoostMissionWithCategory;
   progressDetail?: MissionProgressDetails;
   index: number;
+  isLoggedIn: boolean;
 }
 
-function ActiveMissionCard({ mission, progressDetail, index }: ActiveMissionCardProps) {
+function ActiveMissionCard({ mission, progressDetail, index, isLoggedIn }: ActiveMissionCardProps) {
+  const startMission = useStartMission();
+  const hasStarted = !!progressDetail;
   const currentCount = progressDetail?.progress.current_count ?? 0;
   const targetCount = mission.target_count;
   const percentComplete = targetCount > 0 ? (currentCount / targetCount) * 100 : 0;
@@ -106,12 +123,25 @@ function ActiveMissionCard({ mission, progressDetail, index }: ActiveMissionCard
     daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
   }
 
+  const handleStart = async () => {
+    try {
+      await startMission.mutateAsync(mission.id);
+      toast.success("Mission started", {
+        description: "Check-ins and visits now count toward this mission.",
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message ? error.message : "Please try again.";
+      toast.error("Could not start mission", { description: message });
+    }
+  };
+
   return (
     <AnimatedSection animation="fade-up" delay={0.1 * (index + 2)}>
-      <Card className="group">
+      <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
-            <div className="text-5xl">{icon}</div>
+            <div className="text-5xl" aria-hidden="true">{icon}</div>
 
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -122,7 +152,7 @@ function ActiveMissionCard({ mission, progressDetail, index }: ActiveMissionCard
               <p className="text-muted-foreground mb-2">{mission.description}</p>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+                  <Clock className="h-3 w-3" aria-hidden="true" />
                   {formatDeadline(mission.end_date, daysRemaining)}
                 </span>
                 {mission.reward_description && (
@@ -133,16 +163,70 @@ function ActiveMissionCard({ mission, progressDetail, index }: ActiveMissionCard
 
             <div className="w-full md:w-48">
               <div className="flex justify-between text-sm mb-1">
-                <span>Progress</span>
-                <span className="font-medium">{currentCount}/{targetCount}</span>
+                <span id={`mission-progress-label-${mission.id}`}>Progress</span>
+                <span className="font-medium tabular-nums">
+                  {currentCount}/{targetCount}
+                </span>
               </div>
-              <Progress value={percentComplete} className="h-2 mb-3" />
-              <Button asChild className="w-full group" size="sm">
-                <Link href="/discover">
-                  {currentCount > 0 ? "Continue" : "Start"}
-                  <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
+              <Progress
+                value={percentComplete}
+                className="h-2 mb-3"
+                aria-label={`${mission.title} progress: ${currentCount} of ${targetCount}`}
+              />
+              {hasStarted ? (
+                <Button
+                  asChild
+                  className="w-full group"
+                  size="sm"
+                  aria-label={`Continue mission: ${mission.title}`}
+                >
+                  <Link href="/discover">
+                    Continue
+                    <ChevronRight
+                      className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </Button>
+              ) : isLoggedIn ? (
+                <Button
+                  className="w-full group"
+                  size="sm"
+                  onClick={handleStart}
+                  disabled={startMission.isPending}
+                  aria-label={`Start mission: ${mission.title}`}
+                >
+                  {startMission.isPending ? (
+                    <>
+                      <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden="true" />
+                      Starting…
+                    </>
+                  ) : (
+                    <>
+                      Start
+                      <ChevronRight
+                        className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
+                        aria-hidden="true"
+                      />
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  asChild
+                  className="w-full group"
+                  size="sm"
+                  aria-label={`Sign in to start mission: ${mission.title}`}
+                >
+                  <Link href="/login">
+                    Sign in to start
+                    <ChevronRight
+                      className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -170,27 +254,28 @@ export default function MissionsPage() {
     progressMap.set(detail.progress.mission_id, detail);
   }
 
-  // Stats computed from real data
+  // Stats computed from real data. "In progress" = missions the user has
+  // started (enrolled in) and not yet completed — count 0/3 still counts.
   const activeCount = activeMissions?.length ?? 0;
   const completedCount = allCompleted.length;
-  const inProgressCount = userActive?.filter((m) => m.progress.current_count > 0).length ?? 0;
+  const inProgressCount = userActive?.length ?? 0;
 
   return (
     <div className="relative min-h-screen">
       <Header />
 
-      <div className="pt-20 pb-12">
+      <div className="pt-28 pb-12">
         <div className="mx-auto max-w-6xl px-6">
           {/* Header */}
           <AnimatedSection animation="fade-up">
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-6 w-6 text-chart-3" />
-                <h1 className="text-3xl font-bold tracking-tight">
-                  Boost Missions
-                </h1>
-              </div>
-              <p className="text-muted-foreground">
+            <div className="mb-8 border-b border-border pb-6">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Challenges &amp; rewards
+              </p>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+                Boost Missions
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
                 Complete challenges, support local businesses, and unlock exclusive rewards
               </p>
             </div>
@@ -204,34 +289,45 @@ export default function MissionsPage() {
               <div className="grid sm:grid-cols-3 gap-4 mb-8">
                 <Card>
                   <CardContent className="p-6 flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-chart-3/10 flex items-center justify-center">
+                    <div
+                      className="h-12 w-12 rounded-xl bg-chart-3/10 flex items-center justify-center"
+                      aria-hidden="true"
+                    >
                       <Zap className="h-6 w-6 text-chart-3" />
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold">{activeCount}</div>
+                    {/* Label first in DOM so screen readers announce
+                        "Active Missions, 4"; reversed visually. */}
+                    <div className="flex flex-col-reverse">
                       <div className="text-xs text-muted-foreground">Active Missions</div>
+                      <div className="text-2xl font-bold tabular-nums">{activeCount}</div>
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6 flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-chart-5/10 flex items-center justify-center">
+                    <div
+                      className="h-12 w-12 rounded-xl bg-chart-5/10 flex items-center justify-center"
+                      aria-hidden="true"
+                    >
                       <Trophy className="h-6 w-6 text-chart-5" />
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold">{completedCount}</div>
+                    <div className="flex flex-col-reverse">
                       <div className="text-xs text-muted-foreground">Completed</div>
+                      <div className="text-2xl font-bold tabular-nums">{completedCount}</div>
                     </div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6 flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <div
+                      className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center"
+                      aria-hidden="true"
+                    >
                       <Clock className="h-6 w-6 text-primary" />
                     </div>
-                    <div>
-                      <div className="text-2xl font-bold">{inProgressCount}</div>
+                    <div className="flex flex-col-reverse">
                       <div className="text-xs text-muted-foreground">In Progress</div>
+                      <div className="text-2xl font-bold tabular-nums">{inProgressCount}</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -255,18 +351,23 @@ export default function MissionsPage() {
           {!missionsError && (
             <AnimatedSection animation="fade-up" delay={0.15}>
               <Tabs defaultValue="active" className="w-full">
-                <TabsList className="mb-6">
-                  <TabsTrigger value="active">Active Missions</TabsTrigger>
-                  <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsList className={cn(underlineTabsListClass, "mb-6")}>
+                  <TabsTrigger value="active" className={underlineTabsTriggerClass}>
+                    Active Missions
+                  </TabsTrigger>
+                  <TabsTrigger value="completed" className={underlineTabsTriggerClass}>
+                    Completed
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="active" className="space-y-4">
                   {isLoading ? (
-                    <>
+                    <div className="space-y-4" role="status" aria-busy="true">
+                      <span className="sr-only">Loading missions…</span>
                       <MissionCardSkeleton />
                       <MissionCardSkeleton />
                       <MissionCardSkeleton />
-                    </>
+                    </div>
                   ) : activeMissions && activeMissions.length > 0 ? (
                     activeMissions.map((mission, index) => (
                       <ActiveMissionCard
@@ -274,6 +375,7 @@ export default function MissionsPage() {
                         mission={mission}
                         progressDetail={progressMap.get(mission.id)}
                         index={index}
+                        isLoggedIn={isLoggedIn}
                       />
                     ))
                   ) : (
@@ -304,17 +406,18 @@ export default function MissionsPage() {
                       </CardContent>
                     </Card>
                   ) : progressLoading ? (
-                    <>
+                    <div className="space-y-4" role="status" aria-busy="true">
+                      <span className="sr-only">Loading completed missions…</span>
                       <MissionCardSkeleton />
                       <MissionCardSkeleton />
-                    </>
+                    </div>
                   ) : allCompleted.length > 0 ? (
                     allCompleted.map((detail, index) => (
                       <AnimatedSection key={detail.progress.id} animation="fade-up" delay={0.1 * (index + 2)}>
                         <Card className="bg-muted/30">
                           <CardContent className="p-6">
                             <div className="flex items-center gap-6">
-                              <div className="text-5xl opacity-50">
+                              <div className="text-5xl opacity-50" aria-hidden="true">
                                 {getMissionIcon(detail.progress.mission.mission_type as MissionType)}
                               </div>
                               <div className="flex-1">
@@ -335,7 +438,7 @@ export default function MissionsPage() {
                                   )}
                                 </div>
                               </div>
-                              <Trophy className="h-8 w-8 text-chart-5" />
+                              <Trophy className="h-8 w-8 text-chart-5" aria-hidden="true" />
                             </div>
                           </CardContent>
                         </Card>

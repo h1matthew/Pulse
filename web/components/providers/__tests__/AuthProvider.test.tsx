@@ -26,6 +26,13 @@ vi.mock('@/lib/supabase/client', () => ({
   })),
 }))
 
+// Controllable hydration state — true (regular client render) by default so
+// the pre-existing tests behave as before.
+const mockHydrated = vi.hoisted(() => ({ value: true }))
+vi.mock('@/hooks/useHydrated', () => ({
+  useHydrated: () => mockHydrated.value,
+}))
+
 // Test component to consume the auth context
 function TestConsumer() {
   const { isLoggedIn, isAdmin, loading, userId, user } = useAuth()
@@ -43,6 +50,7 @@ function TestConsumer() {
 describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockHydrated.value = true
 
     // Default mock setup
     mockOnAuthStateChange.mockReturnValue({
@@ -192,6 +200,18 @@ describe('AuthProvider', () => {
 })
 
 describe('useAuth', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockHydrated.value = true
+    mockOnAuthStateChange.mockReturnValue({
+      data: { subscription: { unsubscribe: mockUnsubscribe } },
+    })
+    mockFrom.mockReturnValue({ select: mockSelect, upsert: mockUpsert })
+    mockSelect.mockReturnValue({ eq: mockEq })
+    mockEq.mockReturnValue({ single: mockSingle })
+    mockUpsert.mockResolvedValue({ data: null, error: null })
+  })
+
   it('returns default context values when used outside AuthProvider', () => {
     // The AuthProvider uses a default context value, so it doesn't throw
     // Instead, it returns the default values
@@ -202,5 +222,66 @@ describe('useAuth', () => {
     expect(screen.getByTestId('isAdmin').textContent).toBe('no')
     expect(screen.getByTestId('loading').textContent).toBe('loading')
     expect(screen.getByTestId('userId').textContent).toBe('null')
+  })
+
+  it('masks resolved auth state during hydration renders', async () => {
+    // Regression: Supabase resolves the session from storage in a
+    // root-commit effect, which can land before a deferred Suspense boundary
+    // hydrates. Consumers rendering during hydration must keep seeing the
+    // signed-out/loading state the server HTML was rendered with.
+    mockHydrated.value = false
+    const mockUser = { id: 'user-123', email: 'test@example.com' }
+    mockGetUser.mockResolvedValue({ data: { user: mockUser } })
+    mockSingle.mockResolvedValue({ data: { is_admin: true }, error: null })
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    )
+
+    // Wait until the provider's internal state has definitely updated (the
+    // profile fetch only happens after the user state lands)...
+    await waitFor(() => {
+      expect(mockSingle).toHaveBeenCalled()
+    })
+
+    // ...and the consumer still reports the server-render state.
+    expect(screen.getByTestId('isLoggedIn').textContent).toBe('no')
+    expect(screen.getByTestId('isAdmin').textContent).toBe('no')
+    expect(screen.getByTestId('loading').textContent).toBe('loading')
+    expect(screen.getByTestId('userId').textContent).toBe('null')
+  })
+
+  it('reports the real auth state once hydration completes', async () => {
+    mockHydrated.value = false
+    const mockUser = { id: 'user-123', email: 'test@example.com' }
+    mockGetUser.mockResolvedValue({ data: { user: mockUser } })
+    mockSingle.mockResolvedValue({ data: { is_admin: true }, error: null })
+
+    const { rerender } = render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    )
+
+    await waitFor(() => {
+      expect(mockSingle).toHaveBeenCalled()
+    })
+    expect(screen.getByTestId('isLoggedIn').textContent).toBe('no')
+
+    // Hydration finishes — the very next render unmasks the real state.
+    mockHydrated.value = true
+    rerender(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('isLoggedIn').textContent).toBe('yes')
+    })
+    expect(screen.getByTestId('isAdmin').textContent).toBe('yes')
+    expect(screen.getByTestId('userId').textContent).toBe('user-123')
   })
 })

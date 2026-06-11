@@ -245,7 +245,7 @@ export function Header() {
     <header
       className={cn(
         "fixed left-0 right-0 z-50 transition-all duration-300 ease-out",
-        isCompact ? "top-2 px-3" : "top-4 px-4",
+        isCompact ? "top-3 px-3" : "top-6 px-4",
         isHidden && "-translate-y-full opacity-0"
       )}
       onMouseEnter={() => setHovered(true)}

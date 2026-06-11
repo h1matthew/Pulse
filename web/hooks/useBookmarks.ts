@@ -40,7 +40,8 @@
  * ============================================================================
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useHydrationSafeQuery } from '@/hooks/useHydrationSafeQuery'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { getLocalBookmarkIds, toggleLocalBookmark } from '@/lib/bookmarks/local'
 import type { BusinessBookmark, BookmarkWithBusiness } from '@/types/business'
@@ -133,7 +134,7 @@ async function updateBookmarkNote(businessId: string, note: string): Promise<Bus
 // ============================================================================
 
 export function useUserBookmarks(userId: string) {
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: bookmarkKeys.user(userId),
     queryFn: () => fetchUserBookmarks(userId),
     enabled: !!userId,
@@ -147,7 +148,7 @@ export function useUserBookmarks(userId: string) {
  */
 export function useBookmarkedIds() {
   const scope = useBookmarkScope()
-  return useQuery({
+  return useHydrationSafeQuery({
     queryKey: bookmarkKeys.ids(scope),
     queryFn: scope === 'server' ? fetchBookmarkedIds : () => getLocalBookmarkIds(),
     // localStorage reads are free — always re-read; server ids cache for 2 min
