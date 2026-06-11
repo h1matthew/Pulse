@@ -282,7 +282,7 @@ export function Header() {
             <span
               className={cn(
                 "font-semibold tracking-tight transition-all duration-300",
-                isCompact ? "text-sm" : "text-base",
+                isCompact ? "text-base" : "text-lg",
                 isCompact && "hidden sm:inline"
               )}
             >
