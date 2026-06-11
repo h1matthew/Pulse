@@ -1,9 +1,9 @@
 /**
  * @vitest-environment jsdom
  */
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { toast } from "sonner";
 import DiscoverPage from "../page";
 import type { BusinessWithCategory } from "@/types/business";
@@ -95,8 +95,25 @@ vi.mock("@/hooks/useBookmarks", () => ({
   useToggleBookmark: () => ({ mutateAsync: mockToggleBookmark, isPending: false }),
 }));
 
+let mockAuthUserId: string | null = null;
 vi.mock("@/components/providers/AuthProvider", () => ({
-  useAuth: () => ({ user: null }),
+  useAuth: () => ({
+    user: mockAuthUserId ? { id: mockAuthUserId } : null,
+    userId: mockAuthUserId,
+    isLoggedIn: !!mockAuthUserId,
+    loading: false,
+  }),
+}));
+
+// Started missions surfaced as a context banner when their category matches
+let mockStartedMissions: unknown[] = [];
+vi.mock("@/hooks/useMissions", () => ({
+  useMissionProgressDetails: () => ({
+    activeMissions: mockStartedMissions,
+    completedMissions: [],
+    claimedMissions: [],
+    isLoading: false,
+  }),
 }));
 
 // Deterministic open-now: driven entirely by the mock data, never wall-clock.
@@ -238,6 +255,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   // mockClear keeps implementations — reset so resolved values never leak between tests
   mockToggleBookmark.mockReset();
+  mockAuthUserId = null;
+  mockStartedMissions = [];
 });
 
 async function renderPage() {
@@ -260,6 +279,109 @@ describe("DiscoverPage", () => {
     expect(screen.getByText("2 places")).toBeInTheDocument();
     expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
     expect(screen.getByText("Round1 Arcade")).toBeInTheDocument();
+  });
+
+  it("pre-selects the category from the ?category= search param", async () => {
+    // use(searchParams) suspends until the promise settles
+    await act(async () => {
+      render(
+        <React.Suspense fallback={null}>
+          <DiscoverPage searchParams={Promise.resolve({ category: "retail" })} />
+        </React.Suspense>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Discover places nearby" })).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: "Filter by Retail" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    expect(screen.getByRole("button", { name: "Filter by All" })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+  });
+
+  it("shows a mission banner when a started mission matches the category filter", async () => {
+    mockAuthUserId = "user-1";
+    mockStartedMissions = [
+      {
+        progress: {
+          id: "progress-1",
+          current_count: 1,
+          mission: {
+            id: "mission-1",
+            title: "Coffee Explorer",
+            target_count: 3,
+            category: { slug: "food-drink", name: "Food & Drink" },
+          },
+        },
+        percentageComplete: 33,
+      },
+    ];
+
+    await act(async () => {
+      render(
+        <React.Suspense fallback={null}>
+          <DiscoverPage searchParams={Promise.resolve({ category: "food-drink" })} />
+        </React.Suspense>
+      );
+    });
+
+    expect(screen.getByText("Mission: Coffee Explorer")).toBeInTheDocument();
+    expect(screen.getByText("1/3")).toBeInTheDocument();
+    expect(screen.getByText(/check in with your receipt/i)).toBeInTheDocument();
+  });
+
+  it("hides the mission banner when the category does not match", async () => {
+    mockAuthUserId = "user-1";
+    mockStartedMissions = [
+      {
+        progress: {
+          id: "progress-1",
+          current_count: 1,
+          mission: {
+            id: "mission-1",
+            title: "Coffee Explorer",
+            target_count: 3,
+            category: { slug: "food-drink", name: "Food & Drink" },
+          },
+        },
+        percentageComplete: 33,
+      },
+    ];
+
+    await act(async () => {
+      render(
+        <React.Suspense fallback={null}>
+          <DiscoverPage searchParams={Promise.resolve({ category: "retail" })} />
+        </React.Suspense>
+      );
+    });
+
+    expect(screen.queryByText("Mission: Coffee Explorer")).not.toBeInTheDocument();
+  });
+
+  it("ignores unknown ?category= values and falls back to All", async () => {
+    await act(async () => {
+      render(
+        <React.Suspense fallback={null}>
+          <DiscoverPage searchParams={Promise.resolve({ category: "not-a-category" })} />
+        </React.Suspense>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Discover places nearby" })).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("button", { name: "Filter by All" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
   });
 
   it("does not render the old explainer-heavy discover copy", async () => {

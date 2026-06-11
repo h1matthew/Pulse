@@ -38,9 +38,18 @@ function isDemoStatsEnabled(): boolean {
   const override = parseBoolean(process.env.PULSE_ENABLE_DEMO_STATS)
   if (override != null) return override
 
-  // Enabled by default for demo presentations; tests stay deterministic.
-  if (process.env.NODE_ENV === 'test') return false
-  return true
+  // Off unless explicitly enabled: real users must see real data. Set
+  // PULSE_ENABLE_DEMO_STATS=true (optionally with PULSE_DEMO_ACCOUNT_ID or
+  // PULSE_DEMO_ACCOUNT_EMAIL to target one account) for presentations.
+  return false
+}
+
+/**
+ * Gate for non-user-specific demo content (e.g. fallback demo deals).
+ * Same env switch as demo stats: off unless PULSE_ENABLE_DEMO_STATS=true.
+ */
+export function isDemoContentEnabled(): boolean {
+  return isDemoStatsEnabled()
 }
 
 function getTargetedDemoAccounts() {
