@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { KNOWN_CHAINS, isChainBusiness } from '../classify'
+import {
+  KNOWN_CHAINS,
+  LARGE_FORMAT_PLACE_TYPES,
+  isChainBusiness,
+  isLikelySmallBusiness,
+} from '../classify'
 
 describe('KNOWN_CHAINS', () => {
   it('contains a thorough curated list (120+ entries)', () => {
@@ -160,5 +165,98 @@ describe('isChainBusiness', () => {
         isChainBusiness({ name: 'Little Skewer', tags: ['fast_food_restaurant'] })
       ).toBe(false)
     })
+  })
+})
+
+describe('national + Texas chains', () => {
+  it.each([
+    'Whataburger',
+    'Whataburger #842',
+    'Bill Miller Bar-B-Q',
+    'Taco Cabana',
+    "P. Terry's Burger Stand",
+    "Torchy's Tacos",
+    'H-E-B',
+    'H-E-B plus!',
+    "Buc-ee's",
+    'Cracker Barrel Old Country Store',
+    'Texas Roadhouse',
+    'Dollar General',
+    'Aldi',
+  ])('classifies "%s" as a chain', (name) => {
+    expect(isChainBusiness({ name })).toBe(true)
+  })
+
+  it('does not over-match independent Texas spots', () => {
+    expect(isChainBusiness({ name: 'The Cookhouse' })).toBe(false)
+    expect(isChainBusiness({ name: 'Mi Tierra Cafe y Panaderia' })).toBe(false)
+    expect(isChainBusiness({ name: 'Tacos El Regio' })).toBe(false)
+  })
+})
+
+describe('isLikelySmallBusiness', () => {
+  it('accepts an independent local business', () => {
+    expect(
+      isLikelySmallBusiness({
+        name: 'Mi Tierra Cafe y Panaderia',
+        types: ['mexican_restaurant', 'restaurant'],
+        userRatingCount: 1200,
+      })
+    ).toBe(true)
+  })
+
+  it('rejects known chains by name', () => {
+    expect(
+      isLikelySmallBusiness({ name: 'Whataburger', types: ['hamburger_restaurant'] })
+    ).toBe(false)
+  })
+
+  it('rejects large-format place types even without a chain name', () => {
+    for (const type of LARGE_FORMAT_PLACE_TYPES) {
+      expect(
+        isLikelySmallBusiness({ name: 'Generic Big Place', types: [type] })
+      ).toBe(false)
+    }
+  })
+
+  it('rejects very high-volume operations', () => {
+    expect(
+      isLikelySmallBusiness({
+        name: 'Famous Tourist Spot',
+        types: ['restaurant'],
+        userRatingCount: 20000,
+      })
+    ).toBe(false)
+  })
+
+  it('rejects high-traffic operations just over the tightened ceiling', () => {
+    expect(
+      isLikelySmallBusiness({
+        name: 'Always Packed Diner',
+        types: ['restaurant'],
+        userRatingCount: 2500,
+      })
+    ).toBe(false)
+  })
+
+  it('rejects newly added big-box place types', () => {
+    for (const type of ['hardware_store', 'furniture_store', 'home_goods_store', 'discount_store']) {
+      expect(
+        isLikelySmallBusiness({ name: 'Generic Big Place', types: [type] })
+      ).toBe(false)
+    }
+  })
+
+  it('treats missing review count as acceptable', () => {
+    expect(
+      isLikelySmallBusiness({ name: 'New Corner Cafe', types: ['cafe'] })
+    ).toBe(true)
+  })
+
+  it('defensively rejects malformed input', () => {
+    expect(isLikelySmallBusiness({ name: '' })).toBe(true) // empty name is not a chain; no types/volume
+    expect(
+      isLikelySmallBusiness({ name: undefined as unknown as string })
+    ).toBe(false)
   })
 })

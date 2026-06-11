@@ -163,6 +163,7 @@ CREATE TABLE IF NOT EXISTS businesses (
   owner_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   is_verified BOOLEAN DEFAULT FALSE,
   is_featured BOOLEAN DEFAULT FALSE,
+  is_chain BOOLEAN NOT NULL DEFAULT FALSE, -- national/regional chain vs. independent (drives the "Independent" filter + sync)
   price_range INTEGER CHECK (price_range >= 1 AND price_range <= 4),
   tags JSONB DEFAULT '[]',
   amenities JSONB DEFAULT '[]',

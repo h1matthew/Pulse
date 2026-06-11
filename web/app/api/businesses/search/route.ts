@@ -54,6 +54,7 @@ export async function GET(request: Request) {
         tags: business.tags,
         name: business.name,
         is_chain: business.is_chain,
+        review_count: business.review_count,
       })
     )
 

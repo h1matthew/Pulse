@@ -32,7 +32,7 @@ import {
   getBusinessReviewLabel,
 } from "@/lib/business/display";
 import { NavLink } from "@/components/ui/nav-link";
-import { getCachedLocation, geocodeZipCode, cacheLocation, cacheLocationSource, getCachedLocationSource } from "@/lib/location";
+import { getCachedLocation, cacheLocation, cacheLocationSource, getCachedLocationSource } from "@/lib/location";
 import { isOpenNow } from "@/lib/business/hours";
 import { isChainBusiness } from "@/lib/business/classify";
 import { ChangeLocationDialog } from "@/components/features/discover/ChangeLocationDialog";
@@ -40,26 +40,34 @@ import { cn } from "@/lib/utils";
 import type { BusinessWithCategory } from "@/types/business";
 import type { LatLng } from "@/types/business";
 
+// Search radius is expressed to the user in miles; the nearby API takes meters,
+// so the page converts on the way out (see MILES_TO_METERS).
 const RADIUS_OPTIONS = [
-  { value: 10000, label: '10 km' },
-  { value: 15000, label: '15 km' },
-  { value: 20000, label: '20 km' },
-  { value: 25000, label: '25 km' },
+  { value: 5, label: '5 mi' },
+  { value: 10, label: '10 mi' },
+  { value: 15, label: '15 mi' },
+  { value: 20, label: '20 mi' },
+  { value: 25, label: '25 mi' },
 ]
+const MIN_RADIUS_MILES = 5
+const MAX_RADIUS_MILES = 25
+const DEFAULT_RADIUS_MILES = 10
+const MILES_TO_METERS = 1609.34
 
-// Default location: Diamond Bar, CA
-const DIAMOND_BAR_DEFAULT: LatLng = { lat: 34.0286, lng: -117.8208 };
+// Default location: San Antonio, TX (Pulse seeds this metro most densely)
+const SAN_ANTONIO_DEFAULT: LatLng = { lat: 29.4252, lng: -98.4946 };
 
 const PRICE_LEVELS = [1, 2, 3, 4] as const;
 
 /**
- * Independent vs. chain: prefer the server-populated `is_chain` flag when it
- * is a definite boolean; fall back to name-based classification when null or
- * undefined (older rows that have not been backfilled yet).
+ * Independent vs. chain. A stored `is_chain=true` is authoritative (always a
+ * chain), but a stored `is_chain=false` is NOT trusted to force-include: the
+ * sync/seed pipeline writes false on every row, so we always re-check the name
+ * against the curated chain list. This keeps brands added to the list after a
+ * row was synced (e.g. Dave's Hot Chicken) from slipping through as independent.
  */
 function isIndependentBusiness(business: BusinessWithCategory): boolean {
   if (business.is_chain === true) return false;
-  if (business.is_chain === false) return true;
   return !isChainBusiness({ name: business.name, tags: business.tags ?? undefined });
 }
 
@@ -320,10 +328,9 @@ export default function DiscoverPage() {
   const [selectedPrices, setSelectedPrices] = useState<number[]>([])
   const [highRatedOnly, setHighRatedOnly] = useState(false)
   const [sbaOnly, setSbaOnly] = useState(false)
-  const [radius, setRadius] = useState(10000)
+  const [radiusMiles, setRadiusMiles] = useState(DEFAULT_RADIUS_MILES)
   const [location, setLocation] = useState<LatLng | null>(null)
   const [locationSource, setLocationSource] = useState<'gps' | 'zip' | null>(null)
-  const [isLoadingZip, setIsLoadingZip] = useState(false)
   const [locationLabel, setLocationLabel] = useState('')
   const [changeLocationOpen, setChangeLocationOpen] = useState(false)
 
@@ -336,13 +343,16 @@ export default function DiscoverPage() {
     permission,
   } = useLocation()
 
+  // The API works in meters; the UI works in miles.
+  const radiusMeters = Math.round(radiusMiles * MILES_TO_METERS)
+
   // Fetch businesses based on location
   const {
     data: businesses,
     isLoading: businessesLoading,
     error: businessesError,
     refetch,
-  } = useNearbyBusinesses(location, radius)
+  } = useNearbyBusinesses(location, radiusMeters)
   const { data: bookmarkedIds } = useBookmarkedIds()
 
   // Try to get cached location on mount, fall back to Diamond Bar for demo
@@ -358,7 +368,7 @@ export default function DiscoverPage() {
         setLocationSource('gps')
       }
     } else {
-      setLocation(DIAMOND_BAR_DEFAULT)
+      setLocation(SAN_ANTONIO_DEFAULT)
       setLocationSource('zip')
       setLocationLabel('')
     }
@@ -376,11 +386,6 @@ export default function DiscoverPage() {
     }
   }, [gpsLocation])
 
-  // Demo default: never allow below 10 km.
-  useEffect(() => {
-    setRadius((currentRadius) => Math.max(10000, currentRadius))
-  }, [])
-
   // Handle location errors
   useEffect(() => {
     if (locationError) {
@@ -390,34 +395,21 @@ export default function DiscoverPage() {
     }
   }, [locationError])
 
-  // Handle zip code search
-  const handleZipSearch = useCallback(async (zipCode: string) => {
-    setIsLoadingZip(true)
-    try {
-      const coords = await geocodeZipCode(zipCode)
-      if (coords) {
-        setLocation(coords)
-        setLocationSource('zip')
-        setLocationLabel(zipCode)
-        cacheLocation(coords)
-        cacheLocationSource('zip', zipCode)
-        setChangeLocationOpen(false)
-        toast.success('Location updated', {
-          description: `Showing businesses near ${zipCode}`,
-        })
-      } else {
-        toast.error('Invalid zip code', {
-          description: 'Could not find location for that zip code.',
-        })
-      }
-    } catch {
-      toast.error('Error', {
-        description: 'Failed to search zip code. Please try again.',
+  // Handle a resolved city/zip selection from the autocomplete search box.
+  const handleLocationSelect = useCallback(
+    ({ location: coords, label }: { location: LatLng; label: string }) => {
+      setLocation(coords)
+      setLocationSource('zip')
+      setLocationLabel(label)
+      cacheLocation(coords)
+      cacheLocationSource('zip', label)
+      setChangeLocationOpen(false)
+      toast.success('Location updated', {
+        description: `Showing businesses near ${label}`,
       })
-    } finally {
-      setIsLoadingZip(false)
-    }
-  }, [])
+    },
+    []
+  )
 
   // Request GPS location
   const handleAllowLocation = useCallback(() => {
@@ -575,7 +567,7 @@ export default function DiscoverPage() {
         ).toFixed(1)
       : "0.0";
 
-  const isLoading = locationLoading || businessesLoading || isLoadingZip
+  const isLoading = locationLoading || businessesLoading
   const hasLocation = !!location
   const showLocationPrompt = !hasLocation && !locationLoading
   const resultCountLabel = isLoading
@@ -587,9 +579,9 @@ export default function DiscoverPage() {
       ? 'Current location'
       : locationLabel
         ? `Near ${locationLabel}`
-        : 'Near Diamond Bar'
+        : 'Near San Antonio'
   const locationControlLabel =
-    locationSource === 'gps' ? 'Current location' : locationLabel || 'Diamond Bar'
+    locationSource === 'gps' ? 'Current location' : locationLabel || 'San Antonio'
   const categoryLabel =
     selectedCategory === 'bookmarks'
       ? 'Bookmarks'
@@ -620,7 +612,7 @@ export default function DiscoverPage() {
                   {ratingSummaryLabel}
                 </span>
                 <span className="rounded-md border border-border bg-card px-3 py-2 text-muted-foreground">
-                  {radius / 1000} km
+                  {radiusMiles} mi
                 </span>
               </div>
             </AnimatedSection>
@@ -630,7 +622,7 @@ export default function DiscoverPage() {
           {showLocationPrompt && (
             <LocationPrompt
               onAllowLocation={handleAllowLocation}
-              onSearchZip={handleZipSearch}
+              onSelectLocation={handleLocationSelect}
               permission={permission}
               isLoading={locationLoading}
             />
@@ -784,13 +776,13 @@ export default function DiscoverPage() {
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      onClick={() => setRadius((r) => Math.max(10000, r - 5000))}
-                      disabled={radius <= 10000}
+                      onClick={() => setRadiusMiles((r) => Math.max(MIN_RADIUS_MILES, r - 5))}
+                      disabled={radiusMiles <= MIN_RADIUS_MILES}
                       aria-label="Decrease search radius"
                     >
                       <Minus className="h-3 w-3" aria-hidden="true" />
                     </Button>
-                    <Select value={radius.toString()} onValueChange={(v) => setRadius(Number(v))}>
+                    <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
                       <SelectTrigger className="h-8 w-[96px]" aria-label="Search radius">
                         <SelectValue />
                       </SelectTrigger>
@@ -805,8 +797,8 @@ export default function DiscoverPage() {
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      onClick={() => setRadius((r) => Math.min(25000, r + 5000))}
-                      disabled={radius >= 25000}
+                      onClick={() => setRadiusMiles((r) => Math.min(MAX_RADIUS_MILES, r + 5))}
+                      disabled={radiusMiles >= MAX_RADIUS_MILES}
                       aria-label="Increase search radius"
                     >
                       <Plus className="h-3 w-3" aria-hidden="true" />
@@ -859,8 +851,8 @@ export default function DiscoverPage() {
                         Clear filters
                       </Button>
                     )}
-                    {!searchQuery && radius < 25000 && (
-                      <Button onClick={() => setRadius(25000)}>Use 25 km</Button>
+                    {!searchQuery && radiusMiles < MAX_RADIUS_MILES && (
+                      <Button onClick={() => setRadiusMiles(MAX_RADIUS_MILES)}>Use 25 mi</Button>
                     )}
                   </div>
                 </div>
@@ -884,9 +876,8 @@ export default function DiscoverPage() {
       <ChangeLocationDialog
         open={changeLocationOpen}
         onOpenChange={setChangeLocationOpen}
-        onSearchZip={handleZipSearch}
+        onSelectLocation={handleLocationSelect}
         onUseGps={handleAllowLocation}
-        initialZip={locationSource === 'zip' ? locationLabel : undefined}
         gpsDisabled={permission === 'denied' || locationLoading}
       />
     </div>

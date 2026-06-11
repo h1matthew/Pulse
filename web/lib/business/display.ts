@@ -1,4 +1,8 @@
-import { isChainBusiness } from "./classify";
+import {
+  isChainBusiness,
+  LARGE_FORMAT_PLACE_TYPES,
+  SMALL_BUSINESS_REVIEW_CEILING,
+} from "./classify";
 
 export interface BusinessSummaryInput {
   name: string;
@@ -30,6 +34,7 @@ export interface RealBusinessRecordInput {
   tags?: string[] | null;
   name?: string | null;
   is_chain?: boolean | null;
+  review_count?: number | null;
 }
 
 export interface BusinessPhotoOptions {
@@ -208,16 +213,32 @@ export function isRealBusinessPlaceTypes(types?: string[] | null): boolean {
 
 export function isRealBusinessRecord(input: RealBusinessRecordInput): boolean {
   // Pulse only surfaces independent small businesses — exclude chains and
-  // franchises regardless of where the record came from. The database flag
-  // wins when set; otherwise fall back to name-based classification.
+  // franchises regardless of where the record came from.
   if (input.is_chain === true) {
     return false;
   }
-  if (
-    input.is_chain !== false &&
-    input.name &&
-    isChainBusiness({ name: input.name, tags: input.tags ?? undefined })
-  ) {
+  // Re-derive chain status from the name on every read. We deliberately do NOT
+  // let a stored is_chain=false short-circuit this: the sync/seed pipeline writes
+  // is_chain=false on every row it inserts, so a stale false (written before a
+  // brand was added to the chain list) must never be allowed to resurface a
+  // chain. The stored flag can force-exclude (is_chain=true) but cannot force-include.
+  if (input.name && isChainBusiness({ name: input.name, tags: input.tags ?? undefined })) {
+    return false;
+  }
+
+  // Reject big-box / large-format operations (car dealers, supermarkets, malls,
+  // warehouse clubs, gas stations…) by place type, regardless of data source.
+  // The sync pipeline applies this via isLikelySmallBusiness, but historical or
+  // seeded rows can predate that filter — so enforce it again at display time.
+  if (normalizePlaceTypes(input.tags).some((type) => LARGE_FORMAT_PLACE_TYPES.has(type))) {
+    return false;
+  }
+
+  // High review volume signals a large, high-traffic, or touristy operation, not
+  // a neighborhood independent. The sync pipeline applies this via
+  // isLikelySmallBusiness, but seeded/historical rows can predate that filter —
+  // so enforce the same ceiling again at display time.
+  if ((input.review_count ?? 0) > SMALL_BUSINESS_REVIEW_CEILING) {
     return false;
   }
 

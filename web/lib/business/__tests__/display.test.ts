@@ -205,12 +205,26 @@ describe("business display helpers", () => {
       ).toBe(false);
     });
 
-    it("trusts an explicit is_chain=false over name heuristics", () => {
+    it("does not let a stored is_chain=false resurface a name-classified chain", () => {
+      // The sync/seed pipeline writes is_chain=false on every inserted row, so a
+      // stored false must never override the curated chain list. A chain whose
+      // brand was added to the list after it was synced must still be excluded.
+      expect(
+        isRealBusinessRecord({
+          data_source: "google",
+          tags: ["restaurant"],
+          name: "Dave's Hot Chicken",
+          is_chain: false,
+        })
+      ).toBe(false);
+    });
+
+    it("keeps an independent business that carries a stored is_chain=false", () => {
       expect(
         isRealBusinessRecord({
           data_source: "user_added",
           tags: [],
-          name: "Subway Tile Studio",
+          name: "Maria's Taqueria",
           is_chain: false,
         })
       ).toBe(true);
@@ -234,6 +248,72 @@ describe("business display helpers", () => {
           name: "River Walk Coffee",
         })
       ).toBe(true);
+    });
+
+    it("filters car dealerships by place type", () => {
+      expect(
+        isRealBusinessRecord({
+          data_source: "google",
+          tags: ["car_dealer", "store"],
+          name: "Longo Toyota",
+        })
+      ).toBe(false);
+    });
+
+    it("filters big-box place types regardless of data source", () => {
+      for (const type of [
+        "supermarket",
+        "shopping_mall",
+        "warehouse_store",
+        "gas_station",
+      ]) {
+        expect(
+          isRealBusinessRecord({
+            data_source: "osm",
+            tags: [type],
+            name: "Some Big Place",
+          })
+        ).toBe(false);
+      }
+    });
+
+    it("filters high-review-volume operations regardless of data source", () => {
+      expect(
+        isRealBusinessRecord({
+          data_source: "google",
+          tags: ["restaurant"],
+          name: "Always Packed Diner",
+          review_count: 5000,
+        })
+      ).toBe(false);
+    });
+
+    it("keeps a small business under the review ceiling", () => {
+      expect(
+        isRealBusinessRecord({
+          data_source: "google",
+          tags: ["restaurant"],
+          name: "Corner Bistro",
+          review_count: 320,
+        })
+      ).toBe(true);
+    });
+
+    it("filters fast-growing franchises by name", () => {
+      expect(
+        isRealBusinessRecord({
+          data_source: "google",
+          tags: ["restaurant"],
+          name: "Dave's Hot Chicken",
+        })
+      ).toBe(false);
+      expect(
+        isRealBusinessRecord({
+          data_source: "google",
+          tags: ["restaurant"],
+          name: "Dave's Hot Chicken - Diamond Bar",
+        })
+      ).toBe(false);
     });
   });
 

@@ -57,6 +57,13 @@ const RAW_CHAINS: string[] = [
   'five guys',
   'shake shack',
   'the habit burger grill',
+  "dave's hot chicken",
+  'sweetgreen',
+  'mendocino farms',
+  'the halal guys',
+  'noodles & company',
+  "zaxby's",
+  'bojangles',
   // Casual dining
   'buffalo wild wings',
   "denny's",
@@ -193,7 +200,122 @@ const RAW_CHAINS: string[] = [
   'at&t',
   'metro by t-mobile',
   'cricket wireless',
+  // National casual/QSR chains (common outside CA — added for nationwide seeding)
+  'whataburger',
+  'waffle house',
+  'cracker barrel',
+  'texas roadhouse',
+  'outback steakhouse',
+  'red lobster',
+  'longhorn steakhouse',
+  "chili's grill & bar",
+  'cheesecake factory',
+  "p.f. chang's",
+  "chuy's",
+  'golden corral',
+  "culver's",
+  "freddy's",
+  'jersey mike',
+  "jersey mike's",
+  'firehouse subs',
+  "jimmy john's",
+  "moe's southwest grill",
+  'qdoba',
+  "marco's pizza",
+  "jason's deli",
+  "schlotzsky's",
+  "mcalister's deli",
+  'tropical smoothie cafe',
+  'smoothie king',
+  'crumbl',
+  "dave & buster's",
+  'topgolf',
+  // Big-box / grocery / discount
+  'dollar general',
+  'dollar tree',
+  'family dollar',
+  'big lots',
+  'aldi',
+  'kroger',
+  'safeway',
+  'publix',
+  // Texas / San Antonio regional chains
+  'bill miller bar-b-q',
+  "bill miller's",
+  'bill miller',
+  'taco cabana',
+  "p. terry's",
+  "p terry's",
+  'torchy',
+  "torchy's tacos",
+  'h-e-b',
+  'h e b',
+  "pappadeaux",
+  "pappasito's",
+  "pappas",
+  'buc-ee',
+  "buc-ee's",
+  'rudy',
+  "rudy's bar-b-q",
 ]
+
+/**
+ * Google place types that signal a large-format / big-box operation rather than
+ * a small local business. Used by isLikelySmallBusiness to exclude warehouse
+ * clubs, supermarkets, malls, dealerships, and branded fuel stops even when the
+ * specific brand name is not in the curated chain list above.
+ */
+export const LARGE_FORMAT_PLACE_TYPES = new Set<string>([
+  'department_store',
+  'supermarket',
+  'shopping_mall',
+  'warehouse_store',
+  'wholesaler',
+  'home_improvement_store',
+  'hardware_store',
+  'furniture_store',
+  'home_goods_store',
+  'discount_store',
+  'car_dealer',
+  'gas_station',
+])
+
+/**
+ * Above this review count, a place is almost certainly a large, high-traffic, or
+ * touristy operation rather than a neighborhood independent. Kept deliberately
+ * tight so Pulse surfaces genuinely small local businesses.
+ */
+export const SMALL_BUSINESS_REVIEW_CEILING = 1500
+
+export interface SmallBusinessInput {
+  name: string
+  types?: string[] | null
+  userRatingCount?: number | null
+}
+
+/**
+ * Stronger "is this a genuinely small local business?" test than the chain-name
+ * check alone. A place is treated as a small business only when ALL hold:
+ *   - its name is not a known chain/franchise, AND
+ *   - none of its Google place types are large-format (big-box, mall, dealer…), AND
+ *   - its review count is below the large-operation ceiling.
+ * This is what the seed/sync pipelines use so Pulse surfaces independent shops,
+ * not just anything that lacks a chain name.
+ */
+export function isLikelySmallBusiness(input: SmallBusinessInput): boolean {
+  if (!input || typeof input.name !== 'string') return false
+  if (isChainBusiness({ name: input.name, tags: input.types ?? undefined })) {
+    return false
+  }
+  const types = (input.types ?? []).map((t) => t.toLowerCase())
+  if (types.some((t) => LARGE_FORMAT_PLACE_TYPES.has(t))) {
+    return false
+  }
+  if ((input.userRatingCount ?? 0) > SMALL_BUSINESS_REVIEW_CEILING) {
+    return false
+  }
+  return true
+}
 
 /**
  * Light normalization: lowercase, unify apostrophes/dashes/whitespace,

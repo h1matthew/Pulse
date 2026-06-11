@@ -1,10 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useCommunityPulse } from '@/hooks/useImpact'
+import { useLocation } from '@/hooks/useLocation'
+import { useNearbyBusinesses } from '@/hooks/useBusinesses'
+import { isChainBusiness } from '@/lib/business/classify'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import type { BusinessWithCategory, LatLng } from '@/types/business'
+
+// Diamond Bar, CA — where the seeded data lives. Used when the visitor hasn't
+// shared their location, so the headline stats always reflect real businesses.
+const DEFAULT_LOCATION: LatLng = { lat: 34.0286, lng: -117.8103 }
+const RADIUS_METERS = 10000
+
+function isIndependent(b: BusinessWithCategory): boolean {
+  if (b.is_chain === true) return false
+  if (b.is_chain === false) return true
+  return !isChainBusiness({ name: b.name, tags: Array.isArray(b.tags) ? b.tags : [] })
+}
 
 /**
  * React Query can hydrate persisted community-pulse data on the client before
@@ -134,6 +149,7 @@ const FALLBACK_STATS = {
   dollars: 284600,
   businesses: 312,
   reviews: 1847,
+  supported: 96,
   activeUsers: 2340,
   pulseScore: 7420,
 }
@@ -143,11 +159,35 @@ function positiveOr(value: number | undefined | null, fallback: number): number 
   return typeof value === 'number' && value > 0 ? value : fallback
 }
 
+/**
+ * Headline stats. Three of the four are location-aware — they recompute from the
+ * businesses near the visitor (falling back to the seeded Diamond Bar set), so
+ * they change as the visitor's location changes:
+ *   - Businesses      → independent shops nearby
+ *   - Reviews         → total reviews across those shops
+ *   - Places supported→ nearby shops that already have activity (reviews)
+ * Community Members stays a community-wide total (it isn't location-bound).
+ */
 export function HeroStats() {
-  const { data, isLoading } = useCommunityPulse()
+  const { data: pulse, isLoading: pulseLoading } = useCommunityPulse()
+  const { location } = useLocation()
+  const effectiveLocation = location ?? DEFAULT_LOCATION
+  const { data: nearby, isLoading: nearbyLoading } = useNearbyBusinesses(
+    effectiveLocation,
+    RADIUS_METERS
+  )
   const mounted = useMounted()
 
-  if (!mounted || isLoading) {
+  const local = useMemo(() => {
+    const independent = (nearby ?? []).filter(isIndependent)
+    return {
+      businesses: independent.length,
+      reviews: independent.reduce((sum, b) => sum + (b.review_count ?? 0), 0),
+      supported: independent.filter((b) => (b.review_count ?? 0) > 0).length,
+    }
+  }, [nearby])
+
+  if (!mounted || pulseLoading || nearbyLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto">
         <HeroStatsSkeleton />
@@ -155,24 +195,24 @@ export function HeroStats() {
     )
   }
 
-  const dollars = positiveOr(data?.total_dollars_kept_local, FALLBACK_STATS.dollars)
-  const businesses = positiveOr(data?.total_businesses_supported, FALLBACK_STATS.businesses)
-  const reviews = positiveOr(data?.total_reviews_left, FALLBACK_STATS.reviews)
-  const activeUsers = positiveOr(data?.active_users, FALLBACK_STATS.activeUsers)
+  const businesses = positiveOr(local.businesses, FALLBACK_STATS.businesses)
+  const reviews = positiveOr(local.reviews, FALLBACK_STATS.reviews)
+  const supported = positiveOr(local.supported, FALLBACK_STATS.supported)
+  const activeUsers = positiveOr(pulse?.active_users, FALLBACK_STATS.activeUsers)
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto">
-      <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatDollars(dollars)}+</div>
-        <div className="text-sm text-muted-foreground mt-1">Kept Local</div>
-      </div>
       <div className="text-center">
         <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{businesses.toLocaleString()}</div>
         <div className="text-sm text-muted-foreground mt-1">Businesses</div>
       </div>
       <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatCompact(reviews)}+</div>
+        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatCompact(reviews)}</div>
         <div className="text-sm text-muted-foreground mt-1">Reviews</div>
+      </div>
+      <div className="text-center">
+        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{supported.toLocaleString()}</div>
+        <div className="text-sm text-muted-foreground mt-1">Places Supported</div>
       </div>
       <div className="text-center">
         <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatCompact(activeUsers)}</div>
