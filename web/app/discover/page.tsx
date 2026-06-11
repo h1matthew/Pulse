@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import { use, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import { AlertCircle, Clock, Heart, MapPin, Minus, Navigation, Plus, RefreshCw, Search, ShieldCheck, Star, Store } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
@@ -19,6 +19,9 @@ import { CATEGORY_FILTERS } from '@/lib/constants/navigation'
 // BusinessCard and BusinessCardSkeleton are defined locally below
 import { LocationPrompt } from '@/components/features/discover/LocationPrompt'
 import { useNearbyBusinesses } from '@/hooks/useBusinesses'
+import { useMissionProgressDetails } from '@/hooks/useMissions'
+import { useAuth } from '@/components/providers/AuthProvider'
+import { Progress } from '@/components/ui/progress'
 import { useLocation, formatDistance, calculateDistance } from "@/hooks/useLocation";
 import {
   useIsBookmarked,
@@ -319,8 +322,24 @@ function BusinessCardSkeleton() {
   );
 }
 
-export default function DiscoverPage() {
-  const [selectedCategory, setSelectedCategory] = useState('all')
+interface DiscoverPageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+/** Resolve a `?category=` value to a known filter id, or 'all'. */
+function resolveCategoryParam(raw: string | string[] | undefined): string {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  if (!value) return 'all'
+  if (value === 'bookmarks') return value
+  return CATEGORY_FILTERS.some((category) => category.id === value) ? value : 'all'
+}
+
+export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
+  // use() is safe to call conditionally; tests render without the prop.
+  const resolvedSearchParams = searchParams ? use(searchParams) : undefined
+  const [selectedCategory, setSelectedCategory] = useState(() =>
+    resolveCategoryParam(resolvedSearchParams?.category)
+  )
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('rating')
   const [searchQuery, setSearchQuery] = useState('')
   const [independentOnly, setIndependentOnly] = useState(false)
@@ -496,11 +515,34 @@ export default function DiscoverPage() {
     setSbaOnly(false)
   }, [])
 
+  // Started, incomplete missions whose category matches the current filter —
+  // shown as a context banner so "Continue mission" lands somewhere useful.
+  const { userId } = useAuth()
+  const { activeMissions: startedMissions } = useMissionProgressDetails(userId ?? '')
+  const missionsInView = useMemo(() => {
+    if (selectedCategory === 'all' || selectedCategory === 'bookmarks') return []
+    return (startedMissions ?? []).filter(
+      (detail) => detail.progress.mission.category?.slug === selectedCategory
+    )
+  }, [startedMissions, selectedCategory])
+
+  // Select a category and keep ?category= in the URL so the view is
+  // shareable and deep-linkable (categories page and missions link here).
+  const selectCategory = useCallback((categoryId: string) => {
+    setSelectedCategory(categoryId)
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      if (categoryId === 'all') url.searchParams.delete('category')
+      else url.searchParams.set('category', categoryId)
+      window.history.replaceState(window.history.state, '', url)
+    }
+  }, [])
+
   const clearAllFilters = useCallback(() => {
     resetExtraFilters()
     setSearchQuery('')
-    setSelectedCategory('all')
-  }, [resetExtraFilters])
+    selectCategory('all')
+  }, [resetExtraFilters, selectCategory])
 
   const togglePrice = useCallback((level: number) => {
     setSelectedPrices((prev) =>
@@ -671,7 +713,7 @@ export default function DiscoverPage() {
                       key={category.id}
                       variant="ghost"
                       size="sm"
-                      onClick={() => setSelectedCategory(category.id)}
+                      onClick={() => selectCategory(category.id)}
                       aria-pressed={selectedCategory === category.id}
                       aria-label={`Filter by ${category.name}`}
                       className={cn(
@@ -685,7 +727,7 @@ export default function DiscoverPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setSelectedCategory('bookmarks')}
+                    onClick={() => selectCategory('bookmarks')}
                     aria-pressed={selectedCategory === 'bookmarks'}
                     aria-label="Show bookmarked businesses"
                     className={cn(
@@ -807,6 +849,41 @@ export default function DiscoverPage() {
                 </div>
             </section>
             </AnimatedSection>
+          )}
+
+          {/* Active mission context — visits here count toward these */}
+          {missionsInView.length > 0 && (
+            <section aria-label="Active missions for this category" className="space-y-2">
+              {missionsInView.map((detail) => (
+                <div
+                  key={detail.progress.id}
+                  className="flex flex-col gap-2 rounded-lg border border-primary/25 bg-primary/5 p-4 sm:flex-row sm:items-center sm:gap-4"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">
+                      Mission: {detail.progress.mission.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Check in with your receipt at any business below to log a
+                      verified visit.
+                    </p>
+                  </div>
+                  <div className="w-full sm:w-44">
+                    <div className="mb-1 flex justify-between text-xs">
+                      <span className="text-muted-foreground">Progress</span>
+                      <span className="font-medium tabular-nums">
+                        {detail.progress.current_count}/{detail.progress.mission.target_count}
+                      </span>
+                    </div>
+                    <Progress
+                      value={detail.percentageComplete}
+                      className="h-1.5"
+                      aria-label={`${detail.progress.mission.title} progress: ${detail.progress.current_count} of ${detail.progress.mission.target_count}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </section>
           )}
 
           {/* Business Grid */}

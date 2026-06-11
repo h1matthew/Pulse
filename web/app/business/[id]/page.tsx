@@ -45,6 +45,10 @@ import {
 } from "@/hooks/useBookmarks";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { PhotoGallery } from "@/components/features/business/PhotoGallery";
+import {
+  ReceiptCheckInDialog,
+  type CheckInSuccessResult,
+} from "@/components/features/business/ReceiptCheckInDialog";
 import { BaanihaliPuzzleCaptcha } from "@/components/features/bot/BaanihaliPuzzleCaptcha";
 import { toast } from "sonner";
 import { NavLink } from "@/components/ui/nav-link";
@@ -114,7 +118,7 @@ export default function BusinessDetailPage({
   const [heroPhotoFailed, setHeroPhotoFailed] = useState(false);
   const [isSyncingReviews, setIsSyncingReviews] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [checkInOpen, setCheckInOpen] = useState(false);
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [reviewErrors, setReviewErrors] = useState<Record<string, string>>({});
   const [reviewCaptchaToken, setReviewCaptchaToken] = useState<string | null>(null);
@@ -358,43 +362,40 @@ export default function BusinessDetailPage({
     }
   };
 
-  const handleCheckIn = async () => {
+  const handleCheckIn = () => {
     if (!user) {
       toast.error("Sign in required", {
         description: "Please sign in to check in",
       });
       return;
     }
+    // Check-ins require receipt proof — collected and verified in the dialog.
+    setCheckInOpen(true);
+  };
 
-    setIsCheckingIn(true);
-    try {
-      const response = await fetch(`/api/businesses/${canonicalBusinessId}/checkin`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        if (response.status === 409) {
-          toast.info("Already checked in", {
-            description: "You've already checked in today!",
-          });
-          setHasCheckedIn(true);
-          return;
-        }
-        throw new Error(error.error || "Failed to check in");
+  const handleCheckInVerified = (result: CheckInSuccessResult) => {
+    setHasCheckedIn(true);
+    const total = result.verification?.total;
+    toast.success("Receipt verified — checked in!", {
+      description:
+        total != null
+          ? `$${total.toFixed(2)} kept local at ${business?.name ?? "this business"}.`
+          : `Your visit to ${business?.name ?? "this business"} is logged.`,
+    });
+    for (const update of result.missionUpdates ?? []) {
+      if (update.completed) {
+        toast.success(`Mission complete: ${update.title}!`, {
+          description: "Check the missions page to claim your reward.",
+        });
+      } else {
+        toast.info(`${update.title}: ${update.currentCount}/${update.targetCount}`, {
+          description: "Verified visit counted toward your mission.",
+        });
       }
-
-      const result = await response.json();
-      toast.success("Checked in!", {
-        description: `+$${result.impact.estimated_dollars} estimated local impact`,
-      });
-      setHasCheckedIn(true);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to check in";
-      toast.error("Error", { description: message });
-    } finally {
-      setIsCheckingIn(false);
     }
+    queryClient.invalidateQueries({ queryKey: ["missions", "progress"] });
+    queryClient.invalidateQueries({ queryKey: ["impact"] });
+    queryClient.invalidateQueries({ queryKey: ["activity"] });
   };
 
   const handleGenerateDescription = async (force = false, silent = false) => {
@@ -1320,11 +1321,9 @@ export default function BusinessDetailPage({
                       <Button
                         variant={hasCheckedIn ? "secondary" : "outline"}
                         onClick={handleCheckIn}
-                        disabled={isCheckingIn || hasCheckedIn}
+                        disabled={hasCheckedIn}
                       >
-                        {isCheckingIn ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : hasCheckedIn ? (
+                        {hasCheckedIn ? (
                           <CheckCircle className="h-4 w-4" />
                         ) : (
                           <MapPinned className="h-4 w-4" />
@@ -1440,6 +1439,20 @@ export default function BusinessDetailPage({
           </div>
         </div>
       </div>
+
+      <ReceiptCheckInDialog
+        open={checkInOpen}
+        onOpenChange={setCheckInOpen}
+        businessId={canonicalBusinessId}
+        businessName={business.name}
+        onSuccess={handleCheckInVerified}
+        onAlreadyCheckedIn={() => {
+          setHasCheckedIn(true);
+          toast.info("Already checked in", {
+            description: "You've already checked in today!",
+          });
+        }}
+      />
 
       {/* Review CAPTCHA Modal */}
       {showReviewCaptcha && (

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { GET } from "../route";
 
@@ -18,6 +18,12 @@ vi.mock("@/lib/supabase/server", () => ({
 describe("GET /api/deals", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Demo deals are opt-in; tests assume real-data mode unless they set it
+    delete process.env.PULSE_ENABLE_DEMO_STATS;
+  });
+
+  afterEach(() => {
+    delete process.env.PULSE_ENABLE_DEMO_STATS;
   });
 
   it("returns deals with per-user claim status", async () => {
@@ -106,7 +112,35 @@ describe("GET /api/deals", () => {
     expect(json.error).toBe("Failed to fetch deals");
   });
 
-  it("returns fallback demo deals when no real deals exist", async () => {
+  it("returns an empty list (no demo deals) when no real deals exist and demo mode is off", async () => {
+    const dealsQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      range: vi.fn().mockResolvedValue({ data: [], error: null, count: 0 }),
+    };
+
+    const claimsForEmptyQuery = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: [] }),
+    };
+
+    mockFrom
+      .mockReturnValueOnce(dealsQuery)
+      .mockReturnValueOnce(claimsForEmptyQuery);
+
+    const request = new NextRequest("http://localhost/api/deals");
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.deals).toEqual([]);
+  });
+
+  it("returns fallback demo deals when demo mode is explicitly enabled", async () => {
+    process.env.PULSE_ENABLE_DEMO_STATS = "true";
+
     const dealsQuery = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),

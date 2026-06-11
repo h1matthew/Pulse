@@ -278,6 +278,37 @@ describe('MissionsPage', () => {
     expect(screen.getByText('Continue')).toBeInTheDocument()
   })
 
+  it('deep-links Continue to discover filtered by the mission category', () => {
+    mockMissionsData = [mockActiveMissions[0]]
+    mockAuthState = { isLoggedIn: true, userId: 'user-1', loading: false }
+    mockActiveMissionsProgress = [
+      {
+        progress: {
+          id: 'progress-1',
+          mission_id: 'mission-1',
+          user_id: 'user-1',
+          current_count: 0,
+          is_completed: false,
+          completed_at: null,
+          reward_claimed: false,
+          reward_claimed_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          mission: mockActiveMissions[0],
+        },
+        percentageComplete: 0,
+        remainingCount: 3,
+        daysRemaining: null,
+      },
+    ]
+    renderPage()
+
+    const continueLink = screen.getByRole('link', {
+      name: /continue mission: coffee explorer/i,
+    })
+    expect(continueLink).toHaveAttribute('href', '/discover?category=food-drink')
+  })
+
   it('shows "Start" button when user has no progress on a mission', () => {
     mockMissionsData = [mockActiveMissions[0]]
     mockAuthState = { isLoggedIn: true, userId: 'user-1', loading: false }

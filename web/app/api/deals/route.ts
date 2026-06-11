@@ -5,6 +5,7 @@ import {
   DEMO_DEAL_TEMPLATES,
   dateDaysFromNow,
 } from '@/lib/demo/demo-deals'
+import { isDemoContentEnabled } from '@/lib/demo/demo-account-stats'
 
 export async function GET(request: Request) {
   const supabase = await createClient()
@@ -73,8 +74,9 @@ export async function GET(request: Request) {
       count = filteredResult.count
     }
 
-    // Fallback demo deals for presentations when there are no real deal rows yet.
-    if (!error && (!deals || deals.length === 0)) {
+    // Fallback demo deals, presentations only (PULSE_ENABLE_DEMO_STATS=true).
+    // Real users see the honest empty state plus "Scan for Deals".
+    if (!error && (!deals || deals.length === 0) && isDemoContentEnabled()) {
       const demoDeals = await buildDemoDeals(supabase, { businessId, categoryId })
       const paginated = demoDeals.slice(offset, offset + limit)
       deals = paginated

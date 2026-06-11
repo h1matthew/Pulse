@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { ExternalReview } from '@/types/business'
 import { DEMO_DEAL_TEMPLATES, dateDaysFromNow } from '@/lib/demo/demo-deals'
+import { isDemoContentEnabled } from '@/lib/demo/demo-account-stats'
 
 const GOOGLE_PLACES_DETAILS_FIELD_MASK = 'reviews'
 
@@ -230,7 +231,11 @@ export async function GET(
       return hasStarted && hasNotEnded
     })
     const dealsForResponse =
-      activeDeals.length > 0 ? activeDeals : buildDemoDealsForBusiness(business)
+      activeDeals.length > 0
+        ? activeDeals
+        : isDemoContentEnabled()
+          ? buildDemoDealsForBusiness(business)
+          : []
 
     // Check if user has bookmarked this business
     const { data: { user } } = await supabase.auth.getUser()

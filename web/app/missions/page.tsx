@@ -109,6 +109,11 @@ interface ActiveMissionCardProps {
 function ActiveMissionCard({ mission, progressDetail, index, isLoggedIn }: ActiveMissionCardProps) {
   const startMission = useStartMission();
   const hasStarted = !!progressDetail;
+  // Continue should continue the mission: land on discover pre-filtered to
+  // the mission's category when it has one, not the generic feed.
+  const continueHref = mission.category?.slug
+    ? `/discover?category=${mission.category.slug}`
+    : "/discover";
   const currentCount = progressDetail?.progress.current_count ?? 0;
   const targetCount = mission.target_count;
   const percentComplete = targetCount > 0 ? (currentCount / targetCount) * 100 : 0;
@@ -180,7 +185,7 @@ function ActiveMissionCard({ mission, progressDetail, index, isLoggedIn }: Activ
                   size="sm"
                   aria-label={`Continue mission: ${mission.title}`}
                 >
-                  <Link href="/discover">
+                  <Link href={continueHref}>
                     Continue
                     <ChevronRight
                       className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
