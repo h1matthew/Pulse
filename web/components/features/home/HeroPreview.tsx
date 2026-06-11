@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Clock, MapPin, Star } from 'lucide-react'
 import { useLocation, calculateDistance, formatDistance } from '@/hooks/useLocation'
+import { useCityName } from '@/hooks/useCityName'
 import { useNearbyBusinesses } from '@/hooks/useBusinesses'
 import { isOpenNow } from '@/lib/business/hours'
 import { isChainBusiness } from '@/lib/business/classify'
@@ -95,6 +96,7 @@ export function HeroPreview() {
 
   const { location } = useLocation()
   const effectiveLocation = location ?? DEFAULT_LOCATION
+  const cityName = useCityName(location)
   const { data, isLoading } = useNearbyBusinesses(effectiveLocation, RADIUS_METERS)
 
   const view = useMemo(() => {
@@ -147,7 +149,7 @@ export function HeroPreview() {
 
   return (
     <CardShell
-      locationLabel={location ? 'Near you' : 'Diamond Bar'}
+      locationLabel={cityName ?? (location ? 'Near you' : 'Diamond Bar')}
       pill={<span className="font-mono">{view.total} places</span>}
     >
       <div className="divide-y divide-border">

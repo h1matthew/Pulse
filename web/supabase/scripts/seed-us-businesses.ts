@@ -20,8 +20,9 @@
 
 import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
-import { isChainBusiness } from '../../lib/business/classify'
+import { isLikelySmallBusiness } from '../../lib/business/classify'
 import { isRealBusinessPlaceTypes } from '../../lib/business/display'
+import { gridPoints } from '../../lib/business/geo-grid'
 
 // ============================================================================
 // Config
@@ -88,6 +89,20 @@ const US_CITIES: CityTarget[] = [
   { slug: 'cincinnati', name: 'Cincinnati', state: 'OH', lat: 39.1031, lng: -84.512 },
   { slug: 'salt-lake-city', name: 'Salt Lake City', state: 'UT', lat: 40.7608, lng: -111.891 },
 ]
+
+/**
+ * Cities given extra-dense coverage. Priority cities are seeded first and use a
+ * grid of search centers plus per-type searches (each Google type gets its own
+ * 20-result call) instead of one grouped 20-result call per category — which
+ * yields many more businesses for that metro. Override with `--priority <slugs>`.
+ */
+const DEFAULT_PRIORITY_SLUGS = ['san-antonio']
+
+// Grid spacing for priority cities: rings=1 → 3×3 centers, ~8km apart, each
+// searched at a 6km radius. Covers roughly a 22km × 22km area with overlap.
+const PRIORITY_GRID_RINGS = 1
+const PRIORITY_GRID_STEP_METERS = 8000
+const PRIORITY_SEARCH_RADIUS = 6000
 
 // Same category → Google place types mapping as the live sync pipeline
 const CATEGORY_GOOGLE_TYPES: Record<string, string[]> = {
@@ -166,20 +181,6 @@ async function searchNearby(
   return (data.places || []) as GooglePlaceResult[]
 }
 
-async function resolvePhotoUrl(photoName: string): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&maxHeightPx=600&skipHttpRedirect=true`,
-      { headers: { 'X-Goog-Api-Key': GOOGLE_API_KEY } }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.photoUri || null
-  } catch {
-    return null
-  }
-}
-
 // ============================================================================
 // Transform helpers (mirrors /api/businesses/nearby sync logic)
 // ============================================================================
@@ -193,7 +194,11 @@ function passesContentFilters(place: GooglePlaceResult): boolean {
   const types = place.types || []
   if (types.some((t) => EDUCATIONAL_SUBTYPES.some((edu) => t.includes(edu)))) return false
   if (!isRealBusinessPlaceTypes(types)) return false
-  if (isChainBusiness({ name, tags: types })) return false
+  // Stronger than a chain-name check: also drops big-box/large-format places and
+  // very high-volume operations so seeded rows are genuinely small businesses.
+  if (!isLikelySmallBusiness({ name, types, userRatingCount: place.userRatingCount })) {
+    return false
+  }
 
   return true
 }
@@ -257,15 +262,21 @@ function parseArgs() {
     const i = args.indexOf(`--${name}`)
     return i >= 0 ? args[i + 1] : undefined
   }
+  const priorityFlag = getFlag('priority')
   return {
     cities: getFlag('cities')?.split(',').map((s) => s.trim().toLowerCase()),
     radius: Number(getFlag('radius')) || 12000,
     photosPerBusiness: Math.max(0, Math.min(3, Number(getFlag('photos') ?? 3))),
+    prioritySlugs:
+      priorityFlag !== undefined
+        ? priorityFlag.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+        : DEFAULT_PRIORITY_SLUGS,
   }
 }
 
 async function main() {
-  const { cities: citiesFilter, radius, photosPerBusiness } = parseArgs()
+  const { cities: citiesFilter, radius, photosPerBusiness, prioritySlugs } = parseArgs()
+  const prioritySet = new Set(prioritySlugs)
 
   if (!GOOGLE_API_KEY) {
     console.error('❌ Missing GOOGLE_PLACES_API_KEY in web/.env')
@@ -276,9 +287,14 @@ async function main() {
     process.exit(1)
   }
 
-  const targets = citiesFilter
+  const selected = citiesFilter
     ? US_CITIES.filter((c) => citiesFilter.includes(c.slug))
     : US_CITIES
+
+  // Seed priority cities first (so they finish even if a long run is interrupted).
+  const targets = [...selected].sort(
+    (a, b) => (prioritySet.has(a.slug) ? 0 : 1) - (prioritySet.has(b.slug) ? 0 : 1)
+  )
 
   if (targets.length === 0) {
     console.error(`❌ No matching cities. Valid slugs:\n   ${US_CITIES.map((c) => c.slug).join(', ')}`)
@@ -304,7 +320,11 @@ async function main() {
     .not('place_id', 'is', null)
   const existingPlaceIds = new Set((existingRows || []).map((r) => r.place_id))
 
+  const priorityInRun = targets.filter((c) => prioritySet.has(c.slug)).map((c) => c.slug)
   console.log(`🌎 Seeding ${targets.length} cities (radius ${radius}m, ${photosPerBusiness} photos/business)`)
+  if (priorityInRun.length > 0) {
+    console.log(`   ★ Priority (dense grid + per-type): ${priorityInRun.join(', ')}`)
+  }
   console.log(`   Existing businesses with place_id: ${existingPlaceIds.size}\n`)
 
   let totalNew = 0
@@ -312,15 +332,31 @@ async function main() {
   let totalSkipped = 0
 
   for (const [cityIndex, city] of targets.entries()) {
-    console.log(`📍 [${cityIndex + 1}/${targets.length}] ${city.name}, ${city.state}`)
+    const isPriority = prioritySet.has(city.slug)
+    const centers = isPriority
+      ? gridPoints(city.lat, city.lng, PRIORITY_GRID_RINGS, PRIORITY_GRID_STEP_METERS)
+      : [{ lat: city.lat, lng: city.lng }]
+    const searchRadius = isPriority ? PRIORITY_SEARCH_RADIUS : radius
+
+    console.log(
+      `📍 [${cityIndex + 1}/${targets.length}] ${city.name}, ${city.state}` +
+        (isPriority ? ` ★ priority — ${centers.length} centers, per-type search` : '')
+    )
 
     // Fetch all categories for this city, dedup by place_id
     const cityPlaces = new Map<string, { place: GooglePlaceResult; categorySlug: string }>()
-    for (const [categorySlug, types] of Object.entries(CATEGORY_GOOGLE_TYPES)) {
-      const places = await searchNearby(city.lat, city.lng, radius, types)
-      for (const place of places) {
-        if (place.id && !cityPlaces.has(place.id)) {
-          cityPlaces.set(place.id, { place, categorySlug })
+    for (const center of centers) {
+      for (const [categorySlug, types] of Object.entries(CATEGORY_GOOGLE_TYPES)) {
+        // Priority cities search each type individually (each yields up to 20
+        // results); other cities use one grouped call per category.
+        const typeBatches = isPriority ? types.map((t) => [t]) : [types]
+        for (const batch of typeBatches) {
+          const places = await searchNearby(center.lat, center.lng, searchRadius, batch)
+          for (const place of places) {
+            if (place.id && !cityPlaces.has(place.id)) {
+              cityPlaces.set(place.id, { place, categorySlug })
+            }
+          }
         }
       }
     }
@@ -340,15 +376,13 @@ async function main() {
       const addr = parseAddress(place.formattedAddress || '')
       const desc = generateDescription(place)
 
-      const photoNames = (place.photos || []).slice(0, photosPerBusiness)
-      const photos = (
-        await Promise.all(
-          photoNames.map(async (p) => {
-            const url = await resolvePhotoUrl(p.name)
-            return url ? { photo_reference: url, height: 0, width: 0 } : null
-          })
-        )
-      ).filter(Boolean)
+      // Store the raw Google photo *resource name* (e.g. "places/XYZ/photos/abc")
+      // straight from the search response — these come free with the search we
+      // already paid for. The /api/businesses/photo proxy resolves them to images
+      // on demand (and caches), so we make zero extra Place Photo calls here.
+      const photos = (place.photos || [])
+        .slice(0, photosPerBusiness)
+        .map((p) => ({ photo_reference: p.name, height: 0, width: 0 }))
 
       const types = (place.types || []).filter(
         (t) => t !== 'establishment' && t !== 'point_of_interest'

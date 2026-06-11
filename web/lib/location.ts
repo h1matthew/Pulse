@@ -5,6 +5,69 @@ export interface GeocodeResult {
   error?: string
 }
 
+/** A typeahead suggestion for a city, town, or zip code. */
+export interface LocationSuggestion {
+  /** Google place id — resolve to coordinates via resolveLocationByPlaceId. */
+  id: string
+  /** Human-readable label, e.g. "San Antonio, TX, USA". */
+  label: string
+}
+
+/**
+ * Fetch city/zip autocomplete suggestions for a typed query via our own
+ * /api/geo/autocomplete route (Google key stays server-side). Returns an empty
+ * array for short queries or any failure so callers can render quietly.
+ */
+export async function getLocationSuggestions(
+  query: string
+): Promise<LocationSuggestion[]> {
+  const trimmed = query.trim()
+  if (trimmed.length < 2) return []
+
+  try {
+    const response = await fetch(
+      `/api/geo/autocomplete?q=${encodeURIComponent(trimmed)}`
+    )
+    if (!response.ok) return []
+    const data = await response.json()
+    return Array.isArray(data.suggestions) ? (data.suggestions as LocationSuggestion[]) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Resolve an autocomplete place id to coordinates and a short label via our own
+ * /api/geo/place route. Returns null when the lookup fails.
+ */
+export async function resolveLocationByPlaceId(
+  placeId: string
+): Promise<{ location: LatLng; label: string } | null> {
+  if (!placeId) return null
+
+  try {
+    const response = await fetch(
+      `/api/geo/place?placeId=${encodeURIComponent(placeId)}`
+    )
+    if (!response.ok) return null
+
+    const data = await response.json()
+    if (
+      data.location &&
+      typeof data.location.lat === 'number' &&
+      typeof data.location.lng === 'number'
+    ) {
+      return {
+        location: data.location,
+        label: typeof data.label === 'string' ? data.label : '',
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 /**
  * Geocode an address to coordinates
  */

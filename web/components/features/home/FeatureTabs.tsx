@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { NavLink } from '@/components/ui/nav-link'
 import { Button } from '@/components/ui/button'
 import { useLocation, calculateDistance, formatDistance } from '@/hooks/useLocation'
+import { useCityName } from '@/hooks/useCityName'
 import { useNearbyBusinesses } from '@/hooks/useBusinesses'
 import { useIsBookmarked, useToggleBookmark } from '@/hooks/useBookmarks'
 import { isOpenNow } from '@/lib/business/hours'
@@ -234,6 +235,9 @@ export function FeatureTabs() {
   const content = SNAPSHOTS[active]
   const Icon = ICONS[active]
 
+  const { location } = useLocation()
+  const cityName = useCityName(location)
+
   return (
     <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
       <div>
@@ -241,7 +245,9 @@ export function FeatureTabs() {
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           Today nearby
         </h2>
-        <p className="mt-4 max-w-sm text-base leading-7 text-muted-foreground">A short list for today.</p>
+        <p className="mt-4 max-w-sm text-base leading-7 text-muted-foreground">
+          {cityName ? `A short list for ${cityName} today.` : 'A short list for today.'}
+        </p>
 
         <div className="mt-6 inline-flex rounded-md border border-border p-1">
           {TABS.map((tab) => (

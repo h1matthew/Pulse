@@ -34,7 +34,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { isRealBusinessPlaceTypes, isRealBusinessRecord } from '@/lib/business/display'
-import { isChainBusiness } from '@/lib/business/classify'
+import { isLikelySmallBusiness } from '@/lib/business/classify'
 import { NextResponse } from 'next/server'
 import type { LatLng } from '@/types/business'
 
@@ -355,50 +355,6 @@ async function fetchFromOpenWebNinja(
 }
 
 /**
- * Resolve a Google Places v2 photo resource name to a direct CDN URL.
- * This is done at sync time so display-time photo loading is instant (no API call).
- */
-async function resolvePhotoUrl(photoName: string, apiKey: string): Promise<string | null> {
-  try {
-    const res = await fetch(
-      `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&maxHeightPx=600&skipHttpRedirect=true`,
-      { headers: { 'X-Goog-Api-Key': apiKey } }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.photoUri || null
-  } catch {
-    return null
-  }
-}
-
-/**
- * Resolve photo CDN URLs for a batch of photo references in parallel.
- */
-async function resolvePhotos(
-  googlePhotos: GooglePlacePhoto[],
-  apiKey: string
-): Promise<{ photo_reference: string; height: number; width: number }[]> {
-  const photos = googlePhotos.slice(0, 3)
-  const resolved = await Promise.all(
-    photos.map(async (p) => {
-      // If the photo name is already a direct URL (from OpenWeb Ninja), use it as-is
-      if (p.name.startsWith('http')) {
-        return { photo_reference: p.name, height: p.heightPx || 0, width: p.widthPx || 0 }
-      }
-      // Otherwise resolve Google Places resource name to CDN URL
-      const cdnUrl = await resolvePhotoUrl(p.name, apiKey)
-      return {
-        photo_reference: cdnUrl || p.name,
-        height: p.heightPx || 0,
-        width: p.widthPx || 0,
-      }
-    })
-  )
-  return resolved
-}
-
-/**
  * Upsert Google Places results into the Supabase businesses table.
  */
 async function syncPlacesToDatabase(
@@ -414,10 +370,12 @@ async function syncPlacesToDatabase(
       const types = place.types || []
       if (!isRealBusinessPlaceTypes(types)) continue
 
-      // Skip chains/franchises entirely — Pulse only lists independent
-      // small businesses.
+      // Skip chains/franchises and big-box/large-format places entirely —
+      // Pulse only lists independent small businesses.
       const displayName = place.displayName?.text || ''
-      if (isChainBusiness({ name: displayName, tags: types })) continue
+      if (!isLikelySmallBusiness({ name: displayName, types, userRatingCount: place.userRatingCount })) {
+        continue
+      }
 
       // Map types to internal category
       const categorySlug = mapSubtypeToCategory(types)
@@ -442,11 +400,16 @@ async function syncPlacesToDatabase(
       const addr = parseAddress(place.formattedAddress || '')
       const desc = generateDescription(place)
 
-      // Resolve photo CDN URLs at sync time — this makes display-time loading instant.
-      // Stores direct URLs like "https://lh3.googleusercontent.com/places/..."
-      // which buildBusinessPhotoUrl() returns as-is (no proxy needed).
-      const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || ''
-      const photos = await resolvePhotos(place.photos || [], apiKey)
+      // Store raw photo references straight from the search response (free — they
+      // come with the search). Google resource names ("places/XYZ/photos/abc")
+      // resolve lazily through the /api/businesses/photo proxy at display time;
+      // OpenWeb Ninja entries already carry direct CDN URLs, kept as-is. Either
+      // way we make zero extra Place Photo calls during sync.
+      const photos = (place.photos || []).slice(0, 3).map((p) => ({
+        photo_reference: p.name,
+        height: p.heightPx || 0,
+        width: p.widthPx || 0,
+      }))
 
       const hours = place.regularOpeningHours?.weekdayDescriptions || []
       const tags = types
@@ -569,6 +532,7 @@ export async function GET(request: Request) {
         tags: business.tags,
         name: business.name,
         is_chain: business.is_chain,
+        review_count: business.review_count,
       })
     )
 
@@ -639,6 +603,7 @@ export async function GET(request: Request) {
         tags: business.tags,
         name: business.name,
         is_chain: business.is_chain,
+        review_count: business.review_count,
       })
     )
 

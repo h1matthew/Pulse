@@ -74,6 +74,8 @@ vi.mock("@/lib/location", () => ({
   getCachedLocation: () => ({ lat: 34.0286, lng: -117.8208 }),
   getCachedLocationSource: () => ({ source: "zip", label: "Diamond Bar" }),
   geocodeZipCode: vi.fn(),
+  getLocationSuggestions: vi.fn(async () => []),
+  resolveLocationByPlaceId: vi.fn(async () => null),
   cacheLocation: vi.fn(),
   cacheLocationSource: vi.fn(),
 }));

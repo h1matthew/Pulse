@@ -1,36 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-import { MapPin, LocateFixed, Search, Loader2, Settings2 } from 'lucide-react'
+import { MapPin, LocateFixed, Loader2, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { LocationSearchBox } from '@/components/features/discover/LocationSearchBox'
+import type { LatLng } from '@/types/business'
 
 interface LocationPromptProps {
   onAllowLocation: () => void
-  onSearchZip: (zipCode: string) => void
+  onSelectLocation: (result: { location: LatLng; label: string }) => void
   permission: 'granted' | 'denied' | 'prompt' | 'unknown'
   isLoading: boolean
 }
 
 export function LocationPrompt({
   onAllowLocation,
-  onSearchZip,
+  onSelectLocation,
   permission,
   isLoading,
 }: LocationPromptProps) {
-  const [zipCode, setZipCode] = useState('')
-  const [isSearching, setIsSearching] = useState(false)
-
-  const handleZipSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!zipCode.trim()) return
-
-    setIsSearching(true)
-    await onSearchZip(zipCode.trim())
-    setIsSearching(false)
-  }
-
   const isDenied = permission === 'denied'
 
   return (
@@ -92,35 +80,13 @@ export function LocationPrompt({
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">Or enter zip code</span>
+              <span className="bg-card px-2 text-muted-foreground">Or search a place</span>
             </div>
           </div>
 
-          <form onSubmit={handleZipSubmit} className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="Enter zip code..."
-              value={zipCode}
-              onChange={(e) => setZipCode(e.target.value)}
-              maxLength={10}
-              className="flex-1"
-              disabled={isSearching}
-            />
-            <Button
-              type="submit"
-              disabled={!zipCode.trim() || isSearching}
-              variant="secondary"
-            >
-              {isSearching ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Search className="h-4 w-4 mr-1" />
-                  Search
-                </>
-              )}
-            </Button>
-          </form>
+          <div className="text-left">
+            <LocationSearchBox onSelect={onSelectLocation} placeholder="Search city or zip code" />
+          </div>
         </CardContent>
       </Card>
     </div>

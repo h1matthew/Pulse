@@ -55,7 +55,7 @@ export default function Home() {
             <div className="max-w-2xl">
               <p className="mb-5 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">Pulse local guide</p>
               <h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-                Feel the <span className="gradient-text">Pulse</span> of <HeroCityName />.
+                Feel the <span className="gradient-text">Pulse</span> of <HeroCityName />
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
                 Local shops, deals, and a simple view of what your support keeps in town.
@@ -101,7 +101,7 @@ export default function Home() {
           <AnimatedSection animation="fade-up">
             <div>
               <h2 className="max-w-lg text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                Pick a place without the pitch.
+                Pick a place without the pitch
               </h2>
               <p className="mt-4 max-w-md text-base leading-7 text-muted-foreground">
                 Browse what is open, nearby, and worth a visit. No long setup. No forced account.

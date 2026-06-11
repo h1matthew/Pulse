@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { LocationPrompt } from '../LocationPrompt'
+
+// LocationSearchBox calls into the location lib on type; stub it so the prompt
+// renders without hitting the network.
+vi.mock('@/lib/location', () => ({
+  getLocationSuggestions: vi.fn(async () => []),
+  resolveLocationByPlaceId: vi.fn(async () => null),
+  geocodeZipCode: vi.fn(async () => null),
+}))
 
 // Fix for matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -19,116 +27,62 @@ Object.defineProperty(window, 'matchMedia', {
 
 describe('LocationPrompt', () => {
   const mockOnAllowLocation = vi.fn()
-  const mockOnSearchZip = vi.fn()
+  const mockOnSelectLocation = vi.fn()
+
+  function renderPrompt(props: Partial<React.ComponentProps<typeof LocationPrompt>> = {}) {
+    return render(
+      <LocationPrompt
+        onAllowLocation={mockOnAllowLocation}
+        onSelectLocation={mockOnSelectLocation}
+        permission="prompt"
+        isLoading={false}
+        {...props}
+      />
+    )
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('renders location prompt heading', () => {
-    render(
-      <LocationPrompt
-        onAllowLocation={mockOnAllowLocation}
-        onSearchZip={mockOnSearchZip}
-        permission="prompt"
-        isLoading={false}
-      />
-    )
+    renderPrompt()
     expect(screen.getByText('Find Businesses Near You')).toBeInTheDocument()
   })
 
   it('calls onAllowLocation when allow button is clicked', () => {
-    render(
-      <LocationPrompt
-        onAllowLocation={mockOnAllowLocation}
-        onSearchZip={mockOnSearchZip}
-        permission="prompt"
-        isLoading={false}
-      />
-    )
+    renderPrompt()
     fireEvent.click(screen.getByText('Allow Location Access'))
     expect(mockOnAllowLocation).toHaveBeenCalled()
   })
 
   it('shows loading state when isLoading is true', () => {
-    render(
-      <LocationPrompt
-        onAllowLocation={mockOnAllowLocation}
-        onSearchZip={mockOnSearchZip}
-        permission="prompt"
-        isLoading={true}
-      />
-    )
+    renderPrompt({ isLoading: true })
     expect(screen.getByText('Getting location...')).toBeInTheDocument()
   })
 
   it('shows denied state when permission is denied', () => {
-    render(
-      <LocationPrompt
-        onAllowLocation={mockOnAllowLocation}
-        onSearchZip={mockOnSearchZip}
-        permission="denied"
-        isLoading={false}
-      />
-    )
+    renderPrompt({ permission: 'denied' })
     expect(screen.getByText('Location Access Denied')).toBeInTheDocument()
     expect(screen.getByText(/Please enable location access/)).toBeInTheDocument()
   })
 
-  it('allows entering zip code', () => {
-    render(
-      <LocationPrompt
-        onAllowLocation={mockOnAllowLocation}
-        onSearchZip={mockOnSearchZip}
-        permission="prompt"
-        isLoading={false}
-      />
-    )
-    const input = screen.getByPlaceholderText('Enter zip code...')
-    fireEvent.change(input, { target: { value: '12345' } })
-    expect(input).toHaveValue('12345')
+  it('renders the city/zip search box', () => {
+    renderPrompt()
+    expect(
+      screen.getByPlaceholderText('Search city or zip code')
+    ).toBeInTheDocument()
   })
 
-  it('submits zip code search', async () => {
-    render(
-      <LocationPrompt
-        onAllowLocation={mockOnAllowLocation}
-        onSearchZip={mockOnSearchZip}
-        permission="prompt"
-        isLoading={false}
-      />
-    )
-    const input = screen.getByPlaceholderText('Enter zip code...')
-    fireEvent.change(input, { target: { value: '12345' } })
-    fireEvent.click(screen.getByRole('button', { name: /search/i }))
-
-    await waitFor(() => {
-      expect(mockOnSearchZip).toHaveBeenCalledWith('12345')
-    })
-  })
-
-  it('disables search button when zip code is empty', () => {
-    render(
-      <LocationPrompt
-        onAllowLocation={mockOnAllowLocation}
-        onSearchZip={mockOnSearchZip}
-        permission="prompt"
-        isLoading={false}
-      />
-    )
-    const searchButton = screen.getByRole('button', { name: /search/i })
-    expect(searchButton).toBeDisabled()
+  it('lets the user type into the search box', () => {
+    renderPrompt()
+    const input = screen.getByPlaceholderText('Search city or zip code')
+    fireEvent.change(input, { target: { value: 'San Antonio' } })
+    expect(input).toHaveValue('San Antonio')
   })
 
   it('shows browser settings instructions when denied', () => {
-    render(
-      <LocationPrompt
-        onAllowLocation={mockOnAllowLocation}
-        onSearchZip={mockOnSearchZip}
-        permission="denied"
-        isLoading={false}
-      />
-    )
+    renderPrompt({ permission: 'denied' })
     expect(screen.getByText(/Click the lock\/info icon/)).toBeInTheDocument()
     expect(screen.getByText(/Find "Location" permissions/)).toBeInTheDocument()
   })
