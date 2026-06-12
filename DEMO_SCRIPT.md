@@ -16,9 +16,9 @@ Target: **2:00 flat**. Rehearse with a stopwatch until it's automatic.
    - ⚠️ The AI assistant requires the Gemini API (online). If the venue has no
      internet, **skip the live assistant demo** — it is covered by the Slide 8
      screenshot — or show the cached conversation already on screen.
-2. Log in beforehand as `judge@pulse.demo` / `PulseDemo2026!` (account is
-   seeded with bookmarks, reviews, check-ins, and claimed deals so every page
-   looks alive).
+2. Log in beforehand as `judge@pulse.demo` (password is the `DEMO_PASSWORD`
+   value from `web/.env` — not stored in this repo). The account is seeded with
+   bookmarks, reviews, check-ins, and claimed deals so every page looks alive.
 3. Open tabs in order, left to right: ① `/discover` ② a business detail page
    that the demo account has NOT yet reviewed ③ `/bookmarks` ④ `/deals`
    ⑤ `/dashboard`. Zoom 110%, close every other app, hide the dock,

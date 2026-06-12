@@ -21,8 +21,14 @@ const env = Object.fromEntries(
 const supabase = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY)
 
 const DEMO_EMAIL = 'judge@pulse.demo'
-const DEMO_PASSWORD = 'PulseDemo2026!'
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || env.DEMO_PASSWORD
 const DEMO_NAME = 'Alex Rivera'
+
+if (!DEMO_PASSWORD) {
+  throw new Error(
+    'DEMO_PASSWORD is not set. Add it to web/.env (or export it) before seeding.'
+  )
+}
 
 async function main() {
   // 1. Create (or reuse) the confirmed demo user
@@ -145,7 +151,7 @@ async function main() {
     total_check_ins: 8,
   })
 
-  console.log(`done. login: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`)
+  console.log(`done. login: ${DEMO_EMAIL} (password from DEMO_PASSWORD env)`)
 }
 
 main().catch((e) => {
