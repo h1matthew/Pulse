@@ -664,12 +664,6 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
     ? 'Finding places'
     : `${sortedBusinesses.length} ${sortedBusinesses.length === 1 ? 'place' : 'places'}`
   const ratingSummaryLabel = isLoading ? 'Avg -' : `Avg ${averageVisibleRating}`
-  const locationSummary =
-    locationSource === 'gps'
-      ? 'Current location'
-      : locationLabel
-        ? `Near ${locationLabel}`
-        : 'Near San Antonio'
   const locationControlLabel =
     locationSource === 'gps' ? 'Current location' : locationLabel || 'San Antonio'
   const categoryLabel =
@@ -697,14 +691,6 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
               className="relative flex flex-col gap-5 pb-6 md:flex-row md:items-end md:justify-between"
             >
               <div className="max-w-2xl">
-                <p className="mb-2.5 flex items-center gap-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
-                  <span className="relative flex h-2 w-2" aria-hidden="true">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                  </span>
-                  <span>{locationSummary}</span>
-                  <span className="text-muted-foreground/70">· live</span>
-                </p>
                 <h1
                   id="discover-heading"
                   className="text-4xl font-semibold tracking-tighter sm:text-5xl sm:leading-[1.05]"
