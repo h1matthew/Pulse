@@ -275,7 +275,8 @@ describe("DiscoverPage", () => {
     });
 
     expect(screen.getByPlaceholderText("Search by name, food, or service")).toBeInTheDocument();
-    expect(screen.getByText("Near Diamond Bar")).toBeInTheDocument();
+    // Location surfaces in the filter console's location row
+    expect(screen.getByText("Diamond Bar")).toBeInTheDocument();
     expect(screen.getByText("2 places")).toBeInTheDocument();
     expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
     expect(screen.getByText("Pinpoint Lanes")).toBeInTheDocument();

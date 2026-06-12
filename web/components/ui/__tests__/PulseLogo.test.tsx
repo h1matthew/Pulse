@@ -3,24 +3,26 @@ import { render } from '@testing-library/react'
 import { PulseLogo } from '../PulseLogo'
 
 describe('PulseLogo', () => {
-  it('renders an SVG element', () => {
+  it('renders the logo image', () => {
     const { container } = render(<PulseLogo />)
 
-    const svg = container.querySelector('svg')
-    expect(svg).toBeInTheDocument()
+    const img = container.querySelector('img')
+    expect(img).toBeInTheDocument()
+    expect(img?.getAttribute('src')).toContain('pulse-logo')
   })
 
   it('is hidden from assistive technology', () => {
     const { container } = render(<PulseLogo />)
 
-    const svg = container.querySelector('svg')
-    expect(svg).toHaveAttribute('aria-hidden', 'true')
+    const img = container.querySelector('img')
+    expect(img).toHaveAttribute('aria-hidden', 'true')
+    expect(img).toHaveAttribute('alt', '')
   })
 
   it('applies the provided className', () => {
     const { container } = render(<PulseLogo className="h-8 w-8" />)
 
-    const svg = container.querySelector('svg')
-    expect(svg).toHaveClass('h-8', 'w-8')
+    const img = container.querySelector('img')
+    expect(img).toHaveClass('h-8', 'w-8')
   })
 })
