@@ -172,6 +172,30 @@ describe('verifyReceiptImage', () => {
     expect(result.verified).toBe(true)
   })
 
+  it('parses JSON even when the model adds surrounding commentary', async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        text: () =>
+          'Sure! Here is the verdict:\n' +
+          JSON.stringify({
+            is_receipt: true,
+            merchant_name: 'Diamond Bar Dental',
+            merchant_matches_business: true,
+            purchase_date: today,
+            total_amount: 30,
+            reasoning: 'ok',
+          }) +
+          '\nLet me know if you need anything else.',
+      },
+    })
+
+    const result = await verifyReceiptImage(baseOptions)
+
+    expect(result.verified).toBe(true)
+    expect(result.total).toBe(30)
+  })
+
   it('fails closed when the model returns garbage', async () => {
     mockGenerateContent.mockResolvedValue({
       response: { text: () => 'not json at all' },
