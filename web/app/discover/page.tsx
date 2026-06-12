@@ -89,10 +89,10 @@ function FilterChip({ active, onClick, ariaLabel, children }: FilterChipProps) {
       aria-pressed={active}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
+        "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-all",
         active
-          ? "border-primary/30 bg-primary/10 text-primary"
-          : "border-border text-muted-foreground hover:text-foreground"
+          ? "border-primary/40 bg-primary/10 text-primary shadow-[0_0_0_3px] shadow-primary/5"
+          : "border-border bg-card text-muted-foreground hover:border-primary/25 hover:text-foreground"
       )}
     >
       {children}
@@ -206,14 +206,14 @@ function BusinessCard({
   };
 
   return (
-    <article className="group relative h-64 overflow-hidden rounded-lg border border-border bg-muted transition-all hover:border-primary/40 hover:shadow-md">
+    <article className="group relative h-64 overflow-hidden rounded-2xl border border-border bg-muted transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10">
       {/* Full-bleed image */}
       {showPhoto ? (
         <Image
           src={photoUrl}
           alt={business.name}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-transform duration-700 group-hover:scale-[1.06]"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           unoptimized
           onError={() => setPhotoLoadFailed(true)}
@@ -223,7 +223,7 @@ function BusinessCard({
           src={fallbackImageUrl}
           alt={`${business.name} default cover`}
           fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-transform duration-700 group-hover:scale-[1.06]"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           unoptimized
         />
@@ -238,16 +238,16 @@ function BusinessCard({
       {/* Top-left badges (visual only — clicks fall through to the card link) */}
       <div className="pointer-events-none absolute left-3 top-3 z-20 flex flex-wrap gap-1.5">
         {independent ? (
-          <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+          <span className="rounded-full border border-white/25 bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-md">
             Independent
           </span>
         ) : (
-          <span className="rounded-full bg-black/30 px-2 py-0.5 text-xs font-medium text-white/90 backdrop-blur-sm">
+          <span className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[11px] font-medium text-white/75 backdrop-blur-md">
             Chain
           </span>
         )}
         {business.sba_certified && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+          <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-md">
             <ShieldCheck className="h-3 w-3" aria-hidden="true" />
             SBA
           </span>
@@ -278,28 +278,31 @@ function BusinessCard({
         <h3 className="truncate text-lg font-semibold tracking-tight text-white">
           {business.name}
         </h3>
-        <p className="mt-0.5 truncate text-sm text-white/70">
+        <p className="mt-0.5 truncate text-[13px] text-white/65">
           {business.category?.name ?? "Local business"}
           {locationLine ? ` · ${locationLine}` : ""}
         </p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/90">
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/15 pt-2.5 text-sm text-white/90">
           <span className="inline-flex items-center gap-1 font-medium">
             <Star className="h-3.5 w-3.5 fill-white text-white" aria-hidden="true" />
             {business.average_rating || "New"}
           </span>
           <span className="text-white/60">{reviewLabel}</span>
           {business.price_range && (
-            <span className="font-medium text-white/80">{getPriceRange(business.price_range)}</span>
+            <span className="font-mono text-xs font-medium text-white/80">{getPriceRange(business.price_range)}</span>
           )}
           {openNow && (
-            <span className="inline-flex items-center gap-1 font-medium text-white">
-              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1.5 font-medium text-white">
+              <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
+              </span>
               Open now
             </span>
           )}
           {distance && (
-            <span className="inline-flex items-center gap-1 font-medium text-white">
-              <Navigation className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1 font-mono text-xs font-medium text-white">
+              <Navigation className="h-3 w-3" aria-hidden="true" />
               {distance}
             </span>
           )}
@@ -311,7 +314,7 @@ function BusinessCard({
 
 function BusinessCardSkeleton() {
   return (
-    <div className="relative h-64 overflow-hidden rounded-lg border border-border bg-card">
+    <div className="relative h-64 overflow-hidden rounded-2xl border border-border bg-card">
       <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
       <div className="absolute inset-x-0 bottom-0 space-y-2 p-4">
         <Skeleton className="h-5 w-3/4" />
@@ -633,31 +636,73 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
     <div className="min-h-screen">
       <Header />
 
-      <main className="px-4 pb-12 pt-32 sm:px-6">
+      <main className="px-4 pb-12 pt-28 sm:px-6">
         <div className="mx-auto max-w-6xl space-y-6">
-          <section aria-labelledby="discover-heading">
-            <AnimatedSection animation="rise-up" className="flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
+          <section aria-labelledby="discover-heading" className="relative">
+            {/* Radar atmosphere: dot grid, soft glow, concentric range rings */}
+            <div
+              className="pointer-events-none absolute -inset-x-8 -top-32 bottom-0 overflow-hidden"
+              aria-hidden="true"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[22px_22px] mask-[radial-gradient(110%_100%_at_50%_0%,black_25%,transparent_72%)]" />
+              <div className="absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
+              <div className="absolute -right-28 -top-36 h-120 w-120 rounded-full border border-primary/15" />
+              <div className="absolute -right-12 -top-20 h-88 w-88 rounded-full border border-primary/10" />
+              <div className="absolute right-4 -top-4 h-56 w-56 rounded-full border border-primary/5" />
+            </div>
+            <AnimatedSection
+              animation="rise-up"
+              className="relative flex flex-col gap-5 pb-6 md:flex-row md:items-end md:justify-between"
+            >
               <div className="max-w-2xl">
-                <p className="mb-2 text-sm font-medium text-primary">{locationSummary}</p>
-                <h1 id="discover-heading" className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Discover places nearby
+                <p className="mb-2.5 flex items-center gap-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-primary">
+                  <span className="relative flex h-2 w-2" aria-hidden="true">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-50" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                  </span>
+                  <span>{locationSummary}</span>
+                  <span className="text-muted-foreground/70">· live</span>
+                </p>
+                <h1
+                  id="discover-heading"
+                  className="text-4xl font-semibold tracking-tighter sm:text-5xl sm:leading-[1.05]"
+                >
+                  Discover places <span className="gradient-text">nearby</span>
                 </h1>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+                <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground sm:text-base">
                   Search local spots, compare the basics, and save what looks good.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2 text-sm">
-                <span className="rounded-md border border-border bg-card px-3 py-2 font-medium">
-                  {resultCountLabel}
-                </span>
-                <span className="rounded-md border border-border bg-card px-3 py-2 text-muted-foreground">
-                  {ratingSummaryLabel}
-                </span>
-                <span className="rounded-md border border-border bg-card px-3 py-2 text-muted-foreground">
-                  {radiusMiles} mi
-                </span>
+              {/* HUD readout: live scan stats */}
+              <div className="flex w-fit shrink-0 divide-x divide-border overflow-hidden rounded-xl border border-border bg-card/80 shadow-sm backdrop-blur">
+                <div className="px-4 py-3">
+                  <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    In range
+                  </p>
+                  <p className="mt-1 text-sm font-semibold tabular-nums">{resultCountLabel}</p>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    Rating
+                  </p>
+                  <p className="mt-1 text-sm font-semibold tabular-nums text-muted-foreground">
+                    {ratingSummaryLabel}
+                  </p>
+                </div>
+                <div className="px-4 py-3">
+                  <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    Radius
+                  </p>
+                  <p className="mt-1 text-sm font-semibold tabular-nums text-muted-foreground">
+                    {radiusMiles} mi
+                  </p>
+                </div>
               </div>
             </AnimatedSection>
+            <div
+              className="relative h-px bg-gradient-to-r from-transparent via-border to-transparent"
+              aria-hidden="true"
+            />
           </section>
 
           {/* Location Prompt */}
@@ -675,14 +720,19 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
             <AnimatedSection animation="rise-up" delay={0.08}>
             <section
               aria-label="Search and filters"
-              className="rounded-lg border border-border bg-card p-3 shadow-sm sm:p-4"
+              className="overflow-hidden rounded-2xl border border-border bg-card/90 shadow-sm backdrop-blur-sm"
             >
+              <div
+                className="h-px bg-gradient-to-r from-primary/50 via-primary/10 to-transparent"
+                aria-hidden="true"
+              />
+              <div className="p-3 sm:p-4">
                 <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                   <div role="search" aria-label="Search businesses" className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                     <Input
                       placeholder="Search by name, food, or service"
-                      className="pl-10"
+                      className="bg-background/60 pl-10"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       aria-label="Search businesses"
@@ -717,8 +767,10 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                       aria-pressed={selectedCategory === category.id}
                       aria-label={`Filter by ${category.name}`}
                       className={cn(
-                        "h-8 rounded-md border border-transparent px-3 text-muted-foreground",
-                        selectedCategory === category.id && "border-border bg-secondary text-foreground"
+                        "h-8 rounded-full border border-transparent px-3.5 text-muted-foreground transition-colors",
+                        selectedCategory === category.id
+                          ? "border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background"
+                          : "hover:border-border hover:text-foreground"
                       )}
                     >
                       {category.name}
@@ -731,8 +783,10 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                     aria-pressed={selectedCategory === 'bookmarks'}
                     aria-label="Show bookmarked businesses"
                     className={cn(
-                      "h-8 rounded-md border border-transparent px-3 text-muted-foreground",
-                      selectedCategory === 'bookmarks' && "border-border bg-secondary text-foreground"
+                      "h-8 rounded-full border border-transparent px-3.5 text-muted-foreground transition-colors",
+                      selectedCategory === 'bookmarks'
+                        ? "border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background"
+                        : "hover:border-border hover:text-foreground"
                     )}
                   >
                     <Heart className="h-3.5 w-3.5" aria-hidden="true" />
@@ -800,7 +854,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                 <div className="mt-4 flex flex-col gap-3 border-t border-border pt-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
-                    <span>Location</span>
+                    <span className="font-mono text-[11px] font-medium uppercase tracking-[0.14em]">Location</span>
                     <span className="font-medium text-foreground">{locationControlLabel}</span>
                     <Button
                       variant="ghost"
@@ -814,7 +868,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Radius</span>
+                    <span className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Radius</span>
                     <Button
                       variant="ghost"
                       size="icon-xs"
@@ -847,6 +901,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                     </Button>
                   </div>
                 </div>
+              </div>
             </section>
             </AnimatedSection>
           )}
@@ -857,8 +912,12 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
               {missionsInView.map((detail) => (
                 <div
                   key={detail.progress.id}
-                  className="flex flex-col gap-2 rounded-lg border border-primary/25 bg-primary/5 p-4 sm:flex-row sm:items-center sm:gap-4"
+                  className="relative flex flex-col gap-2 overflow-hidden rounded-xl border border-primary/25 bg-primary/5 p-4 pl-5 sm:flex-row sm:items-center sm:gap-4"
                 >
+                  <div
+                    className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-chart-2"
+                    aria-hidden="true"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold">
                       Mission: {detail.progress.mission.title}
@@ -870,8 +929,8 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                   </div>
                   <div className="w-full sm:w-44">
                     <div className="mb-1 flex justify-between text-xs">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium tabular-nums">
+                      <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Progress</span>
+                      <span className="font-mono font-medium tabular-nums">
                         {detail.progress.current_count}/{detail.progress.mission.target_count}
                       </span>
                     </div>
@@ -889,13 +948,14 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
           {/* Business Grid */}
           {hasLocation && (
             <section aria-label="Business results" aria-live="polite" aria-atomic="false">
-              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="text-sm font-medium">Results</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {sanitizedSearch ? `Matching "${sanitizedSearch}"` : categoryLabel}
-                  </p>
-                </div>
+              <div className="mb-4 flex items-baseline gap-3">
+                <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.18em]">
+                  Results
+                </h2>
+                <span className="hidden h-px flex-1 self-center bg-border sm:block" aria-hidden="true" />
+                <p className="text-sm text-muted-foreground">
+                  {sanitizedSearch ? `Matching "${sanitizedSearch}"` : categoryLabel}
+                </p>
               </div>
 
               {isLoading ? (
@@ -905,14 +965,14 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                   ))}
                 </div>
               ) : businessesError ? (
-                <div className="rounded-lg border border-border bg-card p-8 text-center" role="alert">
+                <div className="rounded-2xl border border-border bg-card p-8 text-center" role="alert">
                   <AlertCircle className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden="true" />
                   <h3 className="text-base font-semibold">Could not load places</h3>
                   <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{businessesError.message}</p>
                   <Button className="mt-4" onClick={() => refetch()}>Try again</Button>
                 </div>
               ) : sortedBusinesses.length === 0 ? (
-                <div className="rounded-lg border border-border bg-card p-8 text-center">
+                <div className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center">
                   <Search className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden="true" />
                   <h3 className="text-base font-semibold">No places found</h3>
                   <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
@@ -935,8 +995,12 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {sortedBusinesses.map((business) => (
-                    <AnimatedSection key={business.id} animation="rise-up">
+                  {sortedBusinesses.map((business, index) => (
+                    <AnimatedSection
+                      key={business.id}
+                      animation="rise-up"
+                      delay={Math.min((index % 6) * 0.06, 0.3)}
+                    >
                       <BusinessCard
                         business={business}
                         userLocation={location}

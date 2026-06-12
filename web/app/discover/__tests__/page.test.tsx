@@ -193,8 +193,8 @@ function makeBaseBusinesses(): BusinessWithCategory[] {
   },
   {
     id: "business-2",
-    name: "Round1 Arcade",
-    slug: "round1-arcade",
+    name: "Galaxy Pinball Lounge",
+    slug: "galaxy-pinball-lounge",
     category_id: "cat-2",
     description: "Bowling, arcade games, and karaoke.",
     short_description: "Games and bowling.",
@@ -278,7 +278,7 @@ describe("DiscoverPage", () => {
     expect(screen.getByText("Near Diamond Bar")).toBeInTheDocument();
     expect(screen.getByText("2 places")).toBeInTheDocument();
     expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
-    expect(screen.getByText("Round1 Arcade")).toBeInTheDocument();
+    expect(screen.getByText("Galaxy Pinball Lounge")).toBeInTheDocument();
   });
 
   it("pre-selects the category from the ?category= search param", async () => {
@@ -408,7 +408,7 @@ describe("DiscoverPage", () => {
 
       // Chain (is_chain: true) hidden, independent (is_chain: false) shown
       expect(screen.queryByText("H Mart Diamond Bar")).not.toBeInTheDocument();
-      expect(screen.getByText("Round1 Arcade")).toBeInTheDocument();
+      expect(screen.getByText("Galaxy Pinball Lounge")).toBeInTheDocument();
       expect(screen.getByText("1 place")).toBeInTheDocument();
 
       // Active chip shows the inline count and pressed state
@@ -434,9 +434,9 @@ describe("DiscoverPage", () => {
 
       fireEvent.click(screen.getByRole("button", { name: "Open now" }));
 
-      // H Mart hours resolve open, Round1 resolves closed
+      // H Mart hours resolve open, Galaxy Pinball resolves closed
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
-      expect(screen.queryByText("Round1 Arcade")).not.toBeInTheDocument();
+      expect(screen.queryByText("Galaxy Pinball Lounge")).not.toBeInTheDocument();
       expect(screen.getByText("1 place")).toBeInTheDocument();
     });
 
@@ -450,7 +450,7 @@ describe("DiscoverPage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Open now" }));
 
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
-      expect(screen.queryByText("Round1 Arcade")).not.toBeInTheDocument();
+      expect(screen.queryByText("Galaxy Pinball Lounge")).not.toBeInTheDocument();
     });
 
     it("filters by price level with multi-select", async () => {
@@ -459,12 +459,12 @@ describe("DiscoverPage", () => {
       // $$ only matches H Mart (price_range 2)
       fireEvent.click(screen.getByRole("button", { name: "Price $$" }));
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
-      expect(screen.queryByText("Round1 Arcade")).not.toBeInTheDocument();
+      expect(screen.queryByText("Galaxy Pinball Lounge")).not.toBeInTheDocument();
 
-      // Adding $ brings back Round1 (price_range 1)
+      // Adding $ brings back Galaxy Pinball (price_range 1)
       fireEvent.click(screen.getByRole("button", { name: "Price $" }));
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
-      expect(screen.getByText("Round1 Arcade")).toBeInTheDocument();
+      expect(screen.getByText("Galaxy Pinball Lounge")).toBeInTheDocument();
       expect(screen.getByText("2 places")).toBeInTheDocument();
     });
 
@@ -474,7 +474,7 @@ describe("DiscoverPage", () => {
       fireEvent.click(screen.getByRole("button", { name: "4.0+" }));
 
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
-      expect(screen.queryByText("Round1 Arcade")).not.toBeInTheDocument();
+      expect(screen.queryByText("Galaxy Pinball Lounge")).not.toBeInTheDocument();
     });
 
     it("filters by SBA certification", async () => {
@@ -483,7 +483,7 @@ describe("DiscoverPage", () => {
       fireEvent.click(screen.getByRole("button", { name: "SBA certified" }));
 
       expect(screen.queryByText("H Mart Diamond Bar")).not.toBeInTheDocument();
-      expect(screen.getByText("Round1 Arcade")).toBeInTheDocument();
+      expect(screen.getByText("Galaxy Pinball Lounge")).toBeInTheDocument();
     });
 
     it("hides the SBA chip when no business in the result set is certified", async () => {
@@ -536,7 +536,7 @@ describe("DiscoverPage", () => {
 
       expect(screen.getByText("2 places")).toBeInTheDocument();
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
-      expect(screen.getByText("Round1 Arcade")).toBeInTheDocument();
+      expect(screen.getByText("Galaxy Pinball Lounge")).toBeInTheDocument();
     });
   });
 
@@ -544,7 +544,7 @@ describe("DiscoverPage", () => {
     it("shows an Independent badge on independents and a muted Chain tag on chains", async () => {
       await renderPage();
 
-      const independentCard = screen.getByText("Round1 Arcade").closest("article");
+      const independentCard = screen.getByText("Galaxy Pinball Lounge").closest("article");
       const chainCard = screen.getByText("H Mart Diamond Bar").closest("article");
       expect(independentCard).not.toBeNull();
       expect(chainCard).not.toBeNull();
@@ -559,7 +559,7 @@ describe("DiscoverPage", () => {
       await renderPage();
 
       const openCard = screen.getByText("H Mart Diamond Bar").closest("article");
-      const closedCard = screen.getByText("Round1 Arcade").closest("article");
+      const closedCard = screen.getByText("Galaxy Pinball Lounge").closest("article");
 
       expect(within(openCard as HTMLElement).getByText("Open now")).toBeInTheDocument();
       expect(within(closedCard as HTMLElement).queryByText("Open now")).not.toBeInTheDocument();
@@ -568,7 +568,7 @@ describe("DiscoverPage", () => {
     it("shows an SBA certified badge on certified businesses", async () => {
       await renderPage();
 
-      const sbaCard = screen.getByText("Round1 Arcade").closest("article");
+      const sbaCard = screen.getByText("Galaxy Pinball Lounge").closest("article");
       const plainCard = screen.getByText("H Mart Diamond Bar").closest("article");
 
       expect(within(sbaCard as HTMLElement).getByText("SBA")).toBeInTheDocument();

@@ -90,7 +90,7 @@ describe('Home Page', () => {
     render(<Home />)
     const heading = screen.getByRole('heading', { level: 1 })
     // HeroCityName falls back to "Your City" without a resolved location
-    expect(heading).toHaveTextContent('Feel the Pulse of Your City.')
+    expect(heading).toHaveTextContent('Feel the Pulse of Your City')
   })
 
   it('renders hero description', () => {
@@ -127,7 +127,7 @@ describe('Home Page', () => {
 
   it('renders discover businesses section', () => {
     render(<Home />)
-    expect(screen.getByText('Pick a place without the pitch.')).toBeInTheDocument()
+    expect(screen.getByText('Pick a place without the pitch')).toBeInTheDocument()
   })
 
   it('renders impact section', () => {
