@@ -121,10 +121,15 @@ export function merchantNamePlausiblyMatches(
 }
 
 function parseVerdict(text: string): GeminiReceiptVerdict | null {
-  // Models occasionally wrap JSON in fences despite instructions
+  // Models occasionally wrap JSON in fences or add a sentence of commentary
+  // despite instructions. Strip fences, then isolate the JSON object so a
+  // stray prefix/suffix doesn't make JSON.parse throw on a valid verdict.
   const cleaned = text.replace(/```json|```/g, '').trim()
+  const start = cleaned.indexOf('{')
+  const end = cleaned.lastIndexOf('}')
+  if (start === -1 || end <= start) return null
   try {
-    const parsed = JSON.parse(cleaned)
+    const parsed = JSON.parse(cleaned.slice(start, end + 1))
     if (typeof parsed?.is_receipt !== 'boolean') return null
     // Trust nothing about the shape beyond is_receipt; coerce field by field
     return {
@@ -174,7 +179,8 @@ export async function verifyReceiptImage(options: {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash-lite',
-    // Verification is a gate, not a creative task: deterministic output only
+    // Verification is a gate, not a creative task: deterministic JSON only,
+    // so the verdict parses reliably instead of arriving wrapped in prose.
     generationConfig: {
       temperature: 0,
       responseMimeType: 'application/json',

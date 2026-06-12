@@ -15,8 +15,8 @@ Pulse is a local business discovery platform that shows users exactly how their 
 - **Bot Verification**: Cloudflare Turnstile CAPTCHA on review submission to prevent automated abuse
 
 ### Beyond the Prompt
-- **AI-Matched "For You" Feed**: Personalized recommendations via Google Gemini based on ratings, bookmarks, and preferences
-- **AI Assistant**: Interactive Q&A chatbot for business recommendations and feature help
+- **AI Assistant (RAG)**: Gemini-powered Q&A that retrieves real businesses from our database — keyword extraction, category and amenity detection — before generating recommendations
+- **Smart Ranking**: Default "Top rated" sort weights rating by review volume (`rating × log10(reviews)`) so credible businesses outrank single-review outliers
 - **Economic Impact Dashboard**: Track dollars kept local, businesses supported, jobs impacted, and carbon saved
 - **Impact Report Export**: Customizable reports with category filtering, sortable tables, CSV download, and print layout
 - **Community Pulse**: Aggregate impact across all users with real-time metrics
@@ -229,6 +229,19 @@ All dependencies are listed in `web/package.json`. Key open-source licenses:
 | React Testing Library | MIT |
 
 All copyrighted material (Google Places business data, Google reviews) is attributed to its respective owners and displayed with proper sourcing.
+
+## Demo & Presentation Assets
+
+| Item | Location |
+|---|---|
+| Demo judge account seeder | `web/scripts/seed-demo-user.mjs` (creates `judge@pulse.demo` with bookmarks, reviews, check-ins, deal claims) |
+| Screenshot capture script | `web/scripts/capture.js` (Playwright, 1920×1080, walks every required feature) |
+| Presentation screenshots | `assets/` (10 code images via charmbracelet freeze + 11 app captures) |
+| Speaker script (7 min, 3 presenters) | `SPEAKER_SCRIPT.md` |
+| Live demo path + offline fallback | `DEMO_SCRIPT.md` |
+| Judge Q&A preparation | `QA_PREP.md` |
+| Canva animation guide | `CANVA_ANIMATION_GUIDE.md` |
+| Rubric gap audit | `GAPS.md` |
 
 ## License
 
