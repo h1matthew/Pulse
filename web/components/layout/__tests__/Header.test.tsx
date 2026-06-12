@@ -117,6 +117,24 @@ describe('Header', () => {
     expect(screen.getByText('Admin')).toBeInTheDocument()
   })
 
+  it('places the help button directly beside the sign out button', () => {
+    mockIsLoggedIn.mockReturnValue(true)
+    mockIsAdmin.mockReturnValue(true)
+    render(<Header />)
+
+    const help = screen.getByTestId('help-menu')
+    const admin = screen.getByText('Admin')
+    const signOut = screen.getByText('Sign out')
+
+    // Order in the actions cluster: Admin ... Help ... Sign out
+    expect(
+      admin.compareDocumentPosition(help) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(
+      help.compareDocumentPosition(signOut) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+  })
+
   it('does not show Admin link when user is not admin', () => {
     mockIsLoggedIn.mockReturnValue(true)
     mockIsAdmin.mockReturnValue(false)
