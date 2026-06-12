@@ -423,15 +423,18 @@ export function OnboardingTour() {
   }
 
   return (
-    <div className="fixed inset-0 z-120" data-tour-overlay>
+    // The root layer must NOT catch clicks: the spotlight hole has to stay
+    // truly open so the user can click and refocus the real control under it.
+    // Only the dim panels and the card opt back into pointer events.
+    <div className="pointer-events-none fixed inset-0 z-120" data-tour-overlay>
       {/* Dimmer: 4 panels around the spotlight hole so the target itself
           stays fully interactive (click the card, press the real buttons). */}
       {hole ? (
         <>
-          <div className="absolute bg-black/55 transition-all duration-300" style={{ top: 0, left: 0, right: 0, height: hole.top }} />
-          <div className="absolute bg-black/55 transition-all duration-300" style={{ top: hole.top, left: 0, width: hole.left, height: hole.height }} />
-          <div className="absolute bg-black/55 transition-all duration-300" style={{ top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height }} />
-          <div className="absolute bg-black/55 transition-all duration-300" style={{ top: hole.top + hole.height, left: 0, right: 0, bottom: 0 }} />
+          <div className="pointer-events-auto absolute bg-black/55 transition-all duration-300" style={{ top: 0, left: 0, right: 0, height: hole.top }} />
+          <div className="pointer-events-auto absolute bg-black/55 transition-all duration-300" style={{ top: hole.top, left: 0, width: hole.left, height: hole.height }} />
+          <div className="pointer-events-auto absolute bg-black/55 transition-all duration-300" style={{ top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height }} />
+          <div className="pointer-events-auto absolute bg-black/55 transition-all duration-300" style={{ top: hole.top + hole.height, left: 0, right: 0, bottom: 0 }} />
           {/* Spotlight ring */}
           <div
             className="pointer-events-none absolute rounded-xl border-2 border-primary shadow-[0_0_0_4px] shadow-primary/25 transition-all duration-300"
@@ -440,7 +443,7 @@ export function OnboardingTour() {
           />
         </>
       ) : (
-        <div className="absolute inset-0 bg-black/55" />
+        <div className="pointer-events-auto absolute inset-0 bg-black/55" />
       )}
 
       {/* Step card */}
@@ -450,7 +453,7 @@ export function OnboardingTour() {
         aria-modal="false"
         aria-label={`Tour step ${stepIndex + 1} of ${TOUR_STEPS.length}: ${step.title}`}
         tabIndex={-1}
-        className="absolute w-[min(360px,calc(100vw-28px))] rounded-2xl border border-border bg-background p-5 shadow-2xl outline-none animate-scale-in"
+        className="pointer-events-auto absolute w-[min(360px,calc(100vw-28px))] rounded-2xl border border-border bg-background p-5 shadow-2xl outline-none animate-scale-in"
         style={cardStyle}
       >
         <div className="flex items-start justify-between gap-3">
