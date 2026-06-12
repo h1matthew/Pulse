@@ -728,6 +728,7 @@ export default function BusinessDetailPage({
                       onClick={handleBookmark}
                       disabled={toggleBookmark.isPending}
                       aria-label={isBookmarked ? "Remove bookmark" : "Bookmark this business"}
+                      data-tour="business-bookmark"
                     >
                       <Heart
                         className={cn("h-4 w-4", isBookmarked && "fill-white")}
@@ -766,7 +767,11 @@ export default function BusinessDetailPage({
                     <TabsTrigger value="about" className={underlineTabsTriggerClass}>
                       About
                     </TabsTrigger>
-                    <TabsTrigger value="reviews" className={underlineTabsTriggerClass}>
+                    <TabsTrigger
+                      value="reviews"
+                      className={underlineTabsTriggerClass}
+                      data-tour="business-reviews"
+                    >
                       Reviews ({reviewTabCount})
                     </TabsTrigger>
                     <TabsTrigger value="deals" className={underlineTabsTriggerClass}>
@@ -1338,6 +1343,7 @@ export default function BusinessDetailPage({
                         variant={hasCheckedIn ? "secondary" : "outline"}
                         onClick={handleCheckIn}
                         disabled={hasCheckedIn}
+                        data-tour="business-checkin"
                       >
                         {hasCheckedIn ? (
                           <CheckCircle className="h-4 w-4" />

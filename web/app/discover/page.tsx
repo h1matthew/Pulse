@@ -246,7 +246,10 @@ function BusinessCard({
   };
 
   return (
-    <article className="group relative h-64 overflow-hidden rounded-2xl border border-border bg-muted transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10">
+    <article
+      data-tour="business-card"
+      className="group relative h-64 overflow-hidden rounded-2xl border border-border bg-muted transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/10"
+    >
       {/* Full-bleed image */}
       {showPhoto ? (
         <Image
@@ -756,7 +759,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
               />
               <div className="p-3 sm:p-4">
                 <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-                  <div role="search" aria-label="Search businesses" className="relative">
+                  <div role="search" aria-label="Search businesses" className="relative" data-tour="discover-search">
                     <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                     <Input
                       placeholder="Search by name, food, or service"
@@ -795,7 +798,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                   </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by category">
+                <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by category" data-tour="discover-categories">
                   {CATEGORY_FILTERS.map((category) => (
                     <Button
                       key={category.id}
