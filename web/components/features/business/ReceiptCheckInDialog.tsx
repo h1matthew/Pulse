@@ -7,7 +7,7 @@
  * receipt, the server verifies it against this business with Gemini vision,
  * and only a verified receipt records the visit (and mission progress).
  */
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Loader2, ReceiptText, ScanLine } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -43,6 +43,8 @@ interface ReceiptCheckInDialogProps {
   onAlreadyCheckedIn?: () => void
 }
 
+const MAX_RECEIPT_BYTES = 8 * 1024 * 1024
+
 export function ReceiptCheckInDialog({
   open,
   onOpenChange,
@@ -57,9 +59,16 @@ export function ReceiptCheckInDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
+  // Revoke the previous object URL whenever the preview changes, and the
+  // current one on unmount (replacing scattered manual revokes)
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
+
   const reset = () => {
     setFile(null)
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(null)
     setErrorMessage(null)
     setIsSubmitting(false)
@@ -72,9 +81,13 @@ export function ReceiptCheckInDialog({
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = event.target.files?.[0] ?? null
+    if (selected && selected.size > MAX_RECEIPT_BYTES) {
+      setErrorMessage('That image is larger than 8MB — try a smaller photo.')
+      event.target.value = ''
+      return
+    }
     setErrorMessage(null)
     setFile(selected)
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
     setPreviewUrl(selected ? URL.createObjectURL(selected) : null)
   }
 
@@ -107,7 +120,25 @@ export function ReceiptCheckInDialog({
         return
       }
 
-      onSuccess(body as CheckInSuccessResult)
+      // Normalize the payload so a server response shape drift can't crash
+      // success handlers downstream
+      const result = body as Partial<CheckInSuccessResult> | null
+      onSuccess({
+        message:
+          typeof result?.message === 'string'
+            ? result.message
+            : 'Receipt verified — checked in!',
+        verification: {
+          merchant: result?.verification?.merchant ?? null,
+          total:
+            typeof result?.verification?.total === 'number'
+              ? result.verification.total
+              : null,
+        },
+        missionUpdates: Array.isArray(result?.missionUpdates)
+          ? result.missionUpdates
+          : [],
+      })
       handleOpenChange(false)
     } catch {
       setErrorMessage('Failed to check in. Please try again.')

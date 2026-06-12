@@ -300,7 +300,9 @@ describe("BusinessDetailPage reviews", () => {
       );
     });
 
-    const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    // The page also fetches check-in status on mount; pick the review POST
+    const reviewCall = fetchMock.mock.calls.find(([url]) => url === "/api/reviews");
+    const requestBody = JSON.parse(reviewCall![1].body as string);
     expect(requestBody.business_id).toBe(BUSINESS_ID);
     expect(requestBody.content).toBe("Great food and service.");
 
@@ -311,5 +313,30 @@ describe("BusinessDetailPage reviews", () => {
     expect(toast.success).toHaveBeenCalledWith("Review submitted", {
       description: "Thank you for sharing your experience!",
     });
+  });
+
+  it("reflects an existing check-in today on load", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkIns: [], checkedInToday: true, totalCheckIns: 1 }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    mockUseAuth.mockReturnValue({ user: { id: "user-1" } });
+
+    await renderPage();
+
+    expect(fetchMock).toHaveBeenCalledWith(`/api/businesses/${BUSINESS_ID}/checkin`);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /checked in/i })).toBeDisabled();
+    });
+  });
+
+  it("does not fetch check-in status for signed-out visitors", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await renderPage();
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

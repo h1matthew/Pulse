@@ -23,9 +23,10 @@ interface MissionUpdate {
 }
 
 /**
- * Advance the user's started, incomplete visit-based missions that match
- * this business's category. "Visit 3 different shops" means distinct
- * businesses, so repeat visits to the same business don't double-count.
+ * Advance the user's started, incomplete visit-based missions
+ * (category_explore and visit_count) that match this business's category.
+ * "Visit 3 different shops" means distinct businesses, so repeat visits to
+ * the same business don't double-count.
  */
 async function advanceVisitMissions(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -46,7 +47,12 @@ async function advanceVisitMissions(
     // Supabase typing for to-one joins comes back loose; normalize.
     const mission = Array.isArray(row.mission) ? row.mission[0] : row.mission
     if (!mission || !mission.is_active) continue
-    if (mission.mission_type !== 'category_explore') continue
+    if (
+      mission.mission_type !== 'category_explore' &&
+      mission.mission_type !== 'visit_count'
+    ) {
+      continue
+    }
     if (
       mission.target_category_id &&
       mission.target_category_id !== business.category_id
@@ -108,6 +114,12 @@ export async function POST(
     if (!receipt.type.startsWith('image/')) {
       return NextResponse.json(
         { error: 'The receipt must be an image.' },
+        { status: 400 }
+      )
+    }
+    if (receipt.size === 0) {
+      return NextResponse.json(
+        { error: 'The receipt image is empty.' },
         { status: 400 }
       )
     }
@@ -181,7 +193,9 @@ export async function POST(
       )
     }
 
-    // Store the proof privately for audit (admin client: bucket is private)
+    // Store the proof privately for audit (admin client: bucket is private).
+    // Fail closed: a check-in without its stored receipt is a check-in
+    // without evidence, so storage failure aborts the whole check-in.
     const admin = createAdminClient()
     const extension = receipt.type === 'image/png' ? 'png' : 'jpg'
     const receiptPath = `${user.id}/${businessId}-${Date.now()}.${extension}`
@@ -190,6 +204,14 @@ export async function POST(
       .upload(receiptPath, imageBuffer, { contentType: receipt.type })
     if (uploadError) {
       console.error('Receipt upload failed:', uploadError)
+      return NextResponse.json(
+        {
+          error: 'Receipt storage is temporarily unavailable',
+          reason:
+            'Your receipt verified, but we could not store it — please try again soon.',
+        },
+        { status: 503 }
+      )
     }
 
     // Was there a prior (pre-today) check-in at this business? Used for
@@ -210,7 +232,7 @@ export async function POST(
         user_id: user.id,
         check_in_at: new Date().toISOString(),
         spend_amount: verification.total,
-        receipt_url: uploadError ? null : receiptPath,
+        receipt_url: receiptPath,
         verified_by_receipt: true,
         receipt_merchant: verification.merchantName,
       })
