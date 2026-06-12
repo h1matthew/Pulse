@@ -1,7 +1,7 @@
 'use client'
 
 import { use, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
-import { AlertCircle, Clock, Heart, MapPin, Minus, Navigation, Plus, RefreshCw, Search, ShieldCheck, Star, Store } from "lucide-react";
+import { AlertCircle, ArrowUpDown, Clock, Heart, MapPin, Minus, Navigation, Plus, RefreshCw, Search, ShieldCheck, Star, Store } from "lucide-react";
 import Image from "next/image";
 import { Header } from "@/components/layout/Header";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
@@ -108,6 +108,35 @@ function FilterChip({ active, onClick, ariaLabel, children }: FilterChipProps) {
     >
       {children}
     </button>
+  );
+}
+
+/** One option inside a joined segmented control (price bands, star bands). */
+function SegmentChip({ active, onClick, ariaLabel, children }: FilterChipProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      aria-label={ariaLabel}
+      className={cn(
+        "inline-flex h-8 items-center gap-1 px-3 text-sm font-medium transition-colors",
+        active
+          ? "bg-primary/15 text-primary"
+          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Mono micro-label naming a cluster inside the filter console. */
+function ClusterLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+      {children}
+    </span>
   );
 }
 
@@ -655,16 +684,13 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
       <main className="px-4 pb-12 pt-28 sm:px-6">
         <div className="mx-auto max-w-6xl space-y-6">
           <section aria-labelledby="discover-heading" className="relative">
-            {/* Radar atmosphere: dot grid, soft glow, concentric range rings */}
+            {/* Atmosphere: faint dot grid with a soft glow */}
             <div
               className="pointer-events-none absolute -inset-x-8 -top-32 bottom-0 overflow-hidden"
               aria-hidden="true"
             >
               <div className="absolute inset-0 bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[22px_22px] mask-[radial-gradient(110%_100%_at_50%_0%,black_25%,transparent_72%)]" />
               <div className="absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-              <div className="absolute -right-28 -top-36 h-120 w-120 rounded-full border border-primary/15" />
-              <div className="absolute -right-12 -top-20 h-88 w-88 rounded-full border border-primary/10" />
-              <div className="absolute right-4 -top-4 h-56 w-56 rounded-full border border-primary/5" />
             </div>
             <AnimatedSection
               animation="rise-up"
@@ -745,10 +771,10 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
               <div className="p-3 sm:p-4">
                 <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
                   <div role="search" aria-label="Search businesses" className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                     <Input
                       placeholder="Search by name, food, or service"
-                      className="bg-background/60 pl-10"
+                      className="rounded-full bg-background/60 pl-10"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       aria-label="Search businesses"
@@ -757,7 +783,11 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
 
                   <div className="flex gap-2">
                     <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-                      <SelectTrigger className="min-w-36 flex-1 sm:w-[152px]" aria-label="Sort businesses by">
+                      <SelectTrigger
+                        className="min-w-36 flex-1 rounded-full sm:w-41"
+                        aria-label="Sort businesses by"
+                      >
+                        <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                         <SelectValue placeholder="Sort by" />
                       </SelectTrigger>
                       <SelectContent>
@@ -767,7 +797,13 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                         <SelectItem value="name">A-Z</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button variant="outline" size="icon" onClick={() => refetch()} aria-label="Refresh business results">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full"
+                      onClick={() => refetch()}
+                      aria-label="Refresh business results"
+                    >
                       <RefreshCw className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
@@ -811,49 +847,69 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                 </div>
 
                 <div
-                  className="mt-2 flex flex-wrap items-center gap-1.5"
+                  className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border pt-3"
                   role="group"
                   aria-label="More filters"
                 >
-                  <FilterChip
-                    active={independentOnly}
-                    onClick={() => setIndependentOnly((v) => !v)}
-                  >
-                    <Store className="h-3.5 w-3.5" aria-hidden="true" />
-                    {independentOnly ? `Independent (${independentCount})` : 'Independent'}
-                  </FilterChip>
-                  <FilterChip
-                    active={openNowOnly}
-                    onClick={() => setOpenNowOnly((v) => !v)}
-                  >
-                    <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                    Open now
-                  </FilterChip>
-                  {PRICE_LEVELS.map((level) => (
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <FilterChip
-                      key={level}
-                      active={selectedPrices.includes(level)}
-                      onClick={() => togglePrice(level)}
-                      ariaLabel={`Price ${'$'.repeat(level)}`}
+                      active={independentOnly}
+                      onClick={() => setIndependentOnly((v) => !v)}
                     >
-                      <span className="font-mono">{'$'.repeat(level)}</span>
+                      <Store className="h-3.5 w-3.5" aria-hidden="true" />
+                      {independentOnly ? `Independent (${independentCount})` : 'Independent'}
                     </FilterChip>
-                  ))}
-                  {RATING_LEVELS.map((level) => (
                     <FilterChip
-                      key={level}
-                      active={ratingBand === level}
-                      onClick={() => setRatingBand((v) => (v === level ? 0 : level))}
-                      ariaLabel={
-                        level >= 5
-                          ? '5 stars'
-                          : `${level} to ${level + 1} stars`
-                      }
+                      active={openNowOnly}
+                      onClick={() => setOpenNowOnly((v) => !v)}
                     >
-                      <Star className="h-3.5 w-3.5" aria-hidden="true" />
-                      {ratingBandLabel(level)}
+                      <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                      Open now
                     </FilterChip>
-                  ))}
+                  </div>
+
+                  <span className="hidden h-5 w-px bg-border sm:block" aria-hidden="true" />
+
+                  <div className="flex items-center gap-2">
+                    <ClusterLabel>Price</ClusterLabel>
+                    <div className="inline-flex divide-x divide-border overflow-hidden rounded-full border border-border bg-card">
+                      {PRICE_LEVELS.map((level) => (
+                        <SegmentChip
+                          key={level}
+                          active={selectedPrices.includes(level)}
+                          onClick={() => togglePrice(level)}
+                          ariaLabel={`Price ${'$'.repeat(level)}`}
+                        >
+                          <span className="font-mono text-xs">{'$'.repeat(level)}</span>
+                        </SegmentChip>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <ClusterLabel>Stars</ClusterLabel>
+                    <div className="inline-flex divide-x divide-border overflow-hidden rounded-full border border-border bg-card">
+                      {RATING_LEVELS.map((level) => (
+                        <SegmentChip
+                          key={level}
+                          active={ratingBand === level}
+                          onClick={() => setRatingBand((v) => (v === level ? 0 : level))}
+                          ariaLabel={
+                            level >= 5
+                              ? '5 stars'
+                              : `${level} to ${level + 1} stars`
+                          }
+                        >
+                          <Star
+                            className={cn("h-3 w-3", ratingBand === level && "fill-primary")}
+                            aria-hidden="true"
+                          />
+                          {ratingBandLabel(level)}
+                        </SegmentChip>
+                      ))}
+                    </div>
+                  </div>
+
                   {hasSbaBusinesses && (
                     <FilterChip
                       active={sbaOnly}
@@ -868,7 +924,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                       variant="ghost"
                       size="xs"
                       onClick={resetExtraFilters}
-                      className="text-muted-foreground hover:text-foreground"
+                      className="ml-auto text-muted-foreground hover:text-foreground"
                     >
                       Reset
                     </Button>
@@ -893,36 +949,43 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
 
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">Radius</span>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => setRadiusMiles((r) => Math.max(MIN_RADIUS_MILES, r - 5))}
-                      disabled={radiusMiles <= MIN_RADIUS_MILES}
-                      aria-label="Decrease search radius"
-                    >
-                      <Minus className="h-3 w-3" aria-hidden="true" />
-                    </Button>
-                    <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
-                      <SelectTrigger className="h-8 w-[96px]" aria-label="Search radius">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {RADIUS_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value.toString()}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => setRadiusMiles((r) => Math.min(MAX_RADIUS_MILES, r + 5))}
-                      disabled={radiusMiles >= MAX_RADIUS_MILES}
-                      aria-label="Increase search radius"
-                    >
-                      <Plus className="h-3 w-3" aria-hidden="true" />
-                    </Button>
+                    <div className="flex items-center divide-x divide-border overflow-hidden rounded-full border border-border bg-card">
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        className="h-8 w-8 rounded-none"
+                        onClick={() => setRadiusMiles((r) => Math.max(MIN_RADIUS_MILES, r - 5))}
+                        disabled={radiusMiles <= MIN_RADIUS_MILES}
+                        aria-label="Decrease search radius"
+                      >
+                        <Minus className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                      <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
+                        <SelectTrigger
+                          className="h-8 w-22 rounded-none border-0 bg-transparent shadow-none"
+                          aria-label="Search radius"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {RADIUS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value.toString()}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        className="h-8 w-8 rounded-none"
+                        onClick={() => setRadiusMiles((r) => Math.min(MAX_RADIUS_MILES, r + 5))}
+                        disabled={radiusMiles >= MAX_RADIUS_MILES}
+                        aria-label="Increase search radius"
+                      >
+                        <Plus className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
