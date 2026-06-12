@@ -145,6 +145,8 @@ export function OnboardingTour() {
   const [stepIndex, setStepIndex] = useState(0)
   const [rect, setRect] = useState<SpotlightRect | null>(null)
   const [targetFound, setTargetFound] = useState(false)
+  /** The target stopped moving; safe to open the spotlight at its spot */
+  const [revealed, setRevealed] = useState(false)
   /** The user genuinely tried the spotlighted control on this step */
   const [interacted, setInteracted] = useState(false)
   const targetRef = useRef<HTMLElement | null>(null)
@@ -250,13 +252,16 @@ export function OnboardingTour() {
   }, [])
 
   // Per-step target lifecycle: navigate if needed, poll until the anchor
-  // exists, spotlight it, follow it through scroll/resize, and advance on
-  // click for click-through steps. Auto-skips if the target never shows.
+  // exists, scroll it into view, and only reveal the spotlight once the
+  // target has stopped moving (no flash at a stale position). After the
+  // reveal, a per-frame eased tracker keeps the hole glued to the target
+  // through user scrolling. Auto-skips if the target never shows.
   useEffect(() => {
     if (!active) return
     const currentStep = TOUR_STEPS[stepIndex]
     setRect(null)
     setTargetFound(false)
+    setRevealed(false)
     setInteracted(false)
     targetRef.current = null
 
@@ -265,25 +270,92 @@ export function OnboardingTour() {
     let cancelled = false
     let navigated = false
     let rafId: number | null = null
+    let stabilizer: ReturnType<typeof setInterval> | null = null
     const startedAt = Date.now()
+    const reduceMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    const measure = () => {
+    const readRect = (): SpotlightRect | null => {
       const el = targetRef.current
-      if (!el || cancelled) return
+      if (!el) return null
       const r = el.getBoundingClientRect()
-      setRect((prev) => {
-        if (
-          prev &&
-          Math.abs(prev.top - r.top) < 0.5 &&
-          Math.abs(prev.left - r.left) < 0.5 &&
-          Math.abs(prev.width - r.width) < 0.5 &&
-          Math.abs(prev.height - r.height) < 0.5
-        ) {
-          return prev
+      return { top: r.top, left: r.left, width: r.width, height: r.height }
+    }
+
+    // Per-frame tracker: ease the displayed rect toward the live target
+    // rect. A short time constant keeps it glued during scrolling without
+    // the rubber-band lag a CSS transition would add.
+    let displayed: SpotlightRect | null = null
+    let lastFrameAt = 0
+    const track = () => {
+      if (cancelled) return
+      const target = readRect()
+      if (!target) return
+      const now = performance.now()
+      let next = target
+      if (displayed && !reduceMotion) {
+        const alpha = 1 - Math.exp(-(now - lastFrameAt) / 70)
+        next = {
+          top: displayed.top + (target.top - displayed.top) * alpha,
+          left: displayed.left + (target.left - displayed.left) * alpha,
+          width: displayed.width + (target.width - displayed.width) * alpha,
+          height: displayed.height + (target.height - displayed.height) * alpha,
         }
-        return { top: r.top, left: r.left, width: r.width, height: r.height }
-      })
-      rafId = requestAnimationFrame(measure)
+        if (
+          Math.abs(next.top - target.top) < 0.5 &&
+          Math.abs(next.left - target.left) < 0.5 &&
+          Math.abs(next.width - target.width) < 0.5 &&
+          Math.abs(next.height - target.height) < 0.5
+        ) {
+          next = target
+        }
+      }
+      lastFrameAt = now
+      const settled = displayed === next
+      displayed = next
+      setRect((prev) => (prev === next || (prev && settled) ? prev : next))
+      if (typeof requestAnimationFrame === 'function') {
+        rafId = requestAnimationFrame(track)
+      }
+    }
+
+    // Reveal gate: after the target is found we keep the full dim up and
+    // wait for two consecutive steady readings (the smooth scroll has
+    // finished), capped at 900ms, before opening the hole at its real spot.
+    const beginReveal = () => {
+      displayed = readRect()
+      lastFrameAt = typeof performance !== 'undefined' ? performance.now() : 0
+      if (displayed) setRect(displayed)
+      setRevealed(true)
+      if (typeof requestAnimationFrame === 'function') {
+        rafId = requestAnimationFrame(track)
+      }
+    }
+
+    const watchUntilSteady = () => {
+      const foundAt = Date.now()
+      let lastSeen: SpotlightRect | null = null
+      let steadyTicks = 0
+      stabilizer = setInterval(() => {
+        if (cancelled) return
+        const r = readRect()
+        if (!r) return
+        if (
+          lastSeen &&
+          Math.abs(r.top - lastSeen.top) < 1 &&
+          Math.abs(r.left - lastSeen.left) < 1
+        ) {
+          steadyTicks++
+        } else {
+          steadyTicks = 0
+        }
+        lastSeen = r
+        if (steadyTicks >= 1 || Date.now() - foundAt > 900) {
+          if (stabilizer) clearInterval(stabilizer)
+          beginReveal()
+        }
+      }, 100)
     }
 
     const advanceFromClick = () => {
@@ -300,7 +372,10 @@ export function OnboardingTour() {
         clearInterval(poll)
         targetRef.current = el
         setTargetFound(true)
-        el.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+        el.scrollIntoView?.({
+          block: 'center',
+          behavior: reduceMotion ? 'auto' : 'smooth',
+        })
         if (currentStep.advanceOnTargetClick) {
           el.addEventListener('click', advanceFromClick, { once: true, capture: true })
         }
@@ -311,15 +386,15 @@ export function OnboardingTour() {
           })
         }
         if (currentStep.focusTarget) {
-          // Put the cursor where the action is — typing works immediately
+          // Put the cursor where the action is, so typing works immediately
           const focusable =
             el.querySelector<HTMLElement>('input, textarea, [contenteditable]') ?? el
           focusable.focus?.()
         }
-        measure()
+        watchUntilSteady()
         return
       }
-      // Target isn't on this page — go where the step lives (once)
+      // Target isn't on this page; go where the step lives (once)
       if (!navigated && currentStep.route && !window.location.pathname.startsWith(currentStep.route)) {
         navigated = true
         routerRef.current.push(currentStep.route)
@@ -338,6 +413,7 @@ export function OnboardingTour() {
     return () => {
       cancelled = true
       clearInterval(poll)
+      if (stabilizer) clearInterval(stabilizer)
       if (rafId !== null) cancelAnimationFrame(rafId)
       targetRef.current?.removeEventListener('click', advanceFromClick, true)
       if (currentStep.interactEvent) {
@@ -387,7 +463,7 @@ export function OnboardingTour() {
   if (!active) return null
 
   const isCentered = !step.target
-  const showSpotlight = targetFound && rect !== null
+  const showSpotlight = targetFound && revealed && rect !== null
   const waitingForTarget = !isCentered && !showSpotlight
 
   const pad = SPOTLIGHT_PADDING
@@ -431,13 +507,15 @@ export function OnboardingTour() {
           stays fully interactive (click the card, press the real buttons). */}
       {hole ? (
         <>
-          <div className="pointer-events-auto absolute bg-black/55 transition-all duration-300" style={{ top: 0, left: 0, right: 0, height: hole.top }} />
-          <div className="pointer-events-auto absolute bg-black/55 transition-all duration-300" style={{ top: hole.top, left: 0, width: hole.left, height: hole.height }} />
-          <div className="pointer-events-auto absolute bg-black/55 transition-all duration-300" style={{ top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height }} />
-          <div className="pointer-events-auto absolute bg-black/55 transition-all duration-300" style={{ top: hole.top + hole.height, left: 0, right: 0, bottom: 0 }} />
+          {/* Panel positions update per-frame from the eased tracker; CSS
+              transitions here would only add rubber-band lag while scrolling */}
+          <div className="pointer-events-auto absolute bg-black/55" style={{ top: 0, left: 0, right: 0, height: hole.top }} />
+          <div className="pointer-events-auto absolute bg-black/55" style={{ top: hole.top, left: 0, width: hole.left, height: hole.height }} />
+          <div className="pointer-events-auto absolute bg-black/55" style={{ top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height }} />
+          <div className="pointer-events-auto absolute bg-black/55" style={{ top: hole.top + hole.height, left: 0, right: 0, bottom: 0 }} />
           {/* Spotlight ring */}
           <div
-            className="pointer-events-none absolute rounded-xl border-2 border-primary shadow-[0_0_0_4px] shadow-primary/25 transition-all duration-300"
+            className="pointer-events-none absolute animate-fade-in rounded-xl border-2 border-primary shadow-[0_0_0_4px] shadow-primary/25"
             style={{ top: hole.top, left: hole.left, width: hole.width, height: hole.height }}
             aria-hidden="true"
           />
