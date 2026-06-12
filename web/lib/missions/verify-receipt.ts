@@ -47,10 +47,15 @@ images are NOT receipts) but lenient about merchant matching when names are
 truncated or abbreviated.`
 
 function parseVerdict(text: string): GeminiReceiptVerdict | null {
-  // Models occasionally wrap JSON in fences despite instructions
+  // Models occasionally wrap JSON in fences or add a sentence of commentary
+  // despite instructions. Strip fences, then isolate the JSON object so a
+  // stray prefix/suffix doesn't make JSON.parse throw on a valid verdict.
   const cleaned = text.replace(/```json|```/g, '').trim()
+  const start = cleaned.indexOf('{')
+  const end = cleaned.lastIndexOf('}')
+  if (start === -1 || end <= start) return null
   try {
-    const parsed = JSON.parse(cleaned)
+    const parsed = JSON.parse(cleaned.slice(start, end + 1))
     if (typeof parsed?.is_receipt !== 'boolean') return null
     return parsed as GeminiReceiptVerdict
   } catch {
@@ -74,7 +79,12 @@ export async function verifyReceiptImage(options: {
   const { imageBase64, mimeType, businessName } = options
 
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash-lite',
+    // Force pure JSON so the verdict parses reliably instead of failing
+    // whenever the model wraps it in prose or markdown fences.
+    generationConfig: { responseMimeType: 'application/json' },
+  })
 
   const result = await model.generateContent([
     VERIFICATION_PROMPT(businessName),

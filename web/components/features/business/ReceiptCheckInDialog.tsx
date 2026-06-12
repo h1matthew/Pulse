@@ -130,11 +130,13 @@ export function ReceiptCheckInDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* No `capture` attribute: it would force the camera on mobile and
+            block choosing an existing receipt photo from the gallery/files.
+            `accept="image/*"` still offers the camera as one option. */}
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="sr-only"
           aria-label="Receipt photo"
           onChange={handleFileChange}

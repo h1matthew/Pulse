@@ -62,6 +62,17 @@ const SAN_ANTONIO_DEFAULT: LatLng = { lat: 29.4252, lng: -98.4946 };
 
 const PRICE_LEVELS = [1, 2, 3, 4] as const;
 
+// Star-band rating filters, shown highest-first. Each value N filters to a
+// one-star band [N, N+1): "1" shows 1–2 stars, "2" shows 2–3, … and "5" shows
+// 5-star businesses (the band's upper bound is open, so 5 has no real ceiling).
+const RATING_LEVELS = [5, 4, 3, 2, 1] as const;
+
+// Visible chip label for a star band: just the lower bound (e.g. the 3–4 band
+// shows "3"). The full range stays in the chip's aria-label for screen readers.
+function ratingBandLabel(level: number): string {
+  return String(level);
+}
+
 /**
  * Independent vs. chain. A stored `is_chain=true` is authoritative (always a
  * chain), but a stored `is_chain=false` is NOT trusted to force-include: the
@@ -345,7 +356,8 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const [independentOnly, setIndependentOnly] = useState(false)
   const [openNowOnly, setOpenNowOnly] = useState(false)
   const [selectedPrices, setSelectedPrices] = useState<number[]>([])
-  const [highRatedOnly, setHighRatedOnly] = useState(false)
+  // 0 = no rating filter; otherwise the lower bound of a one-star band [N, N+1).
+  const [ratingBand, setRatingBand] = useState(0)
   const [sbaOnly, setSbaOnly] = useState(false)
   const [radiusMiles, setRadiusMiles] = useState(DEFAULT_RADIUS_MILES)
   const [location, setLocation] = useState<LatLng | null>(null)
@@ -479,9 +491,13 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
       )
     }
 
-    // Rating: 4.0 and up
-    if (highRatedOnly) {
-      filtered = filtered.filter(b => (b.average_rating ?? 0) >= 4)
+    // Rating: keep businesses in the selected one-star band [N, N+1).
+    // e.g. 3 → 3.0–3.99; the top band (5) has no upper bound (5.0 and up).
+    if (ratingBand > 0) {
+      filtered = filtered.filter(b => {
+        const rating = b.average_rating ?? 0
+        return rating >= ratingBand && (ratingBand >= 5 || rating < ratingBand + 1)
+      })
     }
 
     // SBA certified
@@ -490,7 +506,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
     }
 
     return filtered;
-  }, [businesses, searchQuery, selectedCategory, bookmarkedIds, independentOnly, openNowOnly, selectedPrices, highRatedOnly, sbaOnly]);
+  }, [businesses, searchQuery, selectedCategory, bookmarkedIds, independentOnly, openNowOnly, selectedPrices, ratingBand, sbaOnly]);
 
   // Number of independents in the current result set (shown inline on the chip)
   const independentCount = useMemo(
@@ -505,13 +521,13 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   )
 
   const hasExtraFilters =
-    independentOnly || openNowOnly || selectedPrices.length > 0 || highRatedOnly || sbaOnly
+    independentOnly || openNowOnly || selectedPrices.length > 0 || ratingBand > 0 || sbaOnly
 
   const resetExtraFilters = useCallback(() => {
     setIndependentOnly(false)
     setOpenNowOnly(false)
     setSelectedPrices([])
-    setHighRatedOnly(false)
+    setRatingBand(0)
     setSbaOnly(false)
   }, [])
 
@@ -769,13 +785,21 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                       <span className="font-mono">{'$'.repeat(level)}</span>
                     </FilterChip>
                   ))}
-                  <FilterChip
-                    active={highRatedOnly}
-                    onClick={() => setHighRatedOnly((v) => !v)}
-                  >
-                    <Star className="h-3.5 w-3.5" aria-hidden="true" />
-                    4.0+
-                  </FilterChip>
+                  {RATING_LEVELS.map((level) => (
+                    <FilterChip
+                      key={level}
+                      active={ratingBand === level}
+                      onClick={() => setRatingBand((v) => (v === level ? 0 : level))}
+                      ariaLabel={
+                        level >= 5
+                          ? '5 stars'
+                          : `${level} to ${level + 1} stars`
+                      }
+                    >
+                      <Star className="h-3.5 w-3.5" aria-hidden="true" />
+                      {ratingBandLabel(level)}
+                    </FilterChip>
+                  ))}
                   {hasSbaBusinesses && (
                     <FilterChip
                       active={sbaOnly}

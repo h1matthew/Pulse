@@ -11,7 +11,11 @@ const path = require('path')
 const BASE = 'http://localhost:3000'
 const OUT = path.resolve(__dirname, '../../assets')
 const EMAIL = 'judge@pulse.demo'
-const PASSWORD = 'PulseDemo2026!'
+const PASSWORD = process.env.DEMO_PASSWORD
+if (!PASSWORD) {
+  console.error('DEMO_PASSWORD is not set. Export it before running capture.js.')
+  process.exit(1)
+}
 
 const shot = async (page, name) => {
   await page.waitForTimeout(1200)
