@@ -356,7 +356,6 @@ export function Header() {
           {/* Right side actions */}
           <div className="hidden items-center gap-0.5 sm:flex">
             <ThemeToggle compact={isCompact} />
-            <HelpMenu compact={isCompact} />
             {isAdmin && (
               <NavLink
                 href="/admin"
@@ -378,6 +377,8 @@ export function Header() {
                 <span className="hidden lg:inline">Admin</span>
               </NavLink>
             )}
+            {/* Help sits directly beside the auth action */}
+            <HelpMenu compact={isCompact} />
             {isLoggedIn ? (
               <SignOutButton>
                 <Button
