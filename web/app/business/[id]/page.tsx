@@ -137,6 +137,22 @@ export default function BusinessDetailPage({
     setHeroPhotoFailed(false);
   }, [business?.id]);
 
+  // Reflect an existing check-in on load so the button doesn't invite a
+  // doomed second attempt (the API would 409 it)
+  useEffect(() => {
+    if (!user || !canonicalBusinessId) return;
+    let cancelled = false;
+    fetch(`/api/businesses/${canonicalBusinessId}/checkin`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.checkedInToday) setHasCheckedIn(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user, canonicalBusinessId]);
+
   // Submit review with a specific CAPTCHA token (called directly from CAPTCHA onVerify)
   const submitReviewWithToken = async (token: string) => {
     if (!business?.id || !user) return;

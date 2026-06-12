@@ -39,6 +39,7 @@ interface SupabaseState {
 }
 
 const progressUpdates: Array<Record<string, unknown>> = []
+const checkInInserts: Array<Record<string, unknown>> = []
 
 function createSupabase(state: SupabaseState = {}) {
   const {
@@ -81,8 +82,9 @@ function createSupabase(state: SupabaseState = {}) {
         })
         builder.maybeSingle = vi.fn().mockResolvedValue({ data: priorCheckIn, error: null })
         const originalInsert = builder.insert as ReturnType<typeof vi.fn>
-        originalInsert.mockImplementation(() => {
+        originalInsert.mockImplementation((values: Record<string, unknown>) => {
           ;(builder as { _inserted?: boolean })._inserted = true
+          checkInInserts.push(values)
           return builder
         })
         return builder
@@ -138,6 +140,7 @@ describe('POST /api/businesses/[id]/checkin', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     progressUpdates.length = 0
+    checkInInserts.length = 0
     mockUpload.mockResolvedValue({ data: { path: 'x' }, error: null })
     mockVerifyReceipt.mockResolvedValue({
       verified: true,
@@ -304,5 +307,115 @@ describe('POST /api/businesses/[id]/checkin', () => {
     const body = await res.json()
 
     expect(body.missionUpdates).toEqual([])
+  })
+
+  it('advances visit_count missions on a verified check-in', async () => {
+    mockCreateClient.mockResolvedValue(
+      createSupabase({
+        progressRows: [
+          {
+            id: 'progress-1',
+            current_count: 0,
+            mission: {
+              id: 'mission-3',
+              title: 'Out and About',
+              mission_type: 'visit_count',
+              target_count: 5,
+              target_category_id: null,
+              is_active: true,
+            },
+          },
+        ],
+      })
+    )
+
+    const res = await callRoute(makeRequest())
+    const body = await res.json()
+
+    expect(res.status).toBe(201)
+    expect(body.missionUpdates).toEqual([
+      expect.objectContaining({
+        title: 'Out and About',
+        currentCount: 1,
+        targetCount: 5,
+        completed: false,
+      }),
+    ])
+  })
+
+  it('does not advance review/bookmark missions on check-in', async () => {
+    mockCreateClient.mockResolvedValue(
+      createSupabase({
+        progressRows: [
+          {
+            id: 'progress-1',
+            current_count: 0,
+            mission: {
+              id: 'mission-4',
+              title: 'Community Voice',
+              mission_type: 'review_count',
+              target_count: 3,
+              target_category_id: null,
+              is_active: true,
+            },
+          },
+        ],
+      })
+    )
+
+    const res = await callRoute(makeRequest())
+    const body = await res.json()
+
+    expect(body.missionUpdates).toEqual([])
+  })
+
+  it('rejects empty receipt images without calling verification', async () => {
+    mockCreateClient.mockResolvedValue(createSupabase())
+    const formData = new FormData()
+    formData.append(
+      'receipt',
+      new File([], 'receipt.jpg', { type: 'image/jpeg' })
+    )
+    const request = new NextRequest('http://localhost/api/businesses/biz-1/checkin', {
+      method: 'POST',
+      body: formData,
+    })
+
+    const res = await callRoute(request)
+
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toMatch(/empty/i)
+    expect(mockVerifyReceipt).not.toHaveBeenCalled()
+  })
+
+  it('fails closed when receipt storage fails — no check-in without proof', async () => {
+    mockCreateClient.mockResolvedValue(createSupabase())
+    mockUpload.mockResolvedValue({
+      data: null,
+      error: { message: 'bucket unavailable' },
+    })
+
+    const res = await callRoute(makeRequest())
+
+    expect(res.status).toBe(503)
+    const body = await res.json()
+    expect(body.reason).toMatch(/could not store/i)
+    expect(checkInInserts).toEqual([])
+  })
+
+  it('stores the receipt path on the check-in record', async () => {
+    mockCreateClient.mockResolvedValue(createSupabase())
+
+    const res = await callRoute(makeRequest())
+
+    expect(res.status).toBe(201)
+    expect(checkInInserts).toHaveLength(1)
+    expect(checkInInserts[0]).toMatchObject({
+      verified_by_receipt: true,
+      receipt_merchant: 'Daily Grind',
+      spend_amount: 18.75,
+    })
+    expect(checkInInserts[0].receipt_url).toMatch(/^user-1\/biz-1-/)
   })
 })

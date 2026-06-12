@@ -1,16 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockGenerateContent = vi.fn()
+const mockGetGenerativeModel = vi.fn((_config: unknown) => ({
+  generateContent: mockGenerateContent,
+}))
 
 vi.mock('@google/generative-ai', () => ({
   GoogleGenerativeAI: class {
-    getGenerativeModel() {
-      return { generateContent: mockGenerateContent }
+    getGenerativeModel(config: unknown) {
+      return mockGetGenerativeModel(config)
     }
   },
 }))
 
-import { verifyReceiptImage } from '../verify-receipt'
+import {
+  verifyReceiptImage,
+  merchantNamePlausiblyMatches,
+} from '../verify-receipt'
 
 function geminiResponse(payload: unknown) {
   return { response: { text: () => JSON.stringify(payload) } }
@@ -25,6 +31,31 @@ const baseOptions = {
 describe('verifyReceiptImage', () => {
   beforeEach(() => {
     mockGenerateContent.mockReset()
+    mockGetGenerativeModel.mockClear()
+  })
+
+  it('runs verification deterministically (temperature 0, JSON output)', async () => {
+    mockGenerateContent.mockResolvedValue(
+      geminiResponse({
+        is_receipt: false,
+        merchant_name: null,
+        merchant_matches_business: false,
+        purchase_date: null,
+        total_amount: null,
+        reasoning: 'n/a',
+      })
+    )
+
+    await verifyReceiptImage(baseOptions)
+
+    expect(mockGetGenerativeModel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        generationConfig: expect.objectContaining({
+          temperature: 0,
+          responseMimeType: 'application/json',
+        }),
+      })
+    )
   })
 
   it('verifies a matching, recent receipt and extracts the total', async () => {
@@ -150,5 +181,136 @@ describe('verifyReceiptImage', () => {
 
     expect(result.verified).toBe(false)
     expect(result.reason).toMatch(/could not read/i)
+  })
+
+  // Regression: live testing showed the model approving receipts from
+  // unrelated businesses; the deterministic guardrail must catch that.
+  it('rejects a model-approved match between unrelated names', async () => {
+    mockGenerateContent.mockResolvedValue(
+      geminiResponse({
+        is_receipt: true,
+        merchant_name: 'BLUE BOTTLE COFFEE',
+        merchant_matches_business: true, // model hallucinated a match
+        purchase_date: null,
+        total_amount: 9.75,
+        reasoning: 'Looks fine.',
+      })
+    )
+
+    const result = await verifyReceiptImage({
+      ...baseOptions,
+      businessName: "Joe's Pizza Palace",
+    })
+
+    expect(result.verified).toBe(false)
+    expect(result.reason).toContain('BLUE BOTTLE COFFEE')
+    expect(result.reason).toContain("Joe's Pizza Palace")
+  })
+
+  it('rejects a claimed match when no merchant name was readable', async () => {
+    mockGenerateContent.mockResolvedValue(
+      geminiResponse({
+        is_receipt: true,
+        merchant_name: null,
+        merchant_matches_business: true,
+        purchase_date: null,
+        total_amount: 12,
+        reasoning: 'Merchant illegible.',
+      })
+    )
+
+    const result = await verifyReceiptImage(baseOptions)
+
+    expect(result.verified).toBe(false)
+    expect(result.reason).toMatch(/merchant name/i)
+  })
+
+  it('rejects future-dated receipts', async () => {
+    const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+    mockGenerateContent.mockResolvedValue(
+      geminiResponse({
+        is_receipt: true,
+        merchant_name: 'Diamond Bar Dental',
+        merchant_matches_business: true,
+        purchase_date: future,
+        total_amount: 20,
+        reasoning: 'ok',
+      })
+    )
+
+    const result = await verifyReceiptImage(baseOptions)
+
+    expect(result.verified).toBe(false)
+    expect(result.reason).toMatch(/future/i)
+  })
+
+  it('discards nonsense totals instead of recording them', async () => {
+    const today = new Date().toISOString().slice(0, 10)
+    mockGenerateContent.mockResolvedValue(
+      geminiResponse({
+        is_receipt: true,
+        merchant_name: 'Diamond Bar Dental',
+        merchant_matches_business: true,
+        purchase_date: today,
+        total_amount: -50,
+        reasoning: 'ok',
+      })
+    )
+
+    const result = await verifyReceiptImage(baseOptions)
+
+    expect(result.verified).toBe(true)
+    expect(result.total).toBeNull()
+  })
+})
+
+describe('merchantNamePlausiblyMatches', () => {
+  it('accepts exact and contained names', () => {
+    expect(
+      merchantNamePlausiblyMatches('BLUE BOTTLE COFFEE', 'Blue Bottle Coffee')
+    ).toBe(true)
+    expect(
+      merchantNamePlausiblyMatches('Blue Bottle', 'Blue Bottle Coffee Co.')
+    ).toBe(true)
+  })
+
+  it('accepts POS-style truncation via shared or prefixed tokens', () => {
+    expect(
+      merchantNamePlausiblyMatches('DIAMOND BAR DENT', 'Diamond Bar Dental Studio')
+    ).toBe(true)
+    expect(
+      merchantNamePlausiblyMatches('DB Dental', 'Diamond Bar Dental Studio')
+    ).toBe(true)
+  })
+
+  it('accepts initialisms', () => {
+    expect(
+      merchantNamePlausiblyMatches('DBDS', 'Diamond Bar Dental Studio')
+    ).toBe(true)
+  })
+
+  it('rejects unrelated names', () => {
+    expect(
+      merchantNamePlausiblyMatches('BLUE BOTTLE COFFEE', "Joe's Pizza Palace")
+    ).toBe(false)
+    expect(
+      merchantNamePlausiblyMatches('Walmart Supercenter', 'Daily Grind Coffee')
+    ).toBe(false)
+  })
+
+  it('does not match on generic words alone', () => {
+    expect(
+      merchantNamePlausiblyMatches("Philz Coffee", 'Blue Bottle Coffee')
+    ).toBe(false)
+    expect(
+      merchantNamePlausiblyMatches('The Corner Store', 'The Book Store')
+    ).toBe(false)
+  })
+
+  it('rejects empty or whitespace names', () => {
+    expect(merchantNamePlausiblyMatches('', 'Blue Bottle Coffee')).toBe(false)
+    expect(merchantNamePlausiblyMatches('  ', 'Blue Bottle Coffee')).toBe(false)
   })
 })

@@ -90,6 +90,21 @@ describe('ReceiptCheckInDialog', () => {
     expect(props.onOpenChange).not.toHaveBeenCalledWith(false)
   })
 
+  it('rejects images over 8MB before uploading', () => {
+    renderDialog()
+
+    const input = screen.getByLabelText('Receipt photo') as HTMLInputElement
+    const oversized = new File(['x'], 'huge.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(oversized, 'size', { value: 9 * 1024 * 1024 })
+    fireEvent.change(input, { target: { files: [oversized] } })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/8MB/)
+    expect(
+      screen.getByRole('button', { name: /verify & check in/i })
+    ).toBeDisabled()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('reports already-checked-in and closes', async () => {
     fetchMock.mockResolvedValue({
       ok: false,
