@@ -252,9 +252,7 @@ export function OnboardingTour() {
   }, [])
 
   // Per-step target lifecycle: navigate if needed, poll until the anchor
-  // exists, scroll it into view, and only reveal the spotlight once the
-  // target has stopped moving (no flash at a stale position). After the
-  // reveal, a per-frame eased tracker keeps the hole glued to the target
+  // exists, reveal it immediately, and keep the spotlight glued to the target
   // through user scrolling. Auto-skips if the target never shows.
   useEffect(() => {
     if (!active) return
@@ -270,7 +268,6 @@ export function OnboardingTour() {
     let cancelled = false
     let navigated = false
     let rafId: number | null = null
-    let stabilizer: ReturnType<typeof setInterval> | null = null
     const startedAt = Date.now()
     const reduceMotion =
       typeof window.matchMedia === 'function' &&
@@ -320,9 +317,9 @@ export function OnboardingTour() {
       }
     }
 
-    // Reveal gate: after the target is found we keep the full dim up and
-    // wait for two consecutive steady readings (the smooth scroll has
-    // finished), capped at 900ms, before opening the hole at its real spot.
+    // Reveal immediately once the target exists. The frame tracker below keeps
+    // the spotlight attached while the page scrolls, so users are not left on a
+    // disabled "Taking you there" card during route loads or target movement.
     const beginReveal = () => {
       displayed = readRect()
       lastFrameAt = typeof performance !== 'undefined' ? performance.now() : 0
@@ -331,31 +328,6 @@ export function OnboardingTour() {
       if (typeof requestAnimationFrame === 'function') {
         rafId = requestAnimationFrame(track)
       }
-    }
-
-    const watchUntilSteady = () => {
-      const foundAt = Date.now()
-      let lastSeen: SpotlightRect | null = null
-      let steadyTicks = 0
-      stabilizer = setInterval(() => {
-        if (cancelled) return
-        const r = readRect()
-        if (!r) return
-        if (
-          lastSeen &&
-          Math.abs(r.top - lastSeen.top) < 1 &&
-          Math.abs(r.left - lastSeen.left) < 1
-        ) {
-          steadyTicks++
-        } else {
-          steadyTicks = 0
-        }
-        lastSeen = r
-        if (steadyTicks >= 1 || Date.now() - foundAt > 900) {
-          if (stabilizer) clearInterval(stabilizer)
-          beginReveal()
-        }
-      }, 100)
     }
 
     const advanceFromClick = () => {
@@ -391,7 +363,7 @@ export function OnboardingTour() {
             el.querySelector<HTMLElement>('input, textarea, [contenteditable]') ?? el
           focusable.focus?.()
         }
-        watchUntilSteady()
+        beginReveal()
         return
       }
       // Target isn't on this page; go where the step lives (once)
@@ -413,7 +385,6 @@ export function OnboardingTour() {
     return () => {
       cancelled = true
       clearInterval(poll)
-      if (stabilizer) clearInterval(stabilizer)
       if (rafId !== null) cancelAnimationFrame(rafId)
       targetRef.current?.removeEventListener('click', advanceFromClick, true)
       if (currentStep.interactEvent) {

@@ -146,24 +146,39 @@ describe('OnboardingTour (guided walkthrough)', () => {
     expect(sessionStorage.getItem(TOUR_STEP_KEY)).toBe('2')
   })
 
-  it('keeps the spotlight hidden until the target stops moving', async () => {
+  it('shows loading copy only while waiting for the target to appear', async () => {
     mountAnchors()
     await openWelcome()
 
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
 
-    // Target found, but not yet steady: full dim, Next still disabled
+    // Target has not been found yet: full dim, Next still disabled.
     await act(async () => {
-      vi.advanceTimersByTime(250)
+      vi.advanceTimersByTime(100)
     })
     expect(screen.getByText('Taking you there…')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
 
-    // Two steady readings later the spotlight opens and Next unlocks
+    // As soon as the target is found, the spotlight opens and Next unlocks.
     await act(async () => {
-      vi.advanceTimersByTime(200)
+      vi.advanceTimersByTime(60)
     })
     expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
+  })
+
+  it('reveals the step as soon as an already-rendered target is found', async () => {
+    mountAnchors()
+    await openWelcome()
+
+    fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
+
+    await act(async () => {
+      vi.advanceTimersByTime(160)
+    })
+
+    expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
+    expect(screen.getByText(/go ahead, try it right now/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
   })
 
