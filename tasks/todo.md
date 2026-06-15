@@ -81,3 +81,39 @@ Make `/discover` feel like a practical local directory: faster to scan, less wor
   - `web/output/playwright/pulse-discover-desktop.png`
   - `web/output/playwright/pulse-discover-mobile.png`
 - Full suite still fails outside this discover pass: `7 failed | 69 passed`, with failures in Gemini model expectation, Google nearby/photo API tests, review route Supabase mock/profile chain, QueryProvider defaults, shared discover BusinessCard tag casing, business detail review submission, and an AuthProvider mock unhandled upsert.
+
+---
+
+# Onboarding Tour Stall Fix
+
+## Goal
+
+Make the first-run Pulse onboarding tour feel quick and prevent it from getting stuck on "Taking you there".
+
+## Plan
+
+- [x] Review relevant lessons and current onboarding-tour behavior.
+- [x] Reproduce or isolate the slow/stuck "Taking you there" state.
+- [x] Add a focused failing regression test for the stuck transition.
+- [x] Implement the smallest root-cause fix in the tour lifecycle.
+- [x] Run focused tests and app verification.
+- [x] Document review and verification results here.
+
+## Scope
+
+- Target the guided onboarding tour only unless verification proves the page anchors are part of the root cause.
+- Preserve the real-control spotlight behavior: users should still be able to type in search and click highlighted controls.
+
+## Review
+
+- Removed the extra scroll-settle gate in `OnboardingTour`, so the tour reveals a found target immediately and lets the existing frame tracker keep the spotlight attached while the page scrolls.
+- Added regression coverage that fails if an already-rendered target stays stuck on "Taking you there" after the target poll finds it.
+- Updated the older settling test to assert loading copy only while the target has not appeared.
+
+## Verification
+
+- Watched the new onboarding regression fail before implementation.
+- Passed: `cd /Users/brady/Code/Pulse/web && npm run test:run -- components/features/help/__tests__/OnboardingTour.test.tsx`
+- Passed: `cd /Users/brady/Code/Pulse/web && npm run test:run`
+- Passed: `cd /Users/brady/Code/Pulse/web && npm run build`
+- Chrome verification passed on `http://localhost:3000`: search, category, and business-card tour steps now unlock on the next 100 ms sample after their targets appear, and "Open it for me" reaches the reviews step without trapping the tour.
