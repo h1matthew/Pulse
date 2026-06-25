@@ -18,7 +18,7 @@
  */
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,10 +30,19 @@ import { cn } from '@/lib/utils'
 const ONBOARDING_KEY = 'pulse_onboarding_completed'
 /** SessionStorage key so a reload mid-tour resumes where it left off */
 const TOUR_STEP_KEY = 'pulse_tour_step'
+/** SessionStorage key remembering which business the tour opened, so the
+ *  business-page steps can navigate back to it after a reload. */
+const TOUR_BUSINESS_KEY = 'pulse_tour_business'
+/** Path prefix for a business detail page */
+const BUSINESS_PATH_PREFIX = '/business/'
 
 const TARGET_POLL_MS = 150
 /** A target that hasn't appeared after this long auto-skips its step. */
 const TARGET_TIMEOUT_MS = 8000
+/** Shorter auto-skip for a business-page step that can't be reached at all
+ *  (no remembered business and not on a business page) — skip promptly
+ *  instead of holding a disabled card for the full timeout. */
+const ROUTELESS_TIMEOUT_MS = 1200
 const SPOTLIGHT_PADDING = 8
 
 interface GuidedStep {
@@ -44,6 +53,9 @@ interface GuidedStep {
   target?: string
   /** Route to push when the step starts and the target isn't on screen */
   route?: string
+  /** This step lives on the opened business page; on resume its route is
+   *  resolved from the remembered business path rather than a static one. */
+  businessPage?: boolean
   /** The step completes when the user clicks the spotlighted element */
   advanceOnTargetClick?: boolean
   /** Listen for the user genuinely trying the spotlighted control… */
@@ -96,18 +108,21 @@ const TOUR_STEPS: GuidedStep[] = [
     title: 'Real reviews',
     body: 'Community and Google reviews live here — and you can add your own after you visit.',
     target: '[data-tour="business-reviews"]',
+    businessPage: true,
   },
   {
     id: 'check-in',
     title: 'Make your visit count',
     body: 'After you buy something, hit Check In and snap your receipt. Verified visits advance missions and grow your local impact.',
     target: '[data-tour="business-checkin"]',
+    businessPage: true,
   },
   {
     id: 'bookmark',
     title: 'Save it for later',
     body: 'Bookmark spots you love to build your go-to list and hear about new deals.',
     target: '[data-tour="business-bookmark"]',
+    businessPage: true,
   },
   {
     id: 'done',
@@ -124,6 +139,15 @@ interface SpotlightRect {
   height: number
 }
 
+/**
+ * useLayoutEffect on the client so the spotlight is measured and positioned
+ * before the browser paints — the new step's hole never flashes at the old
+ * step's spot. Falls back to useEffect on the server to avoid React's SSR
+ * "useLayoutEffect does nothing on the server" warning.
+ */
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 function readSessionStep(): number | null {
   try {
     const raw = sessionStorage.getItem(TOUR_STEP_KEY)
@@ -134,6 +158,35 @@ function readSessionStep(): number | null {
       : null
   } catch {
     return null
+  }
+}
+
+/** Remember which business the tour opened (from the card's link href) so the
+ *  business-page steps can return there if the tour resumes off-page. */
+function rememberTourBusiness(href: string | null | undefined): void {
+  if (!href || !href.startsWith(BUSINESS_PATH_PREFIX)) return
+  try {
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, href)
+  } catch {
+    // non-fatal
+  }
+}
+
+/** The remembered business path (e.g. "/business/abc"), if any. */
+function readTourBusiness(): string | undefined {
+  try {
+    const raw = sessionStorage.getItem(TOUR_BUSINESS_KEY)
+    return raw && raw.startsWith(BUSINESS_PATH_PREFIX) ? raw : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function clearTourBusiness(): void {
+  try {
+    sessionStorage.removeItem(TOUR_BUSINESS_KEY)
+  } catch {
+    // non-fatal
   }
 }
 
@@ -166,6 +219,7 @@ export function OnboardingTour() {
       try {
         localStorage.setItem(ONBOARDING_KEY, 'true')
         sessionStorage.removeItem(TOUR_STEP_KEY)
+        sessionStorage.removeItem(TOUR_BUSINESS_KEY)
       } catch {
         // storage unavailable — just close
       }
@@ -246,15 +300,19 @@ export function OnboardingTour() {
       } catch {
         // non-fatal
       }
+      // Forget any business from a prior run so it starts clean.
+      clearTourBusiness()
       goToStepRef.current(0)
       setActive(true)
     }
   }, [])
 
   // Per-step target lifecycle: navigate if needed, poll until the anchor
-  // exists, reveal it immediately, and keep the spotlight glued to the target
-  // through user scrolling. Auto-skips if the target never shows.
-  useEffect(() => {
+  // exists, snap the spotlight onto it at its final position, and keep it
+  // glued through user scrolling. Runs as a layout effect so the hole is
+  // placed before paint — no slide, no chase, no flash at a stale spot.
+  // Auto-skips if the target never shows.
+  useIsomorphicLayoutEffect(() => {
     if (!active) return
     const currentStep = TOUR_STEPS[stepIndex]
     setRect(null)
@@ -269,9 +327,19 @@ export function OnboardingTour() {
     let navigated = false
     let rafId: number | null = null
     const startedAt = Date.now()
-    const reduceMotion =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    // A business-page step (reviews/check-in/bookmark) carries no static route;
+    // on resume it returns to the business the user opened, remembered in
+    // sessionStorage. If that anchor is unreachable from here — no remembered
+    // business and we're not already on a business page — skip fast instead of
+    // holding a disabled card for the full timeout.
+    const effectiveRoute =
+      currentStep.route ?? (currentStep.businessPage ? readTourBusiness() : undefined)
+    const reachable =
+      !currentStep.businessPage ||
+      !!effectiveRoute ||
+      window.location.pathname.startsWith(BUSINESS_PATH_PREFIX)
+    const timeoutMs = reachable ? TARGET_TIMEOUT_MS : ROUTELESS_TIMEOUT_MS
 
     const readRect = (): SpotlightRect | null => {
       const el = targetRef.current
@@ -280,50 +348,36 @@ export function OnboardingTour() {
       return { top: r.top, left: r.left, width: r.width, height: r.height }
     }
 
-    // Per-frame tracker: ease the displayed rect toward the live target
-    // rect. A short time constant keeps it glued during scrolling without
-    // the rubber-band lag a CSS transition would add.
-    let displayed: SpotlightRect | null = null
-    let lastFrameAt = 0
+    // Per-frame tracker: the hole snaps exactly onto the live target rect, so
+    // it is always precisely where the target is — no easing, no lag, nothing
+    // to "correct." Only writes state when the rect actually moves (≥0.5px),
+    // so a stationary target costs no re-renders.
+    let applied: SpotlightRect | null = null
     const track = () => {
       if (cancelled) return
       const target = readRect()
-      if (!target) return
-      const now = performance.now()
-      let next = target
-      if (displayed && !reduceMotion) {
-        const alpha = 1 - Math.exp(-(now - lastFrameAt) / 70)
-        next = {
-          top: displayed.top + (target.top - displayed.top) * alpha,
-          left: displayed.left + (target.left - displayed.left) * alpha,
-          width: displayed.width + (target.width - displayed.width) * alpha,
-          height: displayed.height + (target.height - displayed.height) * alpha,
-        }
-        if (
-          Math.abs(next.top - target.top) < 0.5 &&
-          Math.abs(next.left - target.left) < 0.5 &&
-          Math.abs(next.width - target.width) < 0.5 &&
-          Math.abs(next.height - target.height) < 0.5
-        ) {
-          next = target
-        }
+      if (
+        target &&
+        (!applied ||
+          Math.abs(applied.top - target.top) >= 0.5 ||
+          Math.abs(applied.left - target.left) >= 0.5 ||
+          Math.abs(applied.width - target.width) >= 0.5 ||
+          Math.abs(applied.height - target.height) >= 0.5)
+      ) {
+        applied = target
+        setRect(target)
       }
-      lastFrameAt = now
-      const settled = displayed === next
-      displayed = next
-      setRect((prev) => (prev === next || (prev && settled) ? prev : next))
       if (typeof requestAnimationFrame === 'function') {
         rafId = requestAnimationFrame(track)
       }
     }
 
-    // Reveal immediately once the target exists. The frame tracker below keeps
-    // the spotlight attached while the page scrolls, so users are not left on a
-    // disabled "Taking you there" card during route loads or target movement.
+    // Reveal at the target's final position in this same commit. Because the
+    // scroll above is instant, readRect() already reflects the resting spot,
+    // so the spotlight appears exactly on target with no follow-up animation.
     const beginReveal = () => {
-      displayed = readRect()
-      lastFrameAt = typeof performance !== 'undefined' ? performance.now() : 0
-      if (displayed) setRect(displayed)
+      applied = readRect()
+      if (applied) setRect(applied)
       setRevealed(true)
       if (typeof requestAnimationFrame === 'function') {
         rafId = requestAnimationFrame(track)
@@ -331,23 +385,31 @@ export function OnboardingTour() {
     }
 
     const advanceFromClick = () => {
-      if (!cancelled) goToStepRef.current(stepIndex + 1)
+      if (cancelled) return
+      // Remember the opened business so the business-page steps (reviews,
+      // check-in, bookmark) can navigate back here if the tour later resumes
+      // on a different page.
+      rememberTourBusiness(targetRef.current?.querySelector('a')?.getAttribute('href'))
+      goToStepRef.current(stepIndex + 1)
     }
     const markInteracted = () => {
       if (!cancelled) setInteracted(true)
     }
 
-    const poll = setInterval(() => {
-      if (cancelled) return
+    // One poll attempt: reveal the target if it's here, steer toward its
+    // route if it isn't, or auto-skip after the timeout. Returns true once
+    // the step is settled so polling can stop.
+    let poll: ReturnType<typeof setInterval> | null = null
+    const tick = (): boolean => {
+      if (cancelled) return true
       const el = document.querySelector<HTMLElement>(currentStep.target!)
       if (el) {
-        clearInterval(poll)
         targetRef.current = el
         setTargetFound(true)
-        el.scrollIntoView?.({
-          block: 'center',
-          behavior: reduceMotion ? 'auto' : 'smooth',
-        })
+        // Instant (not smooth) scroll: the target jumps straight to its
+        // resting place so the spotlight can be drawn there at once, rather
+        // than easing along behind a half-second scroll animation.
+        el.scrollIntoView?.({ block: 'center', behavior: 'auto' })
         if (currentStep.advanceOnTargetClick) {
           el.addEventListener('click', advanceFromClick, { once: true, capture: true })
         }
@@ -358,33 +420,48 @@ export function OnboardingTour() {
           })
         }
         if (currentStep.focusTarget) {
-          // Put the cursor where the action is, so typing works immediately
+          // Put the cursor where the action is, so typing works immediately.
+          // preventScroll so focusing doesn't tug the page after we've placed it.
           const focusable =
             el.querySelector<HTMLElement>('input, textarea, [contenteditable]') ?? el
-          focusable.focus?.()
+          focusable.focus?.({ preventScroll: true })
         }
         beginReveal()
-        return
+        return true
       }
-      // Target isn't on this page; go where the step lives (once)
-      if (!navigated && currentStep.route && !window.location.pathname.startsWith(currentStep.route)) {
+      // Target isn't on this page; go where the step lives (once). For
+      // business-page steps that's the remembered business; for others it's
+      // the step's static route.
+      if (!navigated && effectiveRoute && !window.location.pathname.startsWith(effectiveRoute)) {
         navigated = true
-        routerRef.current.push(currentStep.route)
+        routerRef.current.push(effectiveRoute)
       }
-      if (Date.now() - startedAt > TARGET_TIMEOUT_MS) {
-        clearInterval(poll)
+      if (Date.now() - startedAt > timeoutMs) {
         // Never trap the user on a step whose anchor can't be found
         if (stepIndex >= TOUR_STEPS.length - 1) {
           finishRef.current('Tour complete! Enjoy exploring Pulse.')
         } else {
           goToStepRef.current(stepIndex + 1)
         }
+        return true
       }
-    }, TARGET_POLL_MS)
+      return false
+    }
+
+    // Leading tick: a target already in the DOM — every same-page step, e.g.
+    // search→categories on /discover or reviews→check-in on a business page —
+    // is revealed in this same commit, with no 150ms "Taking you there…" gap.
+    // Only fall back to interval polling when the target isn't here yet
+    // (a route change or async data still loading).
+    if (!tick()) {
+      poll = setInterval(() => {
+        if (tick() && poll) clearInterval(poll)
+      }, TARGET_POLL_MS)
+    }
 
     return () => {
       cancelled = true
-      clearInterval(poll)
+      if (poll) clearInterval(poll)
       if (rafId !== null) cancelAnimationFrame(rafId)
       targetRef.current?.removeEventListener('click', advanceFromClick, true)
       if (currentStep.interactEvent) {
@@ -426,9 +503,12 @@ export function OnboardingTour() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [active, handleNext, handleSkip, goToStep, stepIndex])
 
-  // Focus the card when the step changes so keyboard users stay anchored
+  // Focus the card when the step changes so keyboard users stay anchored —
+  // except on steps that hand focus to a real control (e.g. the search field),
+  // which own the cursor so the user can start typing right away.
   useEffect(() => {
-    if (active) cardRef.current?.focus()
+    if (active && !TOUR_STEPS[stepIndex].focusTarget)
+      cardRef.current?.focus({ preventScroll: true })
   }, [active, stepIndex])
 
   if (!active) return null
