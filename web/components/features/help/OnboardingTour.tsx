@@ -139,6 +139,36 @@ interface SpotlightRect {
   height: number
 }
 
+/** Card size estimate used to place it relative to the spotlight hole. */
+const CARD_WIDTH = 360
+const CARD_EST_HEIGHT = 220
+
+/** Pad a raw target rect into the spotlight hole rect. */
+function computeHole(r: SpotlightRect): SpotlightRect {
+  return {
+    top: Math.max(0, r.top - SPOTLIGHT_PADDING),
+    left: Math.max(0, r.left - SPOTLIGHT_PADDING),
+    width: r.width + SPOTLIGHT_PADDING * 2,
+    height: r.height + SPOTLIGHT_PADDING * 2,
+  }
+}
+
+/** Place the card under the hole if there's room, otherwise above it. */
+function computeCardPos(hole: SpotlightRect): { top: number; left: number } {
+  const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800
+  const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200
+  const below = hole.top + hole.height + 14
+  const top =
+    below + CARD_EST_HEIGHT <= viewportH
+      ? below
+      : Math.max(14, hole.top - CARD_EST_HEIGHT - 14)
+  const left = Math.min(
+    Math.max(14, hole.left),
+    Math.max(14, viewportW - CARD_WIDTH - 14)
+  )
+  return { top, left }
+}
+
 /**
  * useLayoutEffect on the client so the spotlight is measured and positioned
  * before the browser paints — the new step's hole never flashes at the old
@@ -204,6 +234,9 @@ export function OnboardingTour() {
   const [interacted, setInteracted] = useState(false)
   const targetRef = useRef<HTMLElement | null>(null)
   const cardRef = useRef<HTMLDivElement | null>(null)
+  /** The overlay root; per-frame geometry is written to CSS vars here so the
+   *  spotlight follows without a React render each frame. */
+  const rootRef = useRef<HTMLDivElement | null>(null)
 
   const step = TOUR_STEPS[stepIndex]
   const isLastStep = stepIndex === TOUR_STEPS.length - 1
@@ -341,6 +374,14 @@ export function OnboardingTour() {
       window.location.pathname.startsWith(BUSINESS_PATH_PREFIX)
     const timeoutMs = reachable ? TARGET_TIMEOUT_MS : ROUTELESS_TIMEOUT_MS
 
+    // Smooth-scroll the target into view, unless the user prefers reduced
+    // motion. The snap tracker below keeps the hole pinned to the target for
+    // the whole scroll, so the spotlight glides along with it rather than
+    // lagging behind and catching up.
+    const reduceMotion =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
     const readRect = (): SpotlightRect | null => {
       const el = targetRef.current
       if (!el) return null
@@ -348,36 +389,61 @@ export function OnboardingTour() {
       return { top: r.top, left: r.left, width: r.width, height: r.height }
     }
 
-    // Per-frame tracker: the hole snaps exactly onto the live target rect, so
-    // it is always precisely where the target is — no easing, no lag, nothing
-    // to "correct." Only writes state when the rect actually moves (≥0.5px),
-    // so a stationary target costs no re-renders.
+    // Write the hole + card geometry to CSS variables on the overlay root. The
+    // dim panels, ring, and card position themselves from these vars, so one
+    // frame touches six custom properties on a single element instead of
+    // re-rendering the whole overlay (4 panels + ring + the icon-heavy card)
+    // through React. That is the difference between a janky and a buttery
+    // follow during the scroll.
+    const paint = (hole: SpotlightRect) => {
+      const root = rootRef.current
+      if (!root) return
+      const card = computeCardPos(hole)
+      root.style.setProperty('--tour-ht', `${hole.top}px`)
+      root.style.setProperty('--tour-hl', `${hole.left}px`)
+      root.style.setProperty('--tour-hw', `${hole.width}px`)
+      root.style.setProperty('--tour-hh', `${hole.height}px`)
+      root.style.setProperty('--tour-ct', `${card.top}px`)
+      root.style.setProperty('--tour-cl', `${card.left}px`)
+    }
+
+    // Per-frame tracker: snap the hole exactly onto the live target each frame
+    // (no easing, so nothing lags or "corrects") and apply it imperatively, so
+    // the spotlight rides the smooth scroll with no React render per frame.
+    // Only repaints when the rect actually moves (≥0.5px).
     let applied: SpotlightRect | null = null
     const track = () => {
       if (cancelled) return
-      const target = readRect()
-      if (
-        target &&
-        (!applied ||
-          Math.abs(applied.top - target.top) >= 0.5 ||
-          Math.abs(applied.left - target.left) >= 0.5 ||
-          Math.abs(applied.width - target.width) >= 0.5 ||
-          Math.abs(applied.height - target.height) >= 0.5)
-      ) {
-        applied = target
-        setRect(target)
+      const r = readRect()
+      if (r) {
+        const hole = computeHole(r)
+        if (
+          !applied ||
+          Math.abs(applied.top - hole.top) >= 0.5 ||
+          Math.abs(applied.left - hole.left) >= 0.5 ||
+          Math.abs(applied.width - hole.width) >= 0.5 ||
+          Math.abs(applied.height - hole.height) >= 0.5
+        ) {
+          applied = hole
+          paint(hole)
+        }
       }
       if (typeof requestAnimationFrame === 'function') {
         rafId = requestAnimationFrame(track)
       }
     }
 
-    // Reveal at the target's final position in this same commit. Because the
-    // scroll above is instant, readRect() already reflects the resting spot,
-    // so the spotlight appears exactly on target with no follow-up animation.
+    // Reveal the hole on the target at its current spot — the vars are written
+    // before React mounts the panels, so the first paint is already in place —
+    // then the tracker keeps it glued as the smooth scroll carries the target
+    // to its resting place.
     const beginReveal = () => {
-      applied = readRect()
-      if (applied) setRect(applied)
+      const r = readRect()
+      if (r) {
+        applied = computeHole(r)
+        paint(applied)
+      }
+      setRect(r)
       setRevealed(true)
       if (typeof requestAnimationFrame === 'function') {
         rafId = requestAnimationFrame(track)
@@ -406,10 +472,12 @@ export function OnboardingTour() {
       if (el) {
         targetRef.current = el
         setTargetFound(true)
-        // Instant (not smooth) scroll: the target jumps straight to its
-        // resting place so the spotlight can be drawn there at once, rather
-        // than easing along behind a half-second scroll animation.
-        el.scrollIntoView?.({ block: 'center', behavior: 'auto' })
+        // Smooth-scroll the target to center; the snap tracker keeps the hole
+        // pinned to it the whole way (reduced motion jumps instantly instead).
+        el.scrollIntoView?.({
+          block: 'center',
+          behavior: reduceMotion ? 'auto' : 'smooth',
+        })
         if (currentStep.advanceOnTargetClick) {
           el.addEventListener('click', advanceFromClick, { once: true, capture: true })
         }
@@ -517,57 +585,33 @@ export function OnboardingTour() {
   const showSpotlight = targetFound && revealed && rect !== null
   const waitingForTarget = !isCentered && !showSpotlight
 
-  const pad = SPOTLIGHT_PADDING
-  const hole = showSpotlight
-    ? {
-        top: Math.max(0, rect.top - pad),
-        left: Math.max(0, rect.left - pad),
-        width: rect.width + pad * 2,
-        height: rect.height + pad * 2,
-      }
-    : null
-
-  // Card placement: under the spotlight if there's room, otherwise above;
-  // centered card for welcome/done steps.
-  const CARD_WIDTH = 360
-  const CARD_EST_HEIGHT = 220
-  let cardStyle: React.CSSProperties
-  if (isCentered || !hole) {
-    cardStyle = { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
-  } else {
-    const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800
-    const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200
-    const below = hole.top + hole.height + 14
-    const top =
-      below + CARD_EST_HEIGHT <= viewportH
-        ? below
-        : Math.max(14, hole.top - CARD_EST_HEIGHT - 14)
-    const left = Math.min(
-      Math.max(14, hole.left),
-      Math.max(14, viewportW - CARD_WIDTH - 14)
-    )
-    cardStyle = { top, left }
-  }
+  // Positions come from CSS variables set imperatively by the per-frame
+  // tracker (see paint()); centered card for welcome/done and while waiting.
+  const cardStyle: React.CSSProperties =
+    isCentered || !showSpotlight
+      ? { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+      : { top: 'var(--tour-ct, 50%)', left: 'var(--tour-cl, 1rem)' }
 
   return (
     // The root layer must NOT catch clicks: the spotlight hole has to stay
     // truly open so the user can click and refocus the real control under it.
     // Only the dim panels and the card opt back into pointer events.
-    <div className="pointer-events-none fixed inset-0 z-120" data-tour-overlay>
-      {/* Dimmer: 4 panels around the spotlight hole so the target itself
-          stays fully interactive (click the card, press the real buttons). */}
-      {hole ? (
+    <div ref={rootRef} className="pointer-events-none fixed inset-0 z-120" data-tour-overlay>
+      {/* Dimmer: 4 panels around the spotlight hole so the target itself stays
+          fully interactive (click the card, press the real buttons). Each
+          panel sizes itself from the --tour-* hole vars, which the tracker
+          updates per frame — no React render and no CSS transition (which
+          would only add rubber-band lag while scrolling). */}
+      {showSpotlight ? (
         <>
-          {/* Panel positions update per-frame from the eased tracker; CSS
-              transitions here would only add rubber-band lag while scrolling */}
-          <div className="pointer-events-auto absolute bg-black/55" style={{ top: 0, left: 0, right: 0, height: hole.top }} />
-          <div className="pointer-events-auto absolute bg-black/55" style={{ top: hole.top, left: 0, width: hole.left, height: hole.height }} />
-          <div className="pointer-events-auto absolute bg-black/55" style={{ top: hole.top, left: hole.left + hole.width, right: 0, height: hole.height }} />
-          <div className="pointer-events-auto absolute bg-black/55" style={{ top: hole.top + hole.height, left: 0, right: 0, bottom: 0 }} />
+          <div className="pointer-events-auto absolute bg-black/55" style={{ top: 0, left: 0, right: 0, height: 'var(--tour-ht, 0px)' }} />
+          <div className="pointer-events-auto absolute bg-black/55" style={{ top: 'var(--tour-ht, 0px)', left: 0, width: 'var(--tour-hl, 0px)', height: 'var(--tour-hh, 0px)' }} />
+          <div className="pointer-events-auto absolute bg-black/55" style={{ top: 'var(--tour-ht, 0px)', left: 'calc(var(--tour-hl, 0px) + var(--tour-hw, 0px))', right: 0, height: 'var(--tour-hh, 0px)' }} />
+          <div className="pointer-events-auto absolute bg-black/55" style={{ top: 'calc(var(--tour-ht, 0px) + var(--tour-hh, 0px))', left: 0, right: 0, bottom: 0 }} />
           {/* Spotlight ring */}
           <div
             className="pointer-events-none absolute animate-fade-in rounded-xl border-2 border-primary shadow-[0_0_0_4px] shadow-primary/25"
-            style={{ top: hole.top, left: hole.left, width: hole.width, height: hole.height }}
+            style={{ top: 'var(--tour-ht, 0px)', left: 'var(--tour-hl, 0px)', width: 'var(--tour-hw, 0px)', height: 'var(--tour-hh, 0px)' }}
             aria-hidden="true"
           />
         </>
