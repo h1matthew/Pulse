@@ -1,23 +1,23 @@
 # Pulse — 7-Minute Presentation Script
 **FBLA Coding & Programming 2025–2026 · "Byte-Sized Business Boost"**
-Team: **Felix Yin (A) · Oscar Gao (B) · Matthew Heng (C)** — Diamond Bar FBLA
+Team: **Felix Yin (A) · Brady Chen (B) · Matthew Heng (C)** — Diamond Bar FBLA
 
 Total ≈ 1,010 words ≈ 7:00 at a measured 145 wpm. Timing marks assume the demo
 runs exactly 2:00 (rehearse with a stopwatch — the demo is the variable).
 
-Word counts per presenter: Felix ≈ 340 · Oscar ≈ 330 · Matthew ≈ 340.
+Word counts per presenter: Felix ≈ 340 · Brady ≈ 330 · Matthew ≈ 340.
 
 ---
 
 ## Slide 1 — Title (0:00–0:30) — FELIX
 
-Good morning, judges. I'm Felix Yin, and with me are Oscar Gao and Matthew Heng from Diamond Bar FBLA. For the "Byte-Sized Business Boost" topic we built **Pulse** — a web platform that helps people discover small local businesses, and then shows them exactly how their spending strengthens their own community. Discovery gets a customer in the door once; visible impact brings them back. That second half is what makes Pulse different.
+Good morning, judges. I'm Felix Yin, and with me are Brady Chen and Matthew Heng from Diamond Bar FBLA. For the "Byte-Sized Business Boost" topic we built **Pulse** — a web platform that helps people discover small local businesses, and then shows them exactly how their spending strengthens their own community. Discovery gets a customer in the door once; visible impact brings them back. That second half is what makes Pulse different.
 
-> **Handoff:** "Oscar will show you the problem we started from."
+> **Handoff:** "Brady will show you the problem we started from."
 
-## Slide 2 — Problem & Solution (0:30–1:10) — OSCAR
+## Slide 2 — Problem & Solution (0:30–1:10) — BRADY
 
-Research shows 68 cents of every dollar spent locally recirculates in the community — versus just 43 cents at a national chain. Yet small businesses keep losing customers to chains, because they have no shared platform for discovery. Pulse answers every requirement of the prompt: users browse businesses **sorted by category**, leave **reviews and ratings**, **sort by those ratings**, **bookmark favorites**, claim **deals and coupons**, and every submission passes **bot verification**. On top of that foundation we added an AI assistant and a live economic-impact dashboard — you'll see all of it today.
+Research summarized by AMIBA and Civic Economics shows local purchases recirculate far more money in the community, often cited as 68 cents locally versus 43 cents at a national chain. Yet small businesses keep losing customers to chains because they have no shared platform for discovery. Pulse answers every requirement of the prompt: users browse businesses **sorted by category**, leave **reviews and ratings**, **sort by those ratings**, **bookmark favorites**, claim **deals and coupons**, and every submission passes **bot verification**. On top of that foundation we added an AI assistant and a live economic-impact dashboard — you'll see all of it today.
 
 > **Handoff:** "Felix will explain the technology choices behind it."
 
@@ -37,9 +37,9 @@ The codebase is organized by responsibility, which you can see in this structure
 
 Every significant file opens with the same four-section comment header: User Journey, Input Validation, Accessibility, and Design Rationale — here it is on our reviews API. Naming follows one convention everywhere: PascalCase components, camelCase utilities, typed named exports. The point isn't decoration — a teammate can open any file cold and know what it does, what it checks, and why it's built that way.
 
-> **Handoff:** "Oscar will cover the user experience."
+> **Handoff:** "Brady will cover the user experience."
 
-## Slide 6 — UX Design (2:50–3:25) — OSCAR
+## Slide 6 — UX Design (2:50–3:25) — BRADY
 
 We designed for everyone. The user journey is three steps — discover, engage, see your impact — and the persistent header reaches every feature in one click. Accessibility is engineered, not assumed: a skip-to-content link for keyboard users, focus trapping inside dialogs, screen-reader announcements through live regions, WCAG-compliant contrast in light and dark mode, and the app honors your system's reduced-motion setting. A built-in onboarding tour and help menu mean nobody needs a manual.
 
@@ -57,9 +57,9 @@ Here's Pulse running live. On Discover, these category pills filter instantly �
 
 Our assistant uses **retrieval-augmented generation**. When you ask for "a cozy coffee shop with wifi," we extract keywords, detect the category and amenities, pull matching businesses from our own database, and only then hand that context to Google's Gemini model — so answers cite real local businesses, never hallucinated ones. Prompt-injection filters sanitize every query before it reaches the model.
 
-> **Handoff:** "Oscar — how we keep bad data out."
+> **Handoff:** "Brady — how we keep bad data out."
 
-## Slide 9 — Input Validation (5:55–6:15) — OSCAR
+## Slide 9 — Input Validation (5:55–6:15) — BRADY
 
 Validation happens twice. **Syntactic** — Zod schemas verify format: ratings must be integers one through five, reviews ten to two thousand characters, IDs valid UUIDs. **Semantic** — the server checks meaning: duplicate reviews are rejected with a clear message, CAPTCHA tokens re-verified. Friendly errors, never crashes.
 
@@ -69,7 +69,7 @@ Validation happens twice. **Syntactic** — Zod schemas verify format: ratings m
 
 Data flows as typed arrays of interface objects — every business, review, and deal matches a TypeScript contract. Scope is deliberate: module constants for static data, component state for UI, React Query cache for server data, PostgreSQL for persistence.
 
-## Slide 11 — Output & Data Analysis (6:35–6:50) — OSCAR
+## Slide 11 — Output & Data Analysis (6:35–6:50) — BRADY
 
 The impact report turns raw check-ins into insight: category breakdowns, a sortable business table, CSV export for spreadsheets, and an economic multiplier showing your dollars kept local — data analysis users actually act on.
 
