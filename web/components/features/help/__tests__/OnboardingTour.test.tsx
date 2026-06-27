@@ -7,6 +7,7 @@ import React from 'react'
 import { OnboardingTour, ONBOARDING_KEY, TOUR_STEPS } from '../OnboardingTour'
 
 const TOUR_STEP_KEY = 'pulse_tour_step'
+const TOUR_BUSINESS_KEY = 'pulse_tour_business'
 
 const mockAnnounce = vi.fn()
 vi.mock('@/components/providers/AccessibilityProvider', () => ({
@@ -146,24 +147,43 @@ describe('OnboardingTour (guided walkthrough)', () => {
     expect(sessionStorage.getItem(TOUR_STEP_KEY)).toBe('2')
   })
 
-  it('keeps the spotlight hidden until the target stops moving', async () => {
-    mountAnchors()
+  it('shows loading copy only while the target is genuinely absent', async () => {
+    // No anchors mounted: the step is truly waiting (mid-navigation / data
+    // still loading), which is the only time the loading copy should show.
     await openWelcome()
 
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
 
-    // Target found, but not yet steady: full dim, Next still disabled
+    // Target not on the page yet: full dim, Next disabled, loading copy shown.
     await act(async () => {
-      vi.advanceTimersByTime(250)
+      vi.advanceTimersByTime(300)
     })
     expect(screen.getByText('Taking you there…')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
 
-    // Two steady readings later the spotlight opens and Next unlocks
+    // Once the anchor mounts, the next poll opens the spotlight and unlocks Next.
+    const el = document.createElement('div')
+    el.setAttribute('data-tour', 'discover-search')
+    el.appendChild(document.createElement('input'))
+    document.body.appendChild(el)
     await act(async () => {
-      vi.advanceTimersByTime(200)
+      vi.advanceTimersByTime(200) // one poll interval
     })
     expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
+  })
+
+  it('reveals an already-rendered target instantly, with no loading gap', async () => {
+    mountAnchors()
+    await openWelcome()
+
+    // The anchor is already in the DOM, so the leading poll tick reveals it in
+    // the same commit — no 150ms "Taking you there…" stall, no disabled Next,
+    // without advancing any timers.
+    fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
+
+    expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
+    expect(screen.getByText(/go ahead, try it right now/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
   })
 
@@ -271,6 +291,62 @@ describe('OnboardingTour (guided walkthrough)', () => {
     await settleStep()
 
     expect(screen.getByText('Real reviews')).toBeInTheDocument()
+  })
+
+  it('remembers the opened business when the card is clicked', async () => {
+    mountAnchors()
+    // The real card wraps a link to the business; give the anchor one so the
+    // tour can capture which business was opened.
+    const card = document.querySelector('[data-tour="business-card"]')!
+    const link = document.createElement('a')
+    link.setAttribute('href', '/business/xyz-789')
+    card.appendChild(link)
+
+    await openWelcome()
+    fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
+    await settleStep() // search
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    await settleStep() // categories
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    await settleStep() // open-business
+
+    expect(screen.getByText('Meet a local business')).toBeInTheDocument()
+
+    fireEvent.click(card)
+    await settleStep()
+
+    expect(sessionStorage.getItem(TOUR_BUSINESS_KEY)).toBe('/business/xyz-789')
+    expect(screen.getByText('Real reviews')).toBeInTheDocument()
+  })
+
+  it('resumes a business-page step by navigating back to the remembered business', async () => {
+    // The reviews step was reached, then the page reloaded while NOT on a
+    // business page (e.g. on /discover). The remembered business lets the step
+    // navigate back instead of stalling on a disabled "Taking you there…" card.
+    sessionStorage.setItem(TOUR_STEP_KEY, '4') // reviews
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, '/business/abc-123')
+
+    render(<OnboardingTour />)
+    await settleStep()
+
+    expect(screen.getByText('Real reviews')).toBeInTheDocument()
+    expect(mockPush).toHaveBeenCalledWith('/business/abc-123')
+  })
+
+  it('skips a business-page step promptly when the business is unknown and off-page', async () => {
+    // Resumed on reviews with no remembered business and not on a business
+    // page: unreachable, so it should auto-skip well before the 8s timeout
+    // rather than holding a disabled card.
+    sessionStorage.setItem(TOUR_STEP_KEY, '4') // reviews, no business remembered
+
+    render(<OnboardingTour />)
+    await act(async () => {
+      vi.advanceTimersByTime(1400) // past the short route-less timeout, far under 8s
+    })
+
+    // reviews auto-skipped to the next business-page step
+    expect(screen.getByText('Make your visit count')).toBeInTheDocument()
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
   it('finishes from the last step and records completion', async () => {
