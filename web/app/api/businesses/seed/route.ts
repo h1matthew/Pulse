@@ -260,39 +260,9 @@ export async function POST(request: Request) {
       const name = place.displayName?.text || 'Unknown Business'
       const addr = parseAddress(place.formattedAddress || '')
 
-      // Store photo resource names — the photo proxy resolves fresh CDN URLs at display time.
-      // We also call Place Details to get valid photo names (Nearby Search returns stale ATCD tokens).
-      let photos: string[] = []
-      if (place.photos && place.photos.length > 0) {
-        // Fetch fresh photo names from Place Details
-        try {
-          const detailsRes = await fetch(
-            `https://places.googleapis.com/v1/places/${placeId}`,
-            {
-              headers: {
-                'X-Goog-Api-Key': GOOGLE_API_KEY,
-                'X-Goog-FieldMask': 'photos',
-              },
-            }
-          )
-          if (detailsRes.ok) {
-            const details = await detailsRes.json()
-            const freshPhotos = (details.photos || []).slice(0, 3)
-            // Resolve to direct CDN URLs for instant display
-            const resolved = await Promise.all(
-              freshPhotos.map(async (p: { name: string }) => {
-                const cdnUrl = await resolvePhotoUrl(p.name)
-                if (!cdnUrl) photosFailed++
-                return cdnUrl
-              })
-            )
-            photos = resolved.filter(Boolean) as string[]
-          }
-        } catch {
-          // Fall back to resource names from Nearby Search
-          photos = place.photos.slice(0, 3).map(p => p.name)
-        }
-      }
+      // Store photo resource names from the search response. The /api/businesses/photo
+      // proxy resolves fresh CDN URLs at display time, so no extra API calls needed here.
+      const photos = (place.photos || []).slice(0, 3).map(p => p.name)
 
       const hours = place.regularOpeningHours?.weekdayDescriptions || []
       const types = (place.types || []).filter(t => t !== 'establishment' && t !== 'point_of_interest')
