@@ -1,3 +1,35 @@
+# Canva FBLA Requirements Audit
+
+## Goal
+
+Audit the live Canva design `DAHMUdo-9oQ` and local Pulse app evidence against the official 2025-2026 FBLA High School Coding & Programming NLC requirements.
+
+## Plan
+
+- [x] Confirm official Coding & Programming topic, event structure, required prompt features, and rubric criteria.
+- [x] Inspect the live Canva design content, page count, and presenter notes.
+- [x] Check local Pulse code evidence for the features claimed in the deck.
+- [x] Run focused requirement tests, full test suite, and production build.
+- [x] Document findings and remaining judging risks.
+
+## Review
+
+- The Canva deck is 11 slides, title `Byte-Sized Business Boost - Pulse`, design ID `DAHMUdo-9oQ`.
+- The deck covers the six prompt features: category sorting, reviews/ratings, sorting by reviews/ratings, bookmarks, deals/coupons, and bot verification.
+- The deck also covers major rubric rows: language selection, code comments/formatting, modular design, UX/accessibility, intuitive navigation/help, intelligent feature, input validation, output/reporting, and data structures/storage.
+- Local code evidence supports the deck's claims: `/discover`, `/business/[id]`, `/bookmarks`, `/deals`, `/dashboard`, `/api/reviews`, `/api/deals/[id]/claim`, `lib/assistant`, `lib/validation`, `lib/captcha`, `README.md`, and `USER_GUIDE.md`.
+- Remaining fixes before NLC: the Canva closing slide names `Felix Yin - Brady Chen - Matthew Heng`, but slide 1 presenter notes say `Felix Yin, Oscar Gao and Matthew Heng`; align names everywhere. Add or show a source/citation slide or Q&A backup for the 68c/43c local-spend statistic and third-party assets. Do a real timed 7-minute rehearsal using the exact NLC device constraints.
+
+## Verification
+
+- Passed: Canva plugin read of design metadata, rich text, page list, and presenter notes for `DAHMUdo-9oQ`.
+- Passed: `cd /Users/brady/Code/Pulse/web && npm run test:run -- app/discover/__tests__/page.test.tsx app/discover/__tests__/sorting.test.ts 'app/business/[id]/__tests__/page.test.tsx' app/api/reviews/__tests__/route.test.ts app/api/deals/__tests__/route.test.ts 'app/api/deals/[id]/claim/__tests__/route.test.ts' app/api/impact/report/__tests__/route.test.ts components/features/dashboard/__tests__/ImpactReport.test.tsx lib/__tests__/report-generator.test.ts lib/__tests__/captcha.test.ts lib/assistant/__tests__/rag.test.ts lib/assistant/__tests__/index.test.ts`
+- Passed: `cd /Users/brady/Code/Pulse/web && npm run test:run`
+- Passed: `cd /Users/brady/Code/Pulse/web && npm run build`
+- Notes: tests print Vitest mock-hoisting warnings and jsdom lacks `window.focus()` / `window.print()` implementations, but all tests pass.
+
+---
+
 # UI Simplification Pass
 
 ## Goal
@@ -117,3 +149,329 @@ Make the first-run Pulse onboarding tour feel quick and prevent it from getting 
 - Passed: `cd /Users/brady/Code/Pulse/web && npm run test:run`
 - Passed: `cd /Users/brady/Code/Pulse/web && npm run build`
 - Chrome verification passed on `http://localhost:3000`: search, category, and business-card tour steps now unlock on the next 100 ms sample after their targets appear, and "Open it for me" reaches the reviews step without trapping the tour.
+
+---
+
+# FBLA Slide Deck Finalization
+
+## Goal
+
+Read the latest relevant Claude/Pulse slide material, preserve the existing deck before touching it, and produce a verified final PPTX for the FBLA presentation.
+
+## Plan
+
+- [x] Search Claude project transcripts and Pulse slide docs for the latest relevant presentation context.
+- [x] Inspect the existing deck at `assets/pulse-fbla-deck.pptx`.
+- [x] Make a timestamped backup before any export work.
+- [x] Export a clean final copy to `outputs/` without overwriting the source deck.
+- [x] Render all final slides and review the contact sheet.
+- [x] Verify slide count, notes, PPTX integrity, output cleanliness, and fonts.
+- [x] Document review and verification results here.
+
+## Scope
+
+- Keep the original source deck in `assets/` unchanged.
+- Use the existing Pulse screenshots, script, Q&A prep, and slide blueprint as source material.
+- No app code changes.
+
+## Review
+
+- Confirmed the useful slide source is the June 12 Pulse slide package: `CANVA_SLIDES.md`, `SPEAKER_SCRIPT.md`, `DEMO_SCRIPT.md`, `QA_PREP.md`, `GAPS.md`, and the images under `assets/`.
+- Confirmed `assets/pulse-fbla-deck.pptx` already matches the 12-slide blueprint and includes speaker notes.
+- Created backup: `assets/pulse-fbla-deck.backup-20260615-170409.pptx`.
+- Exported final deck: `outputs/pulse-fbla-deck-final.pptx`.
+
+## Verification
+
+- Passed: source deck rendered successfully through artifact-tool, 12 slides.
+- Passed: final deck exported through artifact-tool, 12 slides and 12 speaker-note blocks.
+- Passed: `unzip -t /Users/brady/Code/Pulse/outputs/pulse-fbla-deck-final.pptx`.
+- Passed: `outputs/` contains only `pulse-fbla-deck-final.pptx`.
+- Passed: final slide renders reviewed via scratch contact sheet.
+- Passed: exported PPTX XML shows Inter as the slide text font.
+- Not run: app test suite, because this was a presentation artifact finalization with no app code changes.
+
+---
+
+# Rubric Documentation Slide Edit
+
+## Goal
+
+Keep the slide deck the same except for adding the documentation rubric point.
+
+## Plan
+
+- [x] Back up the current final PPTX before editing.
+- [x] Make a targeted slide 5 edit only.
+- [x] Preserve slide count, order, notes, screenshots, logo, footer, and page markers.
+- [x] Render slide 5 before and after for visual comparison.
+- [x] Verify the final PPTX opens structurally and still has 12 slides and notes.
+- [x] Document review and verification results here.
+
+## Scope
+
+- Edit only the PowerPoint artifact in `outputs/`.
+- Do not change app code.
+
+## Review
+
+- Added a small left-side "Rubric / Documentation" callout to slide 5 only.
+- Rebuilt the edit from the pre-edit backup after the first pass wrapped the heading poorly.
+- Left all other visible slide content unchanged.
+- Created backup: `outputs/pulse-fbla-deck-final.backup-20260615-171416.pptx`.
+- Updated final deck in place: `outputs/pulse-fbla-deck-final.pptx`.
+
+## Verification
+
+- Passed: final deck exported through artifact-tool, 12 slides and 12 speaker-note blocks.
+- Passed: `unzip -t /Users/brady/Code/Pulse/outputs/pulse-fbla-deck-final.pptx`.
+- Passed: rendered contact sheet reviewed after the edit.
+- Passed: image diff from backup shows slides 1-4 and 6-12 are byte-identical; only slide 5 changed.
+- Passed: exported PPTX XML shows Inter as the added slide text font.
+- Not run: app test suite, because this was a presentation artifact edit with no app code changes.
+
+---
+
+# Canva Copy Documentation Edit
+
+## Goal
+
+Use the live Canva design as the source of truth, make a copy first, and add the documentation rubric wording to the copy only.
+
+## Plan
+
+- [x] Find the live Canva design from Chrome.
+- [x] Make a copy of the Canva design before editing.
+- [x] Inspect the copied Canva pages instead of assuming the local PPTX matches Canva.
+- [x] Apply the documentation wording as a draft edit to the copied Canva design.
+- [ ] Get user approval on the draft preview.
+- [ ] Commit the Canva edit after approval.
+- [ ] Document final Canva link and verification results here.
+
+## Scope
+
+- Original Canva design remains untouched.
+- Copied Canva design ID: `DAHMsCQZl04`.
+- Draft edit target: copied Canva page 4.
+
+## Review
+
+- Found the live Canva tab: `Byte-Sized Business Boost — Pulse`.
+- Original Canva design ID: `DAHMUdo-9oQ`.
+- Copied Canva design ID: `DAHMsCQZl04`.
+- Canva source has 11 pages, so it is not the same as the local 12-slide PPTX.
+- Draft wording added on page 4: `Formatting + Commenting + Documentation Standard` and `Documentation` in the code-comment caption.
+
+## Verification
+
+- Pending user approval before saving the Canva draft.
+
+---
+
+# Canva Copy Parity Check
+
+## Goal
+
+Verify the copied Canva deck matches the original before any save, because the user observed slide 2 changed.
+
+## Plan
+
+- [x] Cancel the unsaved Canva draft transaction.
+- [x] Compare original Canva page 2 against copied Canva page 2.
+- [x] Compare all original Canva pages against copied Canva pages.
+- [x] Confirm whether the existing copy can be reused.
+- [x] Only re-apply the documentation wording after parity is confirmed.
+- [x] Get user approval on the new Canva draft preview.
+- [x] Commit or cancel the new Canva draft transaction.
+- [x] Document the corrected Canva link and verification results here.
+
+## Scope
+
+- Do not save any Canva edit until the copied deck is proven to match the original.
+- Keep the original Canva design untouched.
+
+## Review
+
+- Cancelled draft transaction `3730612925797045686`; no drafted edit was saved.
+- Verified copied Canva design `DAHMsCQZl04` matches original design `DAHMUdo-9oQ` by thumbnail pixels on pages 1-11.
+- Re-applied the documentation wording as a draft-only Canva edit on page 4.
+- New draft transaction: `3019044184537384155`.
+- Committed transaction `3019044184537384155` after user approval.
+- Saved Canva copy edit URL: `https://www.canva.com/d/BLvvxQtixHTtljx`.
+- Saved Canva copy view URL: `https://www.canva.com/d/m9QvcXzuFmRH3WZ`.
+
+## Verification
+
+- Passed: original and copied Canva page 2 thumbnails are pixel-identical.
+- Passed: original and copied Canva pages 1-11 are pixel-identical from exported thumbnails.
+- Passed: saved Canva copy page 4 text contains `Formatting + Commenting + Documentation Standard`.
+- Passed: saved Canva copy page 4 caption contains `Documentation · User Journey · Input Validation · Accessibility · Bot Prevention`.
+
+---
+
+# Canva Documentation Content Fix
+
+## Goal
+
+Add real documentation evidence to the copied Canva deck, not just documentation in the title.
+
+## Plan
+
+- [x] Read the latest Claude/Pulse slide context for documentation-rubric guidance.
+- [x] Confirm whether additional Claude input is needed.
+- [x] Identify the smallest Canva page 4 content edit that proves documentation without changing the rest of the deck.
+- [x] Apply the edit to the copied Canva design.
+- [x] Verify page 4 contains documentation content, not just title wording.
+- [x] Document the saved link and verification results here.
+
+## Scope
+
+- Edit only copied Canva design `DAHMsCQZl04`.
+- Keep the original Canva design untouched.
+- Avoid broad slide redesigns.
+
+## Review
+
+- Latest Claude slide-specific transcript checked: the newest transcript was unrelated, and the latest slide thread verified the 11-slide Canva deck, flagged slide 4 "Formating", and launched a rubric audit.
+- Local slide planning docs explicitly identify documentation evidence as README feature/tech-stack/setup docs plus structured code-comment headers.
+- Chosen minimal Canva edit: update page 4 title and captions to show README documentation and code-header documentation as visible rubric evidence.
+- Saved the Canva copy with page 4 title `Documentation + Commenting Standard`.
+- Page 4 now shows README evidence: `six FBLA features · tech stack · setup · database schema`.
+- Page 4 now shows code-header evidence: `user journey · validation · accessibility · bot prevention`.
+- Saved Canva copy edit URL: `https://www.canva.com/d/HPtinbOwfLNPSo1`.
+
+## Verification
+
+- Passed: saved copied Canva page 4 text contains README documentation evidence.
+- Passed: saved copied Canva page 4 text contains route-header documentation evidence.
+- Passed: original Canva design `DAHMUdo-9oQ` page 4 remains unchanged.
+
+---
+
+# Claude Documentation Clarification
+
+## Goal
+
+Ask Claude directly what the FBLA documentation rubric issue means before making more Canva changes.
+
+## Plan
+
+- [x] Open the latest Claude cowork thread.
+- [x] Ask Claude for the correct next action.
+- [x] Verify which Canva design Claude inspected versus the copied design.
+- [x] Record the corrected interpretation before any further edits.
+
+## Scope
+
+- No new Canva edits in this step.
+- Treat the original and copied Canva designs separately.
+
+## Review
+
+- Claude said the actual documentation fix is a real README/user guide shown in the demo or included in the submission.
+- Claude said slide text is only a pointer and cannot earn the documentation row by itself.
+- Claude said the Canva change should be on page 5: replace `no manual needed` with a docs pointer such as `Docs -- README + user guide`.
+- Claude said not to make the documentation callout on page 4; the only page 4 cleanup it recommended is the typo `Formating` to `Formatting`.
+- Canva verification confirmed Claude inspected original design `DAHMUdo-9oQ`, where page 4 is unchanged.
+- Canva verification confirmed copied design `DAHMsCQZl04` still has the prior page 4 documentation edit, while page 5 still says `no manual needed`.
+
+## Verification
+
+- Passed: Claude response captured from the `FBLA coding rubric review` thread.
+- Passed: original Canva pages 4-5 read by ID `DAHMUdo-9oQ`.
+- Passed: copied Canva pages 4-5 read by ID `DAHMsCQZl04`.
+
+---
+
+# Claude Rubric Confirmation Loop
+
+## Goal
+
+Have Claude re-check the current FBLA rubric coverage, make the required documentation and slide-copy fixes on the copy only, and continue until Claude confirms the entry covers the requirements well.
+
+## Plan
+
+- [x] Ask Claude for a fresh rubric pass using the current copied Canva design and repo docs state.
+- [x] Apply Claude-required documentation fixes in the repo.
+- [x] Apply Claude-required slide fixes to copied Canva design `DAHMsCQZl04` only.
+- [x] Verify the repo docs and Canva copy text.
+- [x] Ask Claude to re-check the updated state.
+- [x] Repeat until Claude confirms the requirements are covered well or identify a hard blocker.
+
+## Scope
+
+- Original Canva design `DAHMUdo-9oQ` stays untouched.
+- Copied Canva design `DAHMsCQZl04` is the editable deck.
+- App behavior changes are out of scope unless Claude flags a true rubric blocker.
+
+## Review
+
+- Claude's first rubric pass said the only blocking documentation risk was stale or missing real project documentation, plus two copied Canva wording fixes.
+- Added root `USER_GUIDE.md` covering the six required FBLA features, Gemini Assistant, custom impact report filters/CSV/print, Boost Missions, Community Pulse/leaderboard, demo path, help/accessibility, and troubleshooting.
+- Updated `README.md` so the advanced features section is explicit: `Advanced Features (Beyond the Prompt)`, and linked `USER_GUIDE.md` in the demo assets table.
+- Rewrote `web/supabase/README.md` and `web/supabase/QUICKSTART.md` as Pulse-specific Supabase documentation, removing stale AP Physics/sample-question content.
+- Saved copied Canva design `DAHMsCQZl04` only. Current copied edit URL: `https://www.canva.com/d/LHtEp9Lv-31VxKY`.
+- Updated copied Canva page 5 to `Onboarding tour - in-app guidance · README + user guide`.
+- Updated copied Canva page 10 to `Deals & coupons`.
+- Verified original Canva design `DAHMUdo-9oQ` still has the old page 5/page 10 text and was not modified.
+- Claude re-checked the copied Canva deck and confirmed: `Confirmed - the FBLA Coding & Programming requirements are now covered well. No blockers remain.`
+
+## Verification
+
+- Passed: `git diff --check -- README.md USER_GUIDE.md web/supabase/README.md web/supabase/QUICKSTART.md tasks/todo.md`.
+- Passed: active docs search has no stale AP Physics/sample-question/no-manual wording in `README.md`, `USER_GUIDE.md`, `web/supabase/README.md`, or `web/supabase/QUICKSTART.md`.
+- Passed: copied Canva page 5 text readback contains `Onboarding tour — in-app guidance · README + user guide`.
+- Passed: copied Canva page 10 text readback contains `Deals & coupons`.
+- Passed: original Canva design `DAHMUdo-9oQ` page 5/page 10 readback remains unchanged.
+- Passed: Claude final confirmation captured from the `FBLA coding rubric review` thread.
+- Not run: app test suite, because this pass changed documentation and the copied Canva deck only.
+
+---
+
+# FBLA NLC 2026 Claude Rubric Audit
+
+## Goal
+
+Ask Claude to double-check the copied Canva slides and the Pulse website at `/Users/brady/Code/Pulse` against the FBLA Coding & Programming NLC 2026 rubric, then handle any blockers it finds.
+
+## Plan
+
+- [x] Summarize the exact visible slide changes and documentation changes from the previous pass.
+- [x] Collect current slide metadata/content for the copied Canva deck.
+- [x] Collect current website/repo evidence from `/Users/brady/Code/Pulse`.
+- [x] Ask Claude to review slides plus website against the FBLA NLC 2026 rubric.
+- [x] Apply or report any Claude-identified blockers.
+- [x] Record Claude's final assessment and verification here.
+
+## Scope
+
+- Review copied Canva design `DAHMsCQZl04`, not the original design `DAHMUdo-9oQ`.
+- Review the current local Pulse project at `/Users/brady/Code/Pulse`.
+- Do not make app or slide edits unless Claude identifies a clear blocker.
+
+## Review
+
+- Confirmed the working Canva deck is the copy `DAHMsCQZl04`, not the original `DAHMUdo-9oQ`.
+- Current copied Canva edit URL from the final metadata readback: `https://www.canva.com/d/RQATCxyiKnsxYLh`; view URL: `https://www.canva.com/d/cu4TDXVDhXhRkSP`.
+- Claude's first NLC 2026 rubric audit said Pulse was ready only after three blockers were fixed: team-name mismatch in presenter notes, missing README credits/licenses/copyright/open-source documentation, and missing source citation for the `68¢` / `43¢` local-spend statistic.
+- Updated the copied Canva deck only:
+  - Page 2 now visibly cites `Source: AMIBA/Civic Economics local multiplier`.
+  - Page 11 remains `Felix Yin · Brady Chen · Matthew Heng — Diamond Bar FBLA`.
+  - Presenter notes pages 1, 2, 5, 6, 7, and 8 now use Brady consistently instead of Oscar.
+- Updated local documentation:
+  - `README.md` now maps each required FBLA feature to the prompt.
+  - `README.md` now cites AMIBA/Civic Economics for the local multiplier.
+  - `README.md` now includes `Credits / Third-Party & Open-Source Material`, open-source license notes, service/terms notes, and copyrighted/original-material notes.
+  - `USER_GUIDE.md`, `web/supabase/README.md`, and `web/supabase/QUICKSTART.md` remain the real documentation evidence for judges.
+- Claude re-checked the fixes against copied Canva design `DAHMsCQZl04` only and reported: `READY for FBLA NLC 2026`. All three blockers are closed and no remaining blockers were listed.
+- Claude's remaining polish items are non-blocking: tighten the 30-second script gap, rehearse the page 10 demo jump, do a spelling pass, keep a commented source file open during demo, follow the 3-device/no-link protocol, and avoid dress-code/late-arrival deductions.
+
+## Verification
+
+- Passed: copied Canva `DAHMsCQZl04` metadata readback confirms 11-page presentation `Byte-Sized Business Boost — Pulse`.
+- Passed: original Canva `DAHMUdo-9oQ` metadata readback confirms it remains a separate 11-page original design.
+- Passed: copied Canva page readback shows page 2 source citation, page 5 README/user guide pointer, page 10 `Deals & coupons`, and page 11 `Felix Yin · Brady Chen · Matthew Heng — Diamond Bar FBLA`.
+- Passed: copied Canva presenter-note readback shows Brady on pages 1, 2, 5, 6, 7, and 8.
+- Passed: Claude final response says `READY for FBLA NLC 2026`, `All three blockers are closed`, and `Remaining blockers: none`.
+- Passed: `cd /Users/brady/Code/Pulse/web && npm run test:run -- app/discover/__tests__/sorting.test.ts app/discover/__tests__/page.test.tsx app/categories/__tests__/page.test.tsx app/deals/__tests__/page.test.tsx app/bookmarks/__tests__/page.test.tsx app/api/reviews/__tests__/route.test.ts 'app/api/deals/[id]/claim/__tests__/route.test.ts' app/api/impact/report/__tests__/route.test.ts components/features/dashboard/__tests__/ImpactReport.test.tsx app/api/assistant/__tests__/route.test.ts lib/validation/__tests__/schemas.test.ts lib/__tests__/captcha.test.ts` with 12 files and 184 tests passed.
+- Passed: `cd /Users/brady/Code/Pulse/web && npm run build`.
