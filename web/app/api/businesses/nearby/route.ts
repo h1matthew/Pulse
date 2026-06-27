@@ -76,12 +76,12 @@ interface GoogleNearbyResponse {
 
 // Map category slugs to keywords for type matching (lowercase for comparison)
 const CATEGORY_SUBTYPE_MAP: Record<string, string[]> = {
-  'food-drink': ['restaurant', 'cafe', 'bakery', 'bar', 'coffee_shop', 'coffee shop', 'fast_food', 'pizza', 'sushi', 'ice_cream', 'food', 'meal_delivery', 'meal_takeaway'],
-  'retail': ['store', 'shopping', 'clothing', 'book_store', 'book store', 'electronics', 'grocery', 'convenience', 'department', 'shoe', 'gift', 'supermarket', 'market'],
-  'services': ['hair_salon', 'hair salon', 'beauty_salon', 'beauty salon', 'spa', 'gym', 'doctor', 'dentist', 'bank', 'car_repair', 'car repair', 'car_wash', 'car wash', 'gas_station', 'laundry', 'plumber', 'electrician'],
-  'entertainment': ['movie_theater', 'movie theater', 'museum', 'park', 'tourist_attraction', 'art_gallery', 'night_club', 'amusement', 'bowling', 'zoo', 'aquarium'],
-  'health-wellness': ['gym', 'spa', 'doctor', 'dentist', 'hospital', 'physiotherapist', 'pharmacy', 'veterinary', 'yoga'],
-  'arts-culture': ['art_gallery', 'art gallery', 'museum', 'library', 'book_store', 'book store', 'performing_arts', 'theater'],
+  'food-drink': ['restaurant', 'cafe', 'bakery', 'bar', 'coffee_shop', 'coffee shop', 'fast_food', 'pizza', 'sushi', 'ice_cream', 'food', 'meal_delivery', 'meal_takeaway', 'deli', 'donut', 'bagel', 'juice_bar', 'wine_bar', 'brewery', 'liquor_store', 'frozen_yogurt', 'catering', 'brunch', 'breakfast', 'steak', 'barbecue', 'seafood', 'sandwich', 'mexican_restaurant', 'chinese_restaurant', 'indian_restaurant', 'italian_restaurant', 'thai_restaurant', 'japanese_restaurant', 'korean_restaurant', 'vietnamese_restaurant', 'mediterranean_restaurant', 'vegetarian', 'vegan', 'hookah_bar', 'food_court'],
+  'retail': ['store', 'shopping', 'clothing', 'book_store', 'book store', 'electronics', 'grocery', 'convenience', 'department', 'shoe', 'gift', 'supermarket', 'market', 'jewelry', 'pet_store', 'florist', 'furniture', 'home_goods', 'sporting_goods', 'bicycle', 'toy', 'music_store', 'thrift', 'pawn', 'cell_phone', 'auto_parts', 'stationery', 'art_supply', 'craft', 'smoke_shop'],
+  'services': ['hair_salon', 'hair salon', 'beauty_salon', 'beauty salon', 'nail_salon', 'nail salon', 'spa', 'car_repair', 'car repair', 'car_wash', 'car wash', 'gas_station', 'laundry', 'dry_cleaner', 'plumber', 'electrician', 'bank', 'insurance', 'real_estate', 'locksmith', 'tailor', 'tattoo', 'moving', 'photographer', 'photography', 'print', 'pet_grooming', 'travel_agency', 'painter', 'roofing', 'towing', 'shoe_repair', 'accounting'],
+  'entertainment': ['movie_theater', 'movie theater', 'museum', 'park', 'tourist_attraction', 'art_gallery', 'night_club', 'amusement', 'bowling', 'zoo', 'aquarium', 'karaoke', 'escape_room', 'arcade', 'skating', 'golf', 'trampoline', 'laser_tag', 'climbing', 'concert', 'event_venue', 'convention'],
+  'health-wellness': ['gym', 'fitness', 'spa', 'doctor', 'dentist', 'hospital', 'physiotherapist', 'pharmacy', 'veterinary', 'yoga', 'pilates', 'martial_arts', 'chiropractor', 'optometrist', 'optician', 'urgent_care', 'medical_lab', 'swimming_pool', 'dance_studio'],
+  'arts-culture': ['art_gallery', 'art gallery', 'museum', 'library', 'book_store', 'book store', 'performing_arts', 'theater', 'concert_hall', 'dance_studio'],
 }
 
 // Educational subtypes to exclude
@@ -150,9 +150,12 @@ function generateDescription(place: GooglePlaceResult): string {
     'grocery_or_supermarket': (n) => `${n} stocks fresh groceries, produce, and everyday essentials`,
     'convenience_store': (n) => `${n} has quick essentials, snacks, and everyday items`,
     'hair_care': (n) => `${n} provides professional hair styling, cuts, and treatments`,
+    'hair_salon': (n) => `${n} provides professional hair styling, cuts, and treatments`,
+    'nail_salon': (n) => `${n} offers nail care, manicures, pedicures, and beauty treatments`,
     'beauty_salon': (n) => `${n} offers beauty services, treatments, and personal care`,
     'spa': (n) => `${n} provides relaxing spa treatments and wellness services`,
     'gym': (n) => `${n} is a fitness center with equipment, classes, and training`,
+    'fitness_center': (n) => `${n} is a fitness center with equipment, classes, and training`,
     'health': (n) => `${n} provides health and wellness services for the community`,
     'doctor': (n) => `${n} offers professional medical care and health services`,
     'dentist': (n) => `${n} provides dental care, cleanings, and oral health services`,
@@ -167,6 +170,38 @@ function generateDescription(place: GooglePlaceResult): string {
     'art_gallery': (n) => `${n} showcases artwork, exhibitions, and creative collections`,
     'tourist_attraction': (n) => `${n} is a must-visit destination and local landmark`,
     'bank': (n) => `${n} provides banking, financial services, and account management`,
+    'pharmacy': (n) => `${n} is a local pharmacy offering prescriptions and health products`,
+    'pet_store': (n) => `${n} carries pet supplies, food, and accessories for your furry friends`,
+    'veterinary_care': (n) => `${n} provides veterinary care and animal health services`,
+    'florist': (n) => `${n} creates beautiful floral arrangements for every occasion`,
+    'jewelry_store': (n) => `${n} offers fine jewelry, watches, and accessories`,
+    'laundry': (n) => `${n} provides professional laundry and cleaning services`,
+    'dry_cleaner': (n) => `${n} offers dry cleaning and garment care services`,
+    'tattoo_parlor': (n) => `${n} is a tattoo studio offering custom artwork and piercings`,
+    'yoga_studio': (n) => `${n} offers yoga classes and mindful movement sessions`,
+    'brewery': (n) => `${n} crafts local beers and offers tastings in a relaxed setting`,
+    'wine_bar': (n) => `${n} serves curated wines in a cozy, inviting atmosphere`,
+    'coffee_shop': (n) => `${n} is a local coffee spot serving specialty drinks and treats`,
+    'ice_cream_shop': (n) => `${n} serves delicious ice cream, gelato, and frozen treats`,
+    'pizza_restaurant': (n) => `${n} serves fresh, handcrafted pizzas and Italian favorites`,
+    'sushi_restaurant': (n) => `${n} offers fresh sushi, sashimi, and Japanese cuisine`,
+    'mexican_restaurant': (n) => `${n} serves authentic Mexican cuisine and flavors`,
+    'chinese_restaurant': (n) => `${n} offers traditional Chinese dishes and flavors`,
+    'italian_restaurant': (n) => `${n} serves classic Italian cuisine in a warm setting`,
+    'thai_restaurant': (n) => `${n} brings authentic Thai flavors and spices to the table`,
+    'japanese_restaurant': (n) => `${n} offers Japanese cuisine, from ramen to teriyaki`,
+    'korean_restaurant': (n) => `${n} serves Korean cuisine, from BBQ to bibimbap`,
+    'indian_restaurant': (n) => `${n} offers flavorful Indian dishes and aromatic spices`,
+    'seafood_restaurant': (n) => `${n} serves fresh seafood and ocean-inspired dishes`,
+    'steak_house': (n) => `${n} offers premium steaks and hearty American fare`,
+    'barbecue_restaurant': (n) => `${n} serves slow-smoked BBQ and classic sides`,
+    'bowling_alley': (n) => `${n} is a fun spot for bowling, games, and socializing`,
+    'arcade': (n) => `${n} is packed with arcade games and entertainment for all ages`,
+    'karaoke': (n) => `${n} offers private karaoke rooms and a fun night out`,
+    'escape_room': (n) => `${n} challenges you with immersive escape room puzzles`,
+    'martial_arts_school': (n) => `${n} teaches martial arts, self-defense, and discipline`,
+    'chiropractor': (n) => `${n} provides chiropractic care and spinal adjustments`,
+    'optometrist': (n) => `${n} offers eye exams, vision care, and eyewear`,
   }
 
   for (const type of (place.types || [])) {
@@ -203,12 +238,12 @@ function parseAddress(formatted: string): { city: string; state: string; zip: st
 // ============================================================================
 
 const CATEGORY_GOOGLE_TYPES: Record<string, string[]> = {
-  'food-drink': ['restaurant', 'cafe', 'bakery', 'bar', 'coffee_shop', 'fast_food_restaurant', 'pizza_restaurant', 'ice_cream_shop'],
-  'retail': ['store', 'shopping_mall', 'clothing_store', 'book_store', 'electronics_store', 'grocery_store', 'convenience_store', 'gift_shop', 'shoe_store'],
-  'services': ['hair_salon', 'beauty_salon', 'spa', 'gym', 'car_repair', 'car_wash', 'laundry', 'dry_cleaner', 'bank'],
-  'entertainment': ['movie_theater', 'museum', 'tourist_attraction', 'art_gallery', 'night_club', 'amusement_park', 'bowling_alley'],
-  'health-wellness': ['gym', 'spa', 'doctor', 'dentist', 'hospital', 'pharmacy', 'physiotherapist', 'veterinary_care'],
-  'arts-culture': ['art_gallery', 'museum', 'library', 'book_store', 'performing_arts_theater'],
+  'food-drink': ['restaurant', 'cafe', 'bakery', 'bar', 'coffee_shop', 'fast_food_restaurant', 'pizza_restaurant', 'ice_cream_shop', 'mexican_restaurant', 'chinese_restaurant', 'indian_restaurant', 'italian_restaurant', 'thai_restaurant', 'japanese_restaurant', 'seafood_restaurant', 'steak_house', 'barbecue_restaurant', 'breakfast_restaurant', 'sandwich_shop', 'sushi_restaurant', 'vietnamese_restaurant', 'korean_restaurant', 'mediterranean_restaurant', 'vegetarian_restaurant', 'brunch_restaurant', 'deli', 'juice_bar', 'donut_shop', 'wine_bar', 'brewery', 'liquor_store'],
+  'retail': ['store', 'shopping_mall', 'clothing_store', 'book_store', 'electronics_store', 'grocery_store', 'convenience_store', 'gift_shop', 'shoe_store', 'jewelry_store', 'pet_store', 'florist', 'furniture_store', 'home_goods_store', 'sporting_goods_store', 'bicycle_store', 'toy_store', 'music_store', 'thrift_store', 'cell_phone_store', 'auto_parts_store'],
+  'services': ['hair_salon', 'beauty_salon', 'nail_salon', 'spa', 'car_repair', 'car_wash', 'laundry', 'dry_cleaner', 'bank', 'insurance_agency', 'real_estate_agency', 'locksmith', 'tailor', 'tattoo_parlor', 'plumber', 'electrician', 'moving_company', 'photographer', 'print_shop', 'pet_grooming', 'travel_agency'],
+  'entertainment': ['movie_theater', 'museum', 'tourist_attraction', 'art_gallery', 'night_club', 'amusement_park', 'bowling_alley', 'karaoke', 'escape_room', 'arcade', 'skating_rink', 'golf_course', 'trampoline_park', 'zoo', 'aquarium', 'concert_hall', 'event_venue'],
+  'health-wellness': ['gym', 'spa', 'doctor', 'dentist', 'hospital', 'pharmacy', 'physiotherapist', 'veterinary_care', 'yoga_studio', 'pilates_studio', 'martial_arts_school', 'chiropractor', 'optometrist', 'urgent_care', 'fitness_center'],
+  'arts-culture': ['art_gallery', 'museum', 'library', 'book_store', 'performing_arts_theater', 'concert_hall', 'dance_studio', 'art_supply_store', 'craft_store'],
 }
 
 /**
@@ -279,77 +314,151 @@ async function fetchFromGooglePlaces(
   }
 }
 
+// ============================================================================
+// OSM amenity/shop values → internal category slug
+// ============================================================================
+const OSM_AMENITY_CATEGORY: Record<string, string> = {
+  restaurant: 'food-drink', cafe: 'food-drink', bar: 'food-drink',
+  pub: 'food-drink', fast_food: 'food-drink', food_court: 'food-drink',
+  ice_cream: 'food-drink', bakery: 'food-drink', biergarten: 'food-drink',
+  pharmacy: 'health-wellness', doctors: 'health-wellness', dentist: 'health-wellness',
+  veterinary: 'health-wellness', clinic: 'health-wellness', hospital: 'health-wellness',
+  cinema: 'entertainment', theatre: 'entertainment', nightclub: 'entertainment',
+  arts_centre: 'arts-culture', community_centre: 'arts-culture',
+  car_repair: 'services', car_wash: 'services', bank: 'services',
+  beauty: 'services', hairdresser: 'services',
+}
+
+const OSM_SHOP_CATEGORY: Record<string, string> = {
+  supermarket: 'retail', convenience: 'retail', clothes: 'retail',
+  shoes: 'retail', jewelry: 'retail', florist: 'retail',
+  gift: 'retail', books: 'retail', electronics: 'retail',
+  furniture: 'retail', hardware: 'retail', pet: 'retail',
+  sports: 'retail', toys: 'retail', bicycle: 'retail',
+  bakery: 'food-drink', butcher: 'food-drink', deli: 'food-drink',
+  pastry: 'food-drink', seafood: 'food-drink', wine: 'food-drink',
+  alcohol: 'food-drink', coffee: 'food-drink', tea: 'food-drink',
+  beauty: 'services', hairdresser: 'services', tattoo: 'services',
+  laundry: 'services', dry_cleaning: 'services', tailor: 'services',
+  car_repair: 'services', car_parts: 'services', tyres: 'services',
+  optician: 'health-wellness', medical_supply: 'health-wellness',
+  herbalist: 'health-wellness', nutrition_supplements: 'health-wellness',
+  art: 'arts-culture', music: 'arts-culture', musical_instrument: 'arts-culture',
+  photo: 'services', copyshop: 'services', mobile_phone: 'retail',
+  garden_centre: 'retail', variety_store: 'retail', second_hand: 'retail',
+  antiques: 'retail', craft: 'arts-culture',
+}
+
+interface OverpassElement {
+  type: string
+  id: number
+  lat?: number
+  lon?: number
+  center?: { lat: number; lon: number }
+  tags?: Record<string, string>
+}
+
+// Overpass caps at 80km radius to avoid server-side timeouts on mega-queries.
+const OVERPASS_SEED_RADIUS = 80000
+
 /**
- * Supplementary fetch from OpenWeb Ninja for broader coverage.
- * Returns results as GooglePlaceResult-compatible objects so they can
- * be merged with Google Places results and synced the same way.
+ * Fetch businesses from OpenStreetMap via the free Overpass API.
+ * Uses a large fixed radius (80km / ~50mi) so the DB gets seeded broadly
+ * on the first visit — subsequent requests hit the cached DB instead.
  */
-async function fetchFromOpenWebNinja(
+async function fetchFromOverpass(
   location: LatLng,
-  radius: number,
-  categorySlug?: string
 ): Promise<GooglePlaceResult[]> {
-  const apiKey = process.env.OPENWEBNINJA_API_KEY || ''
-  if (!apiKey) return []
-
   try {
-    const query = categorySlug && CATEGORY_GOOGLE_TYPES[categorySlug]
-      ? CATEGORY_GOOGLE_TYPES[categorySlug][0]?.replace(/_/g, ' ') || 'business'
-      : 'business'
-
-    const url = new URL('https://api.openwebninja.com/local-business-data/search-nearby')
-    url.searchParams.set('query', query)
-    url.searchParams.set('lat', String(location.lat))
-    url.searchParams.set('lng', String(location.lng))
-    url.searchParams.set('limit', '20')
-    url.searchParams.set('language', 'en')
-    url.searchParams.set('region', 'us')
-
-    const res = await fetch(url.toString(), {
-      headers: { 'x-api-key': apiKey },
+    const r = OVERPASS_SEED_RADIUS
+    const query = `
+[out:json][timeout:60];
+(
+  node["amenity"~"restaurant|cafe|bar|pub|fast_food|bakery|ice_cream|pharmacy|doctors|dentist|veterinary|clinic|cinema|theatre|nightclub|arts_centre|car_repair|car_wash|bank|beauty|hairdresser|food_court"](around:${r},${location.lat},${location.lng});
+  node["shop"](around:${r},${location.lat},${location.lng});
+  node["tourism"~"hotel|motel|guest_house|hostel|museum|gallery|attraction"](around:${r},${location.lat},${location.lng});
+  node["leisure"~"fitness_centre|sports_centre|bowling_alley|amusement_arcade|escape_game|dance"](around:${r},${location.lat},${location.lng});
+  node["craft"](around:${r},${location.lat},${location.lng});
+  way["amenity"~"restaurant|cafe|bar|pub|fast_food|bakery|ice_cream|pharmacy|doctors|dentist|veterinary|clinic|cinema|theatre|nightclub|arts_centre|car_repair|car_wash|bank|beauty|hairdresser|food_court"](around:${r},${location.lat},${location.lng});
+  way["shop"](around:${r},${location.lat},${location.lng});
+  way["tourism"~"hotel|motel|guest_house|museum|gallery|attraction"](around:${r},${location.lat},${location.lng});
+  way["leisure"~"fitness_centre|sports_centre|bowling_alley|amusement_arcade|escape_game|dance"](around:${r},${location.lat},${location.lng});
+);
+out center body;
+`
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `data=${encodeURIComponent(query)}`,
     })
-    if (!res.ok) return []
 
-    const data = await res.json()
-    // Convert OWN format to GooglePlaceResult-compatible shape
-    return ((data.data || []) as Array<{
-      place_id: string; name: string; latitude: number; longitude: number;
-      rating: number; review_count: number; phone_number: string | null;
-      website: string | null; full_address: string; subtypes: string[];
-      photos_sample: Array<{ photo_url: string; photo_url_large: string }>;
-      working_hours: Record<string, string[]> | null;
-      price_level: string | null; verified: boolean; business_status: string;
-    }>)
-      .filter(p => p.business_status !== 'CLOSED_PERMANENTLY')
-      .map(p => ({
-        id: p.place_id,
-        displayName: { text: p.name },
-        formattedAddress: p.full_address,
-        location: { latitude: p.latitude, longitude: p.longitude },
-        rating: p.rating,
-        userRatingCount: p.review_count,
-        nationalPhoneNumber: p.phone_number || undefined,
-        websiteUri: p.website || undefined,
-        types: p.subtypes?.map(s => s.toLowerCase().replace(/\s+/g, '_')) || [],
-        primaryType: p.subtypes?.[0]?.toLowerCase().replace(/\s+/g, '_'),
-        priceLevel: p.price_level === '$' ? 'PRICE_LEVEL_INEXPENSIVE'
-          : p.price_level === '$$' ? 'PRICE_LEVEL_MODERATE'
-          : p.price_level === '$$$' ? 'PRICE_LEVEL_EXPENSIVE'
-          : undefined,
-        // OWN provides direct CDN photo URLs — no resolution needed
-        photos: (p.photos_sample || []).slice(0, 3).map(ph => ({
-          name: ph.photo_url_large || ph.photo_url,
-          widthPx: 0,
-          heightPx: 0,
-        })),
-        regularOpeningHours: p.working_hours ? {
-          weekdayDescriptions: Object.entries(p.working_hours).map(
-            ([day, times]) => `${day}: ${times.join(', ')}`
-          ),
-        } : undefined,
-      } as GooglePlaceResult))
+    if (!res.ok) {
+      console.error('Overpass API error:', res.status)
+      return []
+    }
+
+    const data = await res.json() as { elements: OverpassElement[] }
+    const elements = data.elements || []
+
+    return elements
+      .filter(el => {
+        const t = el.tags
+        if (!t || !t.name) return false
+        if (ADULT_BUSINESS_PATTERN.test(t.name)) return false
+        return true
+      })
+      .map(el => {
+        const t = el.tags!
+        const lat = el.lat ?? el.center?.lat ?? 0
+        const lon = el.lon ?? el.center?.lon ?? 0
+        if (!lat || !lon) return null
+
+        const amenity = t.amenity || ''
+        const shop = t.shop || ''
+        const tourism = t.tourism || ''
+        const leisure = t.leisure || ''
+        const craft = t.craft || ''
+
+        const types: string[] = []
+        if (amenity) types.push(amenity)
+        if (shop) types.push(shop, 'store')
+        if (tourism) types.push(tourism)
+        if (leisure) types.push(leisure)
+        if (craft) types.push(craft)
+        if (t.cuisine) types.push(...t.cuisine.split(';').map(c => c.trim()))
+
+        const addr = [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' ')
+        const city = t['addr:city'] || ''
+        const state = t['addr:state'] || ''
+        const zip = t['addr:postcode'] || ''
+        const formattedAddress = [addr, city, state, zip].filter(Boolean).join(', ')
+
+        const osmId = `osm_${el.type}_${el.id}`
+
+        let hours: string[] | undefined
+        if (t.opening_hours) {
+          hours = [t.opening_hours]
+        }
+
+        return {
+          id: osmId,
+          displayName: { text: t.name },
+          formattedAddress,
+          location: { latitude: lat, longitude: lon },
+          rating: undefined,
+          userRatingCount: undefined,
+          nationalPhoneNumber: t.phone || t['contact:phone'] || undefined,
+          websiteUri: t.website || t['contact:website'] || undefined,
+          types,
+          primaryType: amenity || shop || tourism || leisure || craft || undefined,
+          priceLevel: undefined,
+          photos: [],
+          regularOpeningHours: hours ? { weekdayDescriptions: hours } : undefined,
+        } as GooglePlaceResult
+      })
+      .filter((p): p is GooglePlaceResult => p !== null)
   } catch (error) {
-    console.error('OpenWeb Ninja fetch failed:', error)
+    console.error('Overpass API fetch failed:', error)
     return []
   }
 }
@@ -368,7 +477,11 @@ async function syncPlacesToDatabase(
   for (const place of places) {
     try {
       const types = place.types || []
-      if (!isRealBusinessPlaceTypes(types)) continue
+      const isOsm = place.id?.startsWith('osm_') ?? false
+
+      // OSM entries use different type vocabularies — skip the Google-centric
+      // type check for them; they were already filtered by the Overpass query.
+      if (!isOsm && !isRealBusinessPlaceTypes(types)) continue
 
       // Skip chains/franchises and big-box/large-format places entirely —
       // Pulse only lists independent small businesses.
@@ -377,8 +490,19 @@ async function syncPlacesToDatabase(
         continue
       }
 
-      // Map types to internal category
-      const categorySlug = mapSubtypeToCategory(types)
+      // Map types to internal category — OSM amenity/shop keys first,
+      // then fall back to the Google-oriented subtype map.
+      let categorySlug: string | undefined
+      if (isOsm) {
+        for (const t of types) {
+          if (OSM_AMENITY_CATEGORY[t]) { categorySlug = OSM_AMENITY_CATEGORY[t]; break }
+          if (OSM_SHOP_CATEGORY[t]) { categorySlug = OSM_SHOP_CATEGORY[t]; break }
+        }
+      }
+      if (!categorySlug) {
+        categorySlug = mapSubtypeToCategory(types)
+      }
+
       const { data: category } = await db
         .from('categories')
         .select('id')
@@ -397,14 +521,11 @@ async function syncPlacesToDatabase(
         .single()
 
       const name = place.displayName?.text || 'Unknown Business'
-      const addr = parseAddress(place.formattedAddress || '')
+      const addr = isOsm
+        ? { city: place.formattedAddress?.split(', ')[1] || '', state: place.formattedAddress?.split(', ')[2] || '', zip: place.formattedAddress?.split(', ')[3] || '' }
+        : parseAddress(place.formattedAddress || '')
       const desc = generateDescription(place)
 
-      // Store raw photo references straight from the search response (free — they
-      // come with the search). Google resource names ("places/XYZ/photos/abc")
-      // resolve lazily through the /api/businesses/photo proxy at display time;
-      // OpenWeb Ninja entries already carry direct CDN URLs, kept as-is. Either
-      // way we make zero extra Place Photo calls during sync.
       const photos = (place.photos || []).slice(0, 3).map((p) => ({
         photo_reference: p.name,
         height: p.heightPx || 0,
@@ -434,8 +555,8 @@ async function syncPlacesToDatabase(
         review_count: place.userRatingCount || 0,
         category_id: category.id,
         place_id: placeId,
-        data_source: 'google',
-        is_verified: true,
+        data_source: isOsm ? 'osm' as const : 'google' as const,
+        is_verified: !isOsm,
         is_chain: false,
         photos,
         hours,
@@ -520,7 +641,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const { data: existingBusinesses, error: dbError } = await query.limit(250)
+    const { data: existingBusinesses, error: dbError } = await query.limit(1000)
 
     if (dbError) {
       console.error('Database error:', dbError)
@@ -543,17 +664,39 @@ export async function GET(request: Request) {
     const shouldFetch = forceRefresh || filteredExistingBusinesses.length < expectedForRadius
     let places: GooglePlaceResult[] = []
     if (shouldFetch) {
-      // Fetch from both Google Places and OpenWeb Ninja in parallel for broader coverage
-      const [googleResults, ownResults] = await Promise.all([
-        fetchFromGooglePlaces(location, radius, category),
-        fetchFromOpenWebNinja(location, radius, category),
-      ])
-      // Merge and deduplicate by place_id
-      const seen = new Set<string>()
-      for (const p of [...googleResults, ...ownResults]) {
-        if (p.id && !seen.has(p.id)) {
-          seen.add(p.id)
-          places.push(p)
+      // Overpass (OSM) seeds aggressively with an 80km radius — free, no cap.
+      // Google Places adds quality data (photos, ratings) for the immediate area.
+      const overpassPromise = fetchFromOverpass(location)
+
+      if (category) {
+        const [googleResults, osmResults] = await Promise.all([
+          fetchFromGooglePlaces(location, radius, category),
+          overpassPromise,
+        ])
+        const seen = new Set<string>()
+        for (const p of [...googleResults, ...osmResults]) {
+          if (p.id && !seen.has(p.id)) {
+            seen.add(p.id)
+            places.push(p)
+          }
+        }
+      } else {
+        // No category filter: fetch Google across categories for quality data
+        // with photos/ratings, plus Overpass for sheer volume and coverage.
+        const diverseCategories = Object.keys(CATEGORY_GOOGLE_TYPES)
+        const fetchPromises: Promise<GooglePlaceResult[]>[] = [overpassPromise]
+        for (const cat of diverseCategories) {
+          fetchPromises.push(fetchFromGooglePlaces(location, radius, cat))
+        }
+        const allResults = await Promise.all(fetchPromises)
+        const seen = new Set<string>()
+        for (const batch of allResults) {
+          for (const p of batch) {
+            if (p.id && !seen.has(p.id)) {
+              seen.add(p.id)
+              places.push(p)
+            }
+          }
         }
       }
     }
@@ -587,7 +730,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const { data: syncedBusinesses, error: syncError } = await syncedQuery.limit(250)
+    const { data: syncedBusinesses, error: syncError } = await syncedQuery.limit(1000)
 
     if (syncError) {
       console.error('Error fetching synced businesses:', syncError)
