@@ -579,6 +579,25 @@ async function syncPlacesToDatabase(
   }
 }
 
+// Cap markers returned to the client. The map only needs the closest results;
+// returning every row in a dense metro (thousands) bloats the payload and makes
+// the map laggy (each result is a DOM marker). 250 keeps coverage while staying
+// smooth to pan/zoom.
+const MAX_NEARBY_RESULTS = 250
+
+// Great-circle distance in meters between two coordinates.
+function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6_371_000
+  const dLat = ((bLat - aLat) * Math.PI) / 180
+  const dLng = ((bLng - aLng) * Math.PI) / 180
+  const lat1 = (aLat * Math.PI) / 180
+  const lat2 = (bLat * Math.PI) / 180
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
 /**
  * GET /api/businesses/nearby
  *
@@ -705,63 +724,81 @@ export async function GET(request: Request) {
       await syncPlacesToDatabase(places, supabase)
     }
 
-    // Fetch the newly synced businesses
-    let syncedQuery = supabase
-      .from('businesses')
-      .select(`
-        *,
-        category:categories(*),
-        deals(*)
-      `)
-      .gte('latitude', lat - latOffset)
-      .lte('latitude', lat + latOffset)
-      .gte('longitude', lng - lngOffset)
-      .lte('longitude', lng + lngOffset)
-
+    // Resolve the category id once (if filtering) for the synced fetch below.
+    let syncedCategoryId: string | undefined
     if (category) {
       const { data: categoryData } = await supabase
         .from('categories')
         .select('id')
         .eq('slug', category)
         .single()
+      syncedCategoryId = categoryData?.id
+    }
 
-      if (categoryData) {
-        syncedQuery = syncedQuery.eq('category_id', categoryData.id)
+    // Fetch ALL businesses in the bounding box, paging past the 1000-row cap.
+    // A dense metro can hold several thousand rows in the box; a single capped
+    // query returns an arbitrary (insertion-order) slice, which silently drops
+    // the genuinely-nearest businesses and biases the map to one side. We page
+    // through everything, then sort by true distance and keep the closest N.
+    const PAGE = 1000
+    const MAX_SCAN = 6000 // safety ceiling on rows scanned
+    const syncedBusinesses: NonNullable<typeof existingBusinesses> = []
+    for (let from = 0; from < MAX_SCAN; from += PAGE) {
+      let pageQuery = supabase
+        .from('businesses')
+        .select(`
+          *,
+          category:categories(*),
+          deals(*)
+        `)
+        .gte('latitude', lat - latOffset)
+        .lte('latitude', lat + latOffset)
+        .gte('longitude', lng - lngOffset)
+        .lte('longitude', lng + lngOffset)
+
+      if (syncedCategoryId) {
+        pageQuery = pageQuery.eq('category_id', syncedCategoryId)
       }
+
+      const { data: pageRows, error: pageError } = await pageQuery.range(from, from + PAGE - 1)
+      if (pageError) {
+        console.error('Error fetching synced businesses:', pageError)
+        // If we already have some rows, return what we've got rather than 500.
+        if (syncedBusinesses.length === 0) {
+          return NextResponse.json(
+            { error: 'Failed to fetch businesses' },
+            { status: 500 }
+          )
+        }
+        break
+      }
+      if (!pageRows || pageRows.length === 0) break
+      syncedBusinesses.push(...pageRows)
+      if (pageRows.length < PAGE) break
     }
 
-    const { data: syncedBusinesses, error: syncError } = await syncedQuery.limit(1000)
-
-    if (syncError) {
-      console.error('Error fetching synced businesses:', syncError)
-      return NextResponse.json(
-        { error: 'Failed to fetch businesses' },
-        { status: 500 }
-      )
-    }
-
-    const filteredSyncedBusinesses = (syncedBusinesses || []).filter((business) =>
-      isRealBusinessRecord({
+    // Keep only real independent businesses that fall inside the actual search
+    // radius (the DB query uses a rectangular box, so its corners reach beyond
+    // the requested radius — filter to the true circle here).
+    const withinRadius = syncedBusinesses.filter((business) => {
+      if (business.latitude == null || business.longitude == null) return false
+      if (haversineMeters(lat, lng, business.latitude, business.longitude) > radius) return false
+      return isRealBusinessRecord({
         data_source: business.data_source,
         tags: business.tags,
         name: business.name,
         is_chain: business.is_chain,
         review_count: business.review_count,
       })
-    )
-
-    // Sort by distance
-    const sorted = filteredSyncedBusinesses.sort((a, b) => {
-      const distA = Math.sqrt(
-        Math.pow((a.latitude || 0) - lat, 2) +
-        Math.pow((a.longitude || 0) - lng, 2)
-      )
-      const distB = Math.sqrt(
-        Math.pow((b.latitude || 0) - lat, 2) +
-        Math.pow((b.longitude || 0) - lng, 2)
-      )
-      return distA - distB
     })
+
+    // Sort by true (great-circle) distance, nearest first, and keep the closest N.
+    const sorted = withinRadius
+      .sort((a, b) =>
+        haversineMeters(lat, lng, a.latitude!, a.longitude!) -
+        haversineMeters(lat, lng, b.latitude!, b.longitude!)
+      )
+      .slice(0, MAX_NEARBY_RESULTS)
 
     return NextResponse.json(sorted)
   } catch (error) {
