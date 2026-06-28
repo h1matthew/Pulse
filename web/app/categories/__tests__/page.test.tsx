@@ -126,13 +126,8 @@ describe('Categories Page', () => {
     await renderPage()
     expect(screen.getByTestId('header')).toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Browse by Category' })
+      screen.getByRole('heading', { level: 1, name: 'Categories' })
     ).toBeInTheDocument()
-  })
-
-  it('renders the mono eyebrow label', async () => {
-    await renderPage()
-    expect(screen.getByText('Browse the directory')).toBeInTheDocument()
   })
 
   it('renders real business counts computed from the data', async () => {
@@ -233,7 +228,7 @@ describe('Categories Page', () => {
       )
       await renderPage()
       expect(
-        screen.getByRole('heading', { level: 1, name: 'Browse by Category' })
+        screen.getByRole('heading', { level: 1, name: 'Categories' })
       ).toBeInTheDocument()
       expect(screen.getAllByText('0 businesses')).toHaveLength(6)
       expect(

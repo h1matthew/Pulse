@@ -36,7 +36,7 @@ export function PhotoGallery({ photos, businessName, categoryIcon = "🏪" }: Ph
 
   if (!hasPhotos) {
     return (
-      <div className="h-64 md:h-80 bg-gradient-to-br from-primary/10 via-chart-2/10 to-chart-3/10 rounded-2xl flex items-center justify-center relative overflow-hidden">
+      <div className="h-64 md:h-80 bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
         <div className="text-8xl">{categoryIcon}</div>
       </div>
     );
@@ -45,7 +45,7 @@ export function PhotoGallery({ photos, businessName, categoryIcon = "🏪" }: Ph
   return (
     <>
       {/* Main Photo Display */}
-      <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden group">
+      <div className="relative h-64 md:h-80 rounded-lg overflow-hidden group">
         <Image
           src={displayPhotos[0]}
           alt={businessName}

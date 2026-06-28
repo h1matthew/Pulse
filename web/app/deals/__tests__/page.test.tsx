@@ -136,7 +136,7 @@ describe("DealsPage", () => {
   it("renders deal sections and dynamic stat cards", () => {
     render(<DealsPage />);
 
-    expect(screen.getByRole("heading", { name: "Deals & Offers" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Deals" })).toBeInTheDocument();
     expect(screen.getByTestId("stat-available")).toHaveTextContent("2");
     expect(screen.getByTestId("stat-flash")).toHaveTextContent("1");
     expect(screen.getByTestId("stat-claimed")).toHaveTextContent("1");
@@ -258,13 +258,10 @@ describe("DealsPage", () => {
   describe("design language", () => {
     const emojiPattern = /\p{Extended_Pictographic}/u;
 
-    it("renders a mono uppercase eyebrow above the heading", () => {
+    it("renders the page heading", () => {
       render(<DealsPage />);
 
-      const eyebrow = screen.getByText(/^save local$/i);
-      expect(eyebrow.classList.contains("font-mono")).toBe(true);
-      expect(eyebrow.classList.contains("uppercase")).toBe(true);
-      expect(eyebrow.tagName).not.toBe("H1");
+      expect(screen.getByRole("heading", { level: 1, name: "Deals" })).toBeInTheDocument();
     });
 
     it("renders the discount value in mono primary text", () => {

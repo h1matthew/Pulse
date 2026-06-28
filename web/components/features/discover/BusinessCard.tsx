@@ -157,7 +157,7 @@ function BusinessImage({
 
   // Fallback to gradient with icon
   return (
-    <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-primary/10 via-chart-2/10 to-primary/5 flex items-center justify-center">
+    <div className="relative h-48 w-full overflow-hidden bg-muted flex items-center justify-center">
       <span className="text-6xl opacity-50">{categoryIcon}</span>
       {business.is_featured && (
         <Badge className="absolute top-3 left-3 bg-chart-2 text-white border-0">
@@ -222,7 +222,7 @@ export function BusinessCard({
   return (
     <AnimatedSection animation="fade-up" delay={0.05 * (index + 1)}>
       <NavLink href={`/business/${business.id}`}>
-        <Card className="h-full overflow-hidden card-lift cursor-pointer group border-border/50 hover:border-primary/30">
+        <Card className="h-full overflow-hidden cursor-pointer group border-border hover:border-border/80">
           <CardContent className="p-0">
             <BusinessImage business={business} priority={priority} />
 

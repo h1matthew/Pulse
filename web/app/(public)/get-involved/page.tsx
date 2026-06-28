@@ -48,16 +48,8 @@ export default function GetInvolvedPage() {
           {/* Header */}
           <div className="mb-16 text-center">
             <AnimatedSection animation="fade-up">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary">
-                <Heart className="h-4 w-4" />
+              <h1 className="text-2xl font-semibold tracking-tight">
                 Get Involved
-              </div>
-            </AnimatedSection>
-            <AnimatedSection animation="fade-up" delay={0.1}>
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                <span className="bg-gradient-to-r from-primary to-chart-2 bg-clip-text text-transparent">
-                  Strengthen Your Local Economy
-                </span>
               </h1>
             </AnimatedSection>
             <AnimatedSection animation="fade-up" delay={0.2}>
@@ -73,8 +65,8 @@ export default function GetInvolvedPage() {
             {WAYS_TO_HELP.map((item, i) => (
               <AnimatedSection key={item.title} animation="fade-up" delay={0.2 + i * 0.1}>
                 <NavLink href={item.href} className="block h-full">
-                  <div className="group h-full rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 transition-colors duration-300 hover:border-primary/20">
-                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/15">
+                  <div className="group h-full rounded-lg border border-border bg-card p-6 transition-colors duration-150 hover:border-primary/20">
+                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
                       <item.icon className="h-7 w-7" />
                     </div>
                     <h2 className="mb-3 text-xl font-bold text-foreground group-hover:text-primary transition-colors">
@@ -95,7 +87,7 @@ export default function GetInvolvedPage() {
 
           {/* Volunteer CTA */}
           <AnimatedSection animation="fade-up" delay={0.6}>
-            <div className="mx-auto max-w-2xl text-center rounded-2xl border border-primary/20 bg-primary/5 p-10">
+            <div className="mx-auto max-w-2xl text-center rounded-lg border border-border bg-card p-8">
               <div className="mb-4 flex justify-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                   <Users className="h-8 w-8" />
@@ -109,7 +101,7 @@ export default function GetInvolvedPage() {
               </p>
               <NavLink
                 href="/about"
-                className="inline-flex items-center gap-2 btn-primary rounded-xl px-6 py-3 text-sm font-medium text-primary-foreground transition-all"
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
                 Learn More
                 <ArrowRight className="h-4 w-4" />

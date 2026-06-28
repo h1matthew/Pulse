@@ -21,28 +21,13 @@ export default function MissionPage() {
 
   return (
     <div className="relative overflow-hidden">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-muted/20 pointer-events-none" />
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border/50 px-6 pt-16 pb-24 lg:pb-32">
         <div className="relative mx-auto max-w-4xl text-center">
-          <AnimatedSection animation="fade-in" delay={0}>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-muted-foreground backdrop-blur-sm">
-              <Heart className="h-4 w-4 text-primary" />
-              Our Mission
-            </div>
-          </AnimatedSection>
-
-          <AnimatedSection animation="fade-up" delay={0.1}>
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-              Powering the Heart of{' '}
-              <span className="relative">
-                <span className="bg-gradient-to-r from-primary via-chart-3 to-chart-2 bg-clip-text text-transparent">
-                  Local Business
-                </span>
-                <span className="absolute -bottom-2 left-0 right-0 h-1 rounded-full bg-gradient-to-r from-primary/60 via-chart-3/60 to-chart-2/60 blur-sm" />
-              </span>
+          <AnimatedSection animation="fade-up">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Powering the Heart of Local Business
             </h1>
           </AnimatedSection>
 
@@ -62,11 +47,7 @@ export default function MissionPage() {
         <div className="mx-auto max-w-6xl">
           <AnimatedSection animation="fade-up">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Our Approach</span>
-                <Sparkles className="h-5 w-5 text-primary" />
-              </div>
+              <p className="text-sm font-medium text-muted-foreground mb-4">Our Approach</p>
               <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
                 What We Do
               </h2>
@@ -192,7 +173,7 @@ function MissionCard3D({
 }) {
   return (
     <AnimatedSection animation="fade-up" delay={delay}>
-      <div className="group relative h-full rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
+      <div className="group relative h-full rounded-lg border border-border bg-card p-6 transition-colors duration-150 hover:border-primary/20">
         {/* Content */}
         <div className="relative">
           <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/15">
@@ -219,7 +200,7 @@ function StatCard({
 }) {
   return (
     <AnimatedSection animation="scale-in" delay={delay}>
-      <div className="group text-center p-6 rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm transition-colors duration-300 hover:border-primary/20">
+      <div className="group text-center p-6 rounded-lg border border-border bg-card transition-colors duration-150 hover:border-primary/20">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mb-4">
           {icon}
         </div>

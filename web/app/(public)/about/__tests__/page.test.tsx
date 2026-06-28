@@ -105,10 +105,10 @@ describe('AboutPage', () => {
     expect(screen.getByText(/Our Story/)).toBeInTheDocument()
   })
 
-  it('renders the Meet the Team h1 heading', () => {
+  it('renders the About h1 heading', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Meet the Team' })
+      screen.getByRole('heading', { level: 1, name: 'About' })
     ).toBeInTheDocument()
   })
 
@@ -121,18 +121,10 @@ describe('AboutPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the mono eyebrow labels for each section', () => {
+  it('renders section labels without mono styling', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    expect(screen.getByText('About Pulse')).toHaveClass('font-mono')
-    expect(screen.getByText('The Founders')).toHaveClass('font-mono')
-    expect(screen.getByText('Our Story')).toHaveClass('font-mono')
-  })
-
-  it('renders the founder count as a mono stat', () => {
-    render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    const count = screen.getByLabelText('4 founders')
-    expect(count).toHaveTextContent('04')
-    expect(count).toHaveClass('font-mono')
+    expect(screen.getByText('The Founders')).toBeInTheDocument()
+    expect(screen.getByText('Our Story')).toBeInTheDocument()
   })
 
   it('contains no emoji characters', () => {

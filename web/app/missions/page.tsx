@@ -274,14 +274,9 @@ export default function MissionsPage() {
           {/* Header */}
           <AnimatedSection animation="fade-up">
             <div className="mb-8 border-b border-border pb-6">
-              <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                Challenges &amp; rewards
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                Boost Missions
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-                Complete challenges, support local businesses, and unlock exclusive rewards
+              <h1 className="text-lg font-semibold">Missions</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Complete challenges and support local businesses
               </p>
             </div>
           </AnimatedSection>

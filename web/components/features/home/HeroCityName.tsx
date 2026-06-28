@@ -98,5 +98,5 @@ export function HeroCityName() {
     }
   }, [])
 
-  return <span className="gradient-text">{city}</span>
+  return <span>{city}</span>
 }

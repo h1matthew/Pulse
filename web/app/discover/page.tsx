@@ -260,8 +260,8 @@ const BusinessCard = memo(function BusinessCard({
       onMouseEnter={() => onHoverChange?.(business.id)}
       onMouseLeave={() => onHoverChange?.(null)}
       className={cn(
-        "group relative h-56 overflow-hidden rounded-2xl border bg-muted transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/10",
-        isHovered ? "border-primary/60 shadow-lg shadow-primary/15 -translate-y-0.5" : "border-border"
+        "group relative h-56 overflow-hidden rounded-lg border bg-muted transition-colors duration-150",
+        isHovered ? "border-primary/60" : "border-border"
       )}
     >
       {/* Full-bleed image */}
@@ -371,7 +371,7 @@ const BusinessCard = memo(function BusinessCard({
 
 function BusinessCardSkeleton() {
   return (
-    <div className="relative h-64 overflow-hidden rounded-2xl border border-border bg-card">
+    <div className="relative h-64 overflow-hidden rounded-lg border border-border bg-card">
       <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
       <div className="absolute inset-x-0 bottom-0 space-y-2 p-4">
         <Skeleton className="h-5 w-3/4" />
@@ -723,7 +723,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
       {/* Title + HUD */}
       <div>
         <h1 id="discover-heading" className="text-2xl font-semibold tracking-tight">
-          Discover places <span className="gradient-text">nearby</span>
+          Discover places nearby
         </h1>
         <div className="mt-2 flex divide-x divide-border overflow-hidden rounded-lg border border-border bg-card/80 text-xs">
           <div className="px-3 py-2">
@@ -753,8 +753,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
 
       {/* Search and Filters */}
       {hasLocation && (
-        <section aria-label="Search and filters" className="overflow-hidden rounded-2xl border border-border bg-card/90 shadow-sm backdrop-blur-sm">
-          <div className="h-px bg-gradient-to-r from-primary/50 via-primary/10 to-transparent" aria-hidden="true" />
+        <section aria-label="Search and filters" className="overflow-hidden rounded-lg border border-border bg-card">
           <div className="p-3">
             <div className="flex gap-2">
               <div role="search" aria-label="Search businesses" className="relative flex-1" data-tour="discover-search">
@@ -890,7 +889,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
         <section aria-label="Active missions" className="space-y-2">
           {missionsInView.map((detail) => (
             <div key={detail.progress.id} className="relative flex flex-col gap-2 overflow-hidden rounded-xl border border-primary/25 bg-primary/5 p-4 pl-5 sm:flex-row sm:items-center sm:gap-4">
-              <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-chart-2" aria-hidden="true" />
+              <div className="absolute inset-y-0 left-0 w-1 bg-primary" aria-hidden="true" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold">Mission: {detail.progress.mission.title}</p>
                 <p className="text-xs text-muted-foreground">Check in with your receipt to log a verified visit.</p>
@@ -921,14 +920,14 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
           {Array.from({ length: 5 }).map((_, i) => <BusinessCardSkeleton key={i} />)}
         </div>
       ) : businessesError ? (
-        <div className="rounded-2xl border border-border bg-card p-8 text-center" role="alert">
+        <div className="rounded-lg border border-border bg-card p-8 text-center" role="alert">
           <AlertCircle className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden="true" />
           <h3 className="text-base font-semibold">Could not load places</h3>
           <p className="mt-2 text-sm text-muted-foreground">{businessesError.message}</p>
           <Button className="mt-4" onClick={() => refetch()}>Try again</Button>
         </div>
       ) : sortedBusinesses.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center">
           <Search className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden="true" />
           <h3 className="text-base font-semibold">No places found</h3>
           <p className="mt-2 text-sm text-muted-foreground">

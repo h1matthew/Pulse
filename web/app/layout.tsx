@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { AppBackground } from "@/components/layout/AppBackground";
+
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AccessibilityProvider } from "@/components/providers/AccessibilityProvider";
@@ -48,8 +48,6 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        {/* Ambient drifting-orb background, shared by every page (fixed, -z-10) */}
-        <AppBackground />
         {/* Skip to main content link for keyboard/screen reader accessibility */}
         <a
           href="#main-content"

@@ -628,10 +628,10 @@ export default function BusinessDetailPage({
       <Header />
 
       {/* Immersive hero — identity and actions live on the photo itself */}
-      <div className="bg-gradient-to-b from-primary/5 via-background to-background pt-28 pb-8">
+      <div className="pt-20 pb-8">
         <div className="mx-auto max-w-6xl px-6">
           <AnimatedSection animation="fade-up">
-            <div className="relative h-[24rem] md:h-[27rem] rounded-3xl overflow-hidden shadow-xl shadow-primary/5">
+            <div className="relative h-[24rem] md:h-[27rem] rounded-lg overflow-hidden">
               {(() => {
                 const photoUrl = buildBusinessPhotoUrl(business.photos?.[0], {
                   maxWidth: 800,

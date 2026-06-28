@@ -169,7 +169,7 @@ export default function AssistantPage() {
                     animate={{ scale: 1, opacity: 1 }}
                     className="mb-6"
                   >
-                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center shadow-lg shadow-primary/25">
+                    <div className="h-16 w-16 rounded-lg bg-primary flex items-center justify-center">
                       <Sparkles className="h-10 w-10 text-white" />
                     </div>
                   </motion.div>
@@ -389,7 +389,7 @@ export default function AssistantPage() {
               </Card>
 
               {/* Mission Card */}
-              <Card className="p-5 bg-gradient-to-br from-primary/5 to-chart-2/5">
+              <Card className="p-5">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
                   <Heart className="h-4 w-4 text-primary" />
                   Our Mission

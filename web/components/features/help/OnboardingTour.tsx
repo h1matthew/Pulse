@@ -582,7 +582,7 @@ export function OnboardingTour() {
         aria-modal="false"
         aria-label={`Tour step ${stepIndex + 1} of ${TOUR_STEPS.length}: ${step.title}`}
         tabIndex={-1}
-        className="pointer-events-auto absolute w-[min(360px,calc(100vw-28px))] rounded-2xl border border-border bg-background p-5 shadow-2xl outline-none animate-scale-in"
+        className="pointer-events-auto absolute w-[min(360px,calc(100vw-28px))] rounded-lg border border-border bg-background p-5 shadow-lg outline-none animate-scale-in"
         style={cardStyle}
       >
         <div className="flex items-start justify-between gap-3">

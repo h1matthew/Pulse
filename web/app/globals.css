@@ -10,12 +10,10 @@
     @apply bg-background text-foreground;
   }
 
-  /* Enhanced focus-visible outlines for keyboard accessibility */
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
   }
 
-  /* Ensure interactive elements have clear focus indicators */
   a:focus-visible,
   button:focus-visible,
   input:focus-visible,
@@ -26,126 +24,39 @@
   }
 }
 
-/* ─── KaTeX Enhancements ─── */
-.katex {
-  font-size: 1.1em;
-  color: var(--foreground);
-}
+/* KaTeX */
+.katex { font-size: 1.1em; color: var(--foreground); }
+.katex-display { margin: 0 !important; }
+.katex .mord, .katex .minner, .katex .mop, .katex .mrel,
+.katex .mopen, .katex .mclose, .katex .mpunct, .katex .mbin { color: inherit; }
+.katex .frac-line { background: var(--foreground); }
 
-.katex-display {
-  margin: 0 !important;
-}
+/* Scrollbar */
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-thin { scrollbar-width: thin; }
+.scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
 
-.katex .mord,
-.katex .minner,
-.katex .mop,
-.katex .mrel,
-.katex .mopen,
-.katex .mclose,
-.katex .mpunct,
-.katex .mbin {
-  color: inherit;
-}
-
-/* Fraction line visibility */
-.katex .frac-line {
-  background: var(--foreground);
-}
-
-/* ─── Scrollbar Styling ─── */
-.scrollbar-none {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-
-.scrollbar-thin {
-  scrollbar-width: thin;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  height: 6px;
-  width: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: oklch(0.5 0 0 / 0.2);
-  border-radius: 3px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0 0 / 0.3);
-}
-
-/* ─── Discover map (Leaflet) ─── */
-.leaflet-container {
-  font-family: inherit;
-  background: var(--muted);
-}
-
-/* Zillow-style photo-card popups. The card itself is rendered in React with
-   inline styles; these rules reshape Leaflet's default bubble into a clean,
-   edge-to-edge card (no padding, rounded corners, soft shadow). */
+/* Leaflet map */
+.leaflet-container { font-family: inherit; background: var(--muted); }
 .leaflet-popup.biz-popup .leaflet-popup-content-wrapper {
-  padding: 0;
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22), 0 3px 8px rgba(0, 0, 0, 0.1);
+  padding: 0; overflow: hidden; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--card);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
-.leaflet-popup.biz-popup .leaflet-popup-content {
-  margin: 0;
-  width: 240px !important;
-}
-.leaflet-popup.biz-popup .leaflet-popup-tip {
-  background: var(--card);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
-}
+.leaflet-popup.biz-popup .leaflet-popup-content { margin: 0; width: 240px !important; }
+.leaflet-popup.biz-popup .leaflet-popup-tip { background: var(--card); }
 .leaflet-popup.biz-popup .leaflet-popup-close-button {
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  line-height: 22px;
-  text-align: center;
-  color: #fff;
-  background: rgba(15, 23, 42, 0.55);
-  border-radius: 9999px;
-  font-size: 16px;
-  font-weight: 500;
-  transition: background 150ms ease;
+  top: 6px; right: 6px; width: 22px; height: 22px; line-height: 20px;
+  text-align: center; color: #fff; background: rgba(0,0,0,0.5);
+  border-radius: 4px; font-size: 14px; font-weight: 500;
 }
-.leaflet-popup.biz-popup .leaflet-popup-close-button:hover {
-  background: rgba(15, 23, 42, 0.8);
-  color: #fff;
-}
+.leaflet-popup.biz-popup .leaflet-popup-close-button:hover { background: rgba(0,0,0,0.7); }
+.leaflet-bar { border: 1px solid var(--border) !important; border-radius: 6px; overflow: hidden; }
+.leaflet-bar a, .leaflet-bar a:hover { background: var(--card); color: var(--foreground); border-bottom-color: var(--border); }
+.leaflet-bar a:hover { background: var(--muted); }
 
-/* Cleaner zoom controls that match the app's card styling. */
-.leaflet-bar {
-  border: 1px solid var(--border) !important;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-}
-.leaflet-bar a,
-.leaflet-bar a:hover {
-  background: var(--card);
-  color: var(--foreground);
-  border-bottom-color: var(--border);
-}
-.leaflet-bar a:hover {
-  background: var(--muted);
-}
-
-/* ─── Impact Report Print ─── */
-/* Print is handled via iframe in handlePrint() — see ImpactReport.tsx.
-   All print formatting lives in the inline <style> of the iframe document.
-   This class just hides the footer element on screen. */
 .print-footer { display: none; }

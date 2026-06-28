@@ -15,14 +15,11 @@ export function AboutContent({ founders }: AboutContentProps) {
       {/* Hero */}
       <section aria-labelledby="about-heading" className="border-b border-border pb-12">
         <AnimatedSection animation="fade-up">
-          <p className="mb-5 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            About Pulse
-          </p>
           <h1
             id="about-heading"
-            className="max-w-2xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl"
+            className="text-lg font-semibold"
           >
-            Meet the Team
+            About
           </h1>
         </AnimatedSection>
 
@@ -38,7 +35,7 @@ export function AboutContent({ founders }: AboutContentProps) {
       <section aria-label="The founders" className="pt-12">
         <AnimatedSection animation="fade-up">
           <div className="flex items-baseline justify-between">
-            <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-sm font-medium text-muted-foreground">
               The Founders
             </p>
             <p
@@ -62,7 +59,7 @@ export function AboutContent({ founders }: AboutContentProps) {
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
           <AnimatedSection animation="fade-up">
             <div>
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-sm font-medium text-muted-foreground">
                 Our Story
               </p>
               <h2

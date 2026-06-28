@@ -146,8 +146,7 @@ describe('MissionsPage', () => {
     mockMissionsData = []
     renderPage()
 
-    expect(screen.getByText('Boost Missions')).toBeInTheDocument()
-    expect(screen.getByText(/Complete challenges, support local businesses/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Missions' })).toBeInTheDocument()
   })
 
   it('shows skeleton loading states while loading', () => {

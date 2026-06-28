@@ -60,23 +60,14 @@ export default function LeaderboardPage() {
           {/* Header */}
           <AnimatedSection animation="fade-up">
             <div className="mb-8 text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm mb-4">
-                <Trophy className="h-4 w-4 text-primary" />
-                <span className="text-muted-foreground">Community Leaders</span>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2">
-                Impact Leaderboard
-              </h1>
-              <p className="text-muted-foreground max-w-lg mx-auto">
-                See who&apos;s making the biggest difference in our local economy
-              </p>
+              <h1 className="text-lg font-semibold">Leaderboard</h1>
             </div>
           </AnimatedSection>
 
           {/* User's Rank Card (if logged in and has rank) */}
           {user && (userRank || currentUserEntry) && (
             <AnimatedSection animation="fade-up" delay={0.1}>
-              <Card className="mb-8 bg-gradient-to-br from-primary/5 via-background to-chart-2/5 border-primary/20">
+              <Card className="mb-8 border-primary/20">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -93,7 +84,7 @@ export default function LeaderboardPage() {
                     {currentUserEntry && (
                       <div className="text-right">
                         <p className="text-sm text-muted-foreground">Your Score</p>
-                        <p className="text-2xl font-bold gradient-text">
+                        <p className="text-2xl font-bold">
                           {currentUserEntry.impact_score.toLocaleString()}
                         </p>
                       </div>

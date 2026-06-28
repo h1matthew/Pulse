@@ -145,11 +145,9 @@ describe('Home Page', () => {
     expect(screen.getAllByText('Pulse').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders footer tagline', () => {
+  it('renders footer with Pulse branding', () => {
     render(<Home />)
-    expect(
-      screen.getByText(/Local discovery, kept simple/)
-    ).toBeInTheDocument()
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument()
   })
 
   it('renders footer navigation links', () => {

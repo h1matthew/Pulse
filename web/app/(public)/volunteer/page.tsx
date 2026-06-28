@@ -33,14 +33,8 @@ export default function VolunteerPage() {
           {/* Header */}
           <div className="mb-16 text-center">
             <AnimatedSection animation="fade-up">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary">
-                <Users className="h-4 w-4" />
+              <h1 className="text-2xl font-semibold tracking-tight">
                 Volunteer
-              </div>
-            </AnimatedSection>
-            <AnimatedSection animation="fade-up" delay={0.1}>
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                Join Our Team
               </h1>
             </AnimatedSection>
             <AnimatedSection animation="fade-up" delay={0.2}>
@@ -57,7 +51,7 @@ export default function VolunteerPage() {
               {opportunities.map((opportunity) => (
                 <div
                   key={opportunity.title}
-                  className="rounded-xl border border-border/50 bg-card/80 backdrop-blur-sm p-6 transition-colors duration-300 hover:border-primary/20"
+                  className="rounded-lg border border-border bg-card p-6 transition-colors duration-150 hover:border-primary/20"
                 >
                   <div className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 text-primary mt-0.5 shrink-0" />
@@ -77,8 +71,8 @@ export default function VolunteerPage() {
 
           {/* CTA */}
           <AnimatedSection animation="fade-up" delay={0.4}>
-            <div className="rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 text-center">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+            <div className="rounded-lg border border-border bg-card p-8 text-center">
+              <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-md bg-primary/10">
                 <Mail className="h-8 w-8 text-primary" />
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-3">

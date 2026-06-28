@@ -18,11 +18,11 @@ describe('HeroCityName', () => {
     vi.mocked(reverseGeocodeCity).mockResolvedValue(null)
   })
 
-  it('defaults to "Your City" in the brand gradient when location is off', () => {
+  it('defaults to "Your City" when location is off', () => {
     render(<HeroCityName />)
 
     const city = screen.getByText('Your City')
-    expect(city).toHaveClass('gradient-text')
+    expect(city).toBeInTheDocument()
   })
 
   it('shows the cached city name, capitalized', () => {

@@ -147,16 +147,13 @@ export default async function CategoriesPage() {
           {/* Page header */}
           <AnimatedSection animation="fade-up">
             <div className="mb-10 border-b border-border pb-8">
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                Browse the directory
-              </p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Browse by Category
+              <h1 className="text-lg font-semibold">
+                Categories
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
                 Every place in the directory, organized by what it does.
               </p>
-              <p className="mt-4 font-mono text-xs text-muted-foreground">
+              <p className="mt-4 text-xs text-muted-foreground">
                 {totalLabel}
               </p>
             </div>
