@@ -274,7 +274,7 @@ describe("DiscoverPage", () => {
       expect(screen.getByRole("heading", { name: "Discover places nearby" })).toBeInTheDocument();
     });
 
-    expect(screen.getByPlaceholderText("Search by name, food, or service")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Name, food, or service")).toBeInTheDocument();
     // Location surfaces in the filter console's location row
     expect(screen.getByText("Diamond Bar")).toBeInTheDocument();
     expect(screen.getByText("2 places")).toBeInTheDocument();
@@ -296,11 +296,11 @@ describe("DiscoverPage", () => {
       expect(screen.getByRole("heading", { name: "Discover places nearby" })).toBeInTheDocument();
     });
 
-    expect(screen.getByRole("button", { name: "Filter by Retail" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "Retail" })).toHaveAttribute(
       "aria-pressed",
       "true"
     );
-    expect(screen.getByRole("button", { name: "Filter by All" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute(
       "aria-pressed",
       "false"
     );
@@ -379,7 +379,7 @@ describe("DiscoverPage", () => {
       expect(screen.getByRole("heading", { name: "Discover places nearby" })).toBeInTheDocument();
     });
 
-    expect(screen.getByRole("button", { name: "Filter by All" })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute(
       "aria-pressed",
       "true"
     );
