@@ -6,6 +6,7 @@ import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { AccessibilityProvider } from "@/components/providers/AccessibilityProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/next"
 import { ChatWidget } from "@/components/features/assistant";
 import { OnboardingTour } from "@/components/features/help/OnboardingTour";
@@ -60,6 +61,7 @@ export default function RootLayout({
           <QueryProvider>
             <AuthProvider>
               <AccessibilityProvider>
+                <TooltipProvider>
                   <main id="main-content" role="main">
                     {children}
                   </main>
@@ -67,6 +69,7 @@ export default function RootLayout({
                 <Analytics />
                 <ChatWidget />
                 <OnboardingTour />
+                </TooltipProvider>
               </AccessibilityProvider>
             </AuthProvider>
           </QueryProvider>
