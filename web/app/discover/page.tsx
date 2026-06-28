@@ -1,8 +1,8 @@
 'use client'
 
-import { use, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from "react";
+import { use, useState, useEffect, useCallback, useMemo, memo, type ReactNode } from "react";
 import dynamic from 'next/dynamic'
-import { AlertCircle, ArrowUpDown, Clock, Heart, List, Map as MapIcon, MapPin, Minus, Navigation, Plus, RefreshCw, Search, ShieldCheck, Star, Store } from "lucide-react";
+import { AlertCircle, ArrowUpDown, Clock, Heart, List, Map as MapIcon, MapPin, Navigation, RefreshCw, Search, ShieldCheck, Star, Store } from "lucide-react";
 
 const DiscoverMap = dynamic(
   () => import('@/components/features/discover/DiscoverMap').then(m => m.DiscoverMap),
@@ -54,12 +54,12 @@ import type { LatLng } from "@/types/business";
 const RADIUS_OPTIONS = [
   { value: 5, label: '5 mi' },
   { value: 10, label: '10 mi' },
+  { value: 15, label: '15 mi' },
   { value: 25, label: '25 mi' },
   { value: 50, label: '50 mi' },
 ]
-const MIN_RADIUS_MILES = 5
 const MAX_RADIUS_MILES = 50
-const DEFAULT_RADIUS_MILES = 25
+const DEFAULT_RADIUS_MILES = 5
 const MILES_TO_METERS = 1609.34
 
 // Default location: San Antonio, TX (Pulse seeds this metro most densely)
@@ -176,7 +176,7 @@ function ClusterLabel({ children }: { children: ReactNode }) {
  * ============================================================================
  */
 
-function BusinessCard({
+const BusinessCard = memo(function BusinessCard({
   business,
   userLocation,
   isHovered,
@@ -367,7 +367,7 @@ function BusinessCard({
       </NavLink>
     </article>
   );
-}
+});
 
 function BusinessCardSkeleton() {
   return (
@@ -415,7 +415,6 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const [changeLocationOpen, setChangeLocationOpen] = useState(false)
   const [hoveredBusinessId, setHoveredBusinessId] = useState<string | null>(null)
   const [mobileShowMap, setMobileShowMap] = useState(false)
-  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map())
 
   // Get geolocation hook for permission handling
   const {
@@ -433,6 +432,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const {
     data: businesses,
     isLoading: businessesLoading,
+    isFetching: businessesFetching,
     error: businessesError,
     refetch,
   } = useNearbyBusinesses(location, radiusMeters)
@@ -680,10 +680,21 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const handlePinClick = useCallback((id: string) => {
     setHoveredBusinessId(id)
     setMobileShowMap(false)
-    const el = cardRefs.current.get(id)
+    const el = document.querySelector(`[data-business-id="${id}"]`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     setTimeout(() => setHoveredBusinessId(null), 1500)
   }, [])
+
+  // Refresh re-pulls the current area and gives clear feedback (the icon spins
+  // while fetching, then a toast confirms the count) so the action never feels
+  // like a no-op even when the results are unchanged.
+  const handleRefresh = useCallback(async () => {
+    const result = await refetch()
+    const count = result.data?.length ?? 0
+    toast.success('Map refreshed', {
+      description: `${count} ${count === 1 ? 'place' : 'places'} nearby`,
+    })
+  }, [refetch])
 
   const isLoading = locationLoading || businessesLoading
   const hasLocation = !!location
@@ -699,9 +710,13 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
       ? 'Bookmarks'
       : CATEGORY_FILTERS.find((category) => category.id === selectedCategory)?.name ?? 'All'
 
-  const mapCenter: [number, number] = location
-    ? [location.lat, location.lng]
-    : [SAN_ANTONIO_DEFAULT.lat, SAN_ANTONIO_DEFAULT.lng]
+  // Memoized so the reference is stable across re-renders (e.g. on hover). A
+  // fresh array each render would make the map re-fit and zoom out every time
+  // the user hovers a pin or card.
+  const mapCenter = useMemo<[number, number]>(
+    () => (location ? [location.lat, location.lng] : [SAN_ANTONIO_DEFAULT.lat, SAN_ANTONIO_DEFAULT.lng]),
+    [location],
+  )
 
   const filterPanel = (
     <div className="space-y-4 p-4">
@@ -764,8 +779,15 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
                   <SelectItem value="name">A-Z</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="icon" className="rounded-full shrink-0" onClick={() => refetch()} aria-label="Refresh">
-                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full shrink-0"
+                onClick={handleRefresh}
+                disabled={businessesFetching}
+                aria-label="Refresh results"
+              >
+                <RefreshCw className={cn("h-4 w-4", businessesFetching && "animate-spin")} aria-hidden="true" />
               </Button>
             </div>
 
@@ -840,15 +862,23 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
               )}
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 text-sm">
-              <MapPin className="h-4 w-4 text-primary" aria-hidden="true" />
+            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-border pt-3 text-sm">
+              <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
               <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Location</span>
-              <span className="font-medium">{locationControlLabel}</span>
+              <span className="truncate font-medium">{locationControlLabel}</span>
               <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" onClick={() => setChangeLocationOpen(true)}>Change</Button>
-              <div className="ml-auto flex items-center gap-1 overflow-hidden rounded-full border border-border bg-card">
-                <Button variant="ghost" size="icon-xs" className="h-7 w-7 rounded-none" onClick={() => setRadiusMiles((r) => Math.max(MIN_RADIUS_MILES, r - 5))} disabled={radiusMiles <= MIN_RADIUS_MILES} aria-label="Decrease radius"><Minus className="h-3 w-3" /></Button>
-                <span className="px-1 font-mono text-xs font-medium tabular-nums">{radiusMiles} mi</span>
-                <Button variant="ghost" size="icon-xs" className="h-7 w-7 rounded-none" onClick={() => setRadiusMiles((r) => Math.min(MAX_RADIUS_MILES, r + 5))} disabled={radiusMiles >= MAX_RADIUS_MILES} aria-label="Increase radius"><Plus className="h-3 w-3" /></Button>
+              <div className="ml-auto flex items-center gap-1.5">
+                <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Within</span>
+                <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
+                  <SelectTrigger className="h-8 w-[5.5rem] rounded-full" aria-label="Search radius">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RADIUS_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -906,13 +936,13 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {(hasExtraFilters || !!sanitizedSearch || selectedCategory !== 'all') && <Button variant="outline" onClick={clearAllFilters}>Clear filters</Button>}
-            {!searchQuery && radiusMiles < MAX_RADIUS_MILES && <Button onClick={() => setRadiusMiles(MAX_RADIUS_MILES)}>Use 25 mi</Button>}
+            {!searchQuery && radiusMiles < MAX_RADIUS_MILES && <Button onClick={() => setRadiusMiles(MAX_RADIUS_MILES)}>{`Widen to ${MAX_RADIUS_MILES} mi`}</Button>}
           </div>
         </div>
       ) : (
         <div className="space-y-3">
           {sortedBusinesses.map((business) => (
-            <div key={business.id} ref={(el) => { if (el) cardRefs.current.set(business.id, el); else cardRefs.current.delete(business.id) }}>
+            <div key={business.id} data-business-id={business.id}>
               <BusinessCard
                 business={business}
                 userLocation={location}
@@ -952,6 +982,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
             hoveredId={hoveredBusinessId}
             center={mapCenter}
             onPinClick={handlePinClick}
+            onPinHover={setHoveredBusinessId}
           />
         </div>
       </div>

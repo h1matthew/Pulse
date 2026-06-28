@@ -83,6 +83,67 @@
   background: oklch(0.5 0 0 / 0.3);
 }
 
+/* ─── Discover map (Leaflet) ─── */
+.leaflet-container {
+  font-family: inherit;
+  background: var(--muted);
+}
+
+/* Zillow-style photo-card popups. The card itself is rendered in React with
+   inline styles; these rules reshape Leaflet's default bubble into a clean,
+   edge-to-edge card (no padding, rounded corners, soft shadow). */
+.leaflet-popup.biz-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22), 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+.leaflet-popup.biz-popup .leaflet-popup-content {
+  margin: 0;
+  width: 240px !important;
+}
+.leaflet-popup.biz-popup .leaflet-popup-tip {
+  background: var(--card);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+.leaflet-popup.biz-popup .leaflet-popup-close-button {
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  line-height: 22px;
+  text-align: center;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.55);
+  border-radius: 9999px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background 150ms ease;
+}
+.leaflet-popup.biz-popup .leaflet-popup-close-button:hover {
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+}
+
+/* Cleaner zoom controls that match the app's card styling. */
+.leaflet-bar {
+  border: 1px solid var(--border) !important;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background: var(--card);
+  color: var(--foreground);
+  border-bottom-color: var(--border);
+}
+.leaflet-bar a:hover {
+  background: var(--muted);
+}
+
 /* ─── Impact Report Print ─── */
 /* Print is handled via iframe in handlePrint() — see ImpactReport.tsx.
    All print formatting lives in the inline <style> of the iframe document.
