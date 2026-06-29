@@ -153,20 +153,39 @@ function computeHole(r: SpotlightRect): SpotlightRect {
   }
 }
 
-/** Place the card under the hole if there's room, otherwise above it. */
-function computeCardPos(hole: SpotlightRect): { top: number; left: number } {
+/** Place the card under the hole if there's room, otherwise above it.
+ *  Once a placement is chosen (above/below) it's locked for the step so the
+ *  card doesn't flip-flop while the smooth scroll brings the target in. */
+function computeCardPos(
+  hole: SpotlightRect,
+  currentPlacement: 'above' | 'below' | null
+): { top: number; left: number; placement: 'above' | 'below' } {
   const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800
   const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200
   const below = hole.top + hole.height + 14
-  const top =
-    below + CARD_EST_HEIGHT <= viewportH
-      ? below
-      : Math.max(14, hole.top - CARD_EST_HEIGHT - 14)
+
+  let top: number
+  let placement: 'above' | 'below'
+
+  if (currentPlacement === 'below') {
+    top = below
+    placement = 'below'
+  } else if (currentPlacement === 'above') {
+    top = Math.max(14, hole.top - CARD_EST_HEIGHT - 14)
+    placement = 'above'
+  } else if (below + CARD_EST_HEIGHT <= viewportH) {
+    top = below
+    placement = 'below'
+  } else {
+    top = Math.max(14, hole.top - CARD_EST_HEIGHT - 14)
+    placement = 'above'
+  }
+
   const left = Math.min(
     Math.max(14, hole.left),
     Math.max(14, viewportW - CARD_WIDTH - 14)
   )
-  return { top, left }
+  return { top, left, placement }
 }
 
 /**
@@ -234,6 +253,10 @@ export function OnboardingTour() {
   const [interacted, setInteracted] = useState(false)
   const targetRef = useRef<HTMLElement | null>(null)
   const cardRef = useRef<HTMLDivElement | null>(null)
+  /** Tracks whether the card was placed above or below the hole so we stick
+   *  with that decision for the whole step — prevents flip-flopping during
+   *  the smooth scroll animation that brings the target into view. */
+  const cardPlacementRef = useRef<'above' | 'below' | null>(null)
   /** The overlay root; per-frame geometry is written to CSS vars here so the
    *  spotlight follows without a React render each frame. */
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -353,6 +376,7 @@ export function OnboardingTour() {
     setRevealed(false)
     setInteracted(false)
     targetRef.current = null
+    cardPlacementRef.current = null
 
     if (!currentStep.target) return
 
@@ -398,7 +422,8 @@ export function OnboardingTour() {
     const paint = (hole: SpotlightRect) => {
       const root = rootRef.current
       if (!root) return
-      const card = computeCardPos(hole)
+      const card = computeCardPos(hole, cardPlacementRef.current)
+      cardPlacementRef.current = card.placement
       root.style.setProperty('--tour-ht', `${hole.top}px`)
       root.style.setProperty('--tour-hl', `${hole.left}px`)
       root.style.setProperty('--tour-hw', `${hole.width}px`)
