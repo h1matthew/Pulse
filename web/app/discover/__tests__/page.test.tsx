@@ -8,7 +8,9 @@ import { toast } from "sonner";
 import DiscoverPage from "../page";
 import type { BusinessWithCategory } from "@/types/business";
 
-const { mockToggleBookmark } = vi.hoisted(() => ({
+const { mockNearbyRefetch, mockRefreshNearbyBusinesses, mockToggleBookmark } = vi.hoisted(() => ({
+  mockNearbyRefetch: vi.fn(),
+  mockRefreshNearbyBusinesses: vi.fn(),
   mockToggleBookmark: vi.fn(),
 }));
 
@@ -85,7 +87,8 @@ vi.mock("@/hooks/useBusinesses", () => ({
     data: mockBusinesses,
     isLoading: false,
     error: null,
-    refetch: vi.fn(),
+    refetch: mockNearbyRefetch,
+    refreshNearbyBusinesses: mockRefreshNearbyBusinesses,
   }),
 }));
 
@@ -257,12 +260,35 @@ beforeEach(() => {
   mockToggleBookmark.mockReset();
   mockAuthUserId = null;
   mockStartedMissions = [];
+  mockNearbyRefetch.mockResolvedValue({ data: mockBusinesses });
+  mockRefreshNearbyBusinesses.mockResolvedValue(mockBusinesses);
 });
 
 async function renderPage() {
   render(<DiscoverPage />);
   await waitFor(() => {
     expect(screen.getByRole("heading", { name: "Discover places nearby" })).toBeInTheDocument();
+  });
+}
+
+function openPriceFilters() {
+  fireEvent.pointerDown(screen.getByRole("button", { name: /price filter/i }), {
+    button: 0,
+    ctrlKey: false,
+  });
+}
+
+function openStarFilters() {
+  fireEvent.pointerDown(screen.getByRole("button", { name: /stars filter/i }), {
+    button: 0,
+    ctrlKey: false,
+  });
+}
+
+function openExtraFilters() {
+  fireEvent.pointerDown(screen.getByRole("button", { name: /more filters/i }), {
+    button: 0,
+    ctrlKey: false,
   });
 }
 
@@ -278,8 +304,63 @@ describe("DiscoverPage", () => {
     // Location surfaces in the filter console's location row
     expect(screen.getByText("Diamond Bar")).toBeInTheDocument();
     expect(screen.getByText("2 places")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /price filter/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stars filter/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /more filters/i })).toBeInTheDocument();
     expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
     expect(screen.getByText("Pinpoint Lanes")).toBeInTheDocument();
+  });
+
+  it("separates search and sort controls from the title row to prevent toolbar clipping", async () => {
+    await renderPage();
+
+    const toolbar = screen.getByTestId("discover-toolbar");
+    const summaryGroup = screen.getByRole("group", { name: "Discover summary" });
+    const controlGroup = screen.getByRole("group", { name: "Search and sort controls" });
+
+    expect(toolbar).toHaveClass("space-y-3");
+    expect(within(summaryGroup).getByRole("heading", { name: "Discover places nearby" })).toBeInTheDocument();
+    expect(within(summaryGroup).queryByRole("searchbox", { name: "Search businesses" })).not.toBeInTheDocument();
+    expect(within(controlGroup).getByRole("searchbox", { name: "Search businesses" })).toBeInTheDocument();
+    expect(within(controlGroup).getByRole("combobox", { name: "Sort by" })).toBeInTheDocument();
+    expect(within(controlGroup).getByRole("button", { name: "Refresh results" })).toBeInTheDocument();
+  });
+
+  it("provides an accessible splitter for resizing the results and map panes", async () => {
+    await renderPage();
+
+    const splitter = screen.getByRole("separator", { name: "Resize results and map panes" });
+    const initialWidth = Number(splitter.getAttribute("aria-valuenow"));
+
+    expect(splitter).toHaveAttribute("aria-orientation", "vertical");
+    expect(initialWidth).toBeGreaterThan(0);
+
+    fireEvent.keyDown(splitter, { key: "ArrowRight" });
+
+    expect(Number(splitter.getAttribute("aria-valuenow"))).toBeGreaterThan(initialWidth);
+  });
+
+  it("uses an adaptive results grid so a widened list pane can show multiple columns", async () => {
+    await renderPage();
+
+    const resultsGrid = screen.getByTestId("discover-results-grid");
+
+    expect(resultsGrid).toHaveClass("grid");
+    expect(resultsGrid.className).toContain("grid-cols-[repeat(auto-fit,minmax(min(17rem,100%),1fr))]");
+  });
+
+  it("uses a forced nearby refresh so new provider results can backfill", async () => {
+    await renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Refresh results" }));
+
+    await waitFor(() => {
+      expect(mockRefreshNearbyBusinesses).toHaveBeenCalledTimes(1);
+    });
+    expect(mockNearbyRefetch).not.toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith("Map refreshed", {
+      description: "2 places nearby",
+    });
   });
 
   it("pre-selects the category from the ?category= search param", async () => {
@@ -402,19 +483,22 @@ describe("DiscoverPage", () => {
     it("filters to independent businesses and shows the count inline", async () => {
       await renderPage();
 
-      const chip = screen.getByRole("button", { name: "Independent" });
-      expect(chip).toHaveAttribute("aria-pressed", "false");
+      const trigger = screen.getByRole("button", { name: /more filters/i });
+      expect(trigger).toHaveAttribute("aria-pressed", "false");
 
-      fireEvent.click(chip);
+      openExtraFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Independent" }));
 
       // Chain (is_chain: true) hidden, independent (is_chain: false) shown
       expect(screen.queryByText("H Mart Diamond Bar")).not.toBeInTheDocument();
       expect(screen.getByText("Pinpoint Lanes")).toBeInTheDocument();
       expect(screen.getByText("1 place")).toBeInTheDocument();
 
-      // Active chip shows the inline count and pressed state
-      const activeChip = screen.getByRole("button", { name: "Independent (1)" });
-      expect(activeChip).toHaveAttribute("aria-pressed", "true");
+      // Active dropdown shows a count and pressed state
+      expect(screen.getByRole("button", { name: /more filters: 1 active/i })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
     });
 
     it("falls back to name classification when is_chain is null", async () => {
@@ -424,7 +508,8 @@ describe("DiscoverPage", () => {
       ];
       await renderPage();
 
-      fireEvent.click(screen.getByRole("button", { name: "Independent" }));
+      openExtraFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Independent" }));
 
       expect(screen.queryByText("Starbucks")).not.toBeInTheDocument();
       expect(screen.getByText("Maya's Kitchen")).toBeInTheDocument();
@@ -433,7 +518,8 @@ describe("DiscoverPage", () => {
     it("filters to businesses that are open now", async () => {
       await renderPage();
 
-      fireEvent.click(screen.getByRole("button", { name: "Open now" }));
+      openExtraFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Open now" }));
 
       // H Mart hours resolve open, Pinpoint Lanes resolves closed
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
@@ -448,7 +534,8 @@ describe("DiscoverPage", () => {
       ];
       await renderPage();
 
-      fireEvent.click(screen.getByRole("button", { name: "Open now" }));
+      openExtraFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Open now" }));
 
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
       expect(screen.queryByText("Pinpoint Lanes")).not.toBeInTheDocument();
@@ -458,22 +545,28 @@ describe("DiscoverPage", () => {
       await renderPage();
 
       // $$ only matches H Mart (price_range 2)
-      fireEvent.click(screen.getByRole("button", { name: "Price $$" }));
+      openPriceFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "$$" }));
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
       expect(screen.queryByText("Pinpoint Lanes")).not.toBeInTheDocument();
 
       // Adding $ brings back Pinpoint Lanes (price_range 1)
-      fireEvent.click(screen.getByRole("button", { name: "Price $" }));
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "$" }));
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
       expect(screen.getByText("Pinpoint Lanes")).toBeInTheDocument();
       expect(screen.getByText("2 places")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /price filter: \$, \$\$/i })).toHaveAttribute(
+        "aria-pressed",
+        "true"
+      );
     });
 
     it("filters to the 4–5 star band", async () => {
       await renderPage();
 
       // Bands are [N, N+1): H Mart (4.6) is in 4–5, Pinpoint Lanes (3.9) is not
-      fireEvent.click(screen.getByRole("button", { name: "4 to 5 stars" }));
+      openStarFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "4 to 5 stars" }));
 
       expect(screen.getByText("H Mart Diamond Bar")).toBeInTheDocument();
       expect(screen.queryByText("Pinpoint Lanes")).not.toBeInTheDocument();
@@ -483,7 +576,8 @@ describe("DiscoverPage", () => {
       await renderPage();
 
       // Pinpoint Lanes (3.9) falls in 3–4; H Mart (4.6) is above the band and excluded
-      fireEvent.click(screen.getByRole("button", { name: "3 to 4 stars" }));
+      openStarFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "3 to 4 stars" }));
 
       expect(screen.getByText("Pinpoint Lanes")).toBeInTheDocument();
       expect(screen.queryByText("H Mart Diamond Bar")).not.toBeInTheDocument();
@@ -492,27 +586,29 @@ describe("DiscoverPage", () => {
     it("treats star bands as single-select and toggles off", async () => {
       await renderPage();
 
-      const fourBand = screen.getByRole("button", { name: "4 to 5 stars" });
+      openStarFilters();
+      const fourBand = screen.getByRole("menuitemcheckbox", { name: "4 to 5 stars" });
       fireEvent.click(fourBand);
-      expect(fourBand).toHaveAttribute("aria-pressed", "true");
+      expect(fourBand).toHaveAttribute("aria-checked", "true");
 
       // Picking another band replaces the first (single-select)
-      fireEvent.click(screen.getByRole("button", { name: "3 to 4 stars" }));
-      expect(fourBand).toHaveAttribute("aria-pressed", "false");
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "3 to 4 stars" }));
+      expect(fourBand).toHaveAttribute("aria-checked", "false");
 
       // The top "5 stars" band matches neither fixture
-      fireEvent.click(screen.getByRole("button", { name: "5 stars" }));
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "5 stars" }));
       expect(screen.getByText("No places found")).toBeInTheDocument();
 
       // Clicking the active band again clears the rating filter
-      fireEvent.click(screen.getByRole("button", { name: "5 stars" }));
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "5 stars" }));
       expect(screen.getByText("2 places")).toBeInTheDocument();
     });
 
     it("filters by SBA certification", async () => {
       await renderPage();
 
-      fireEvent.click(screen.getByRole("button", { name: "SBA certified" }));
+      openExtraFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "SBA certified" }));
 
       expect(screen.queryByText("H Mart Diamond Bar")).not.toBeInTheDocument();
       expect(screen.getByText("Pinpoint Lanes")).toBeInTheDocument();
@@ -522,7 +618,8 @@ describe("DiscoverPage", () => {
       mockBusinesses = makeBaseBusinesses().map((b) => ({ ...b, sba_certified: false }));
       await renderPage();
 
-      expect(screen.queryByRole("button", { name: "SBA certified" })).not.toBeInTheDocument();
+      openExtraFilters();
+      expect(screen.queryByRole("menuitemcheckbox", { name: "SBA certified" })).not.toBeInTheDocument();
     });
 
     it("resets the extra filters with the Reset button", async () => {
@@ -531,15 +628,17 @@ describe("DiscoverPage", () => {
       // Reset is hidden until a filter is active
       expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: "Independent" }));
-      fireEvent.click(screen.getByRole("button", { name: "Price $" }));
+      openExtraFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "Independent" }));
+      openPriceFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "$" }));
       expect(screen.getByText("1 place")).toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 
       expect(screen.getByText("2 places")).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Independent" })).toHaveAttribute(
+      expect(screen.getByRole("button", { name: /more filters/i })).toHaveAttribute(
         "aria-pressed",
         "false"
       );
@@ -550,18 +649,18 @@ describe("DiscoverPage", () => {
 
       const group = screen.getByRole("group", { name: "More filters" });
       const chips = within(group).getAllByRole("button");
-      // Independent, Open now, 4 price levels, 5 rating levels, SBA certified
-      expect(chips.length).toBe(12);
-      for (const chip of chips) {
-        expect(chip).toHaveAttribute("aria-pressed");
-      }
+      expect(chips).toHaveLength(3);
+      expect(within(group).getByRole("button", { name: /price filter/i })).toHaveAttribute("aria-haspopup", "menu");
+      expect(within(group).getByRole("button", { name: /stars filter/i })).toHaveAttribute("aria-haspopup", "menu");
+      expect(within(group).getByRole("button", { name: /more filters/i })).toHaveAttribute("aria-haspopup", "menu");
     });
 
     it("offers one-click clear filters in the empty state", async () => {
       await renderPage();
 
       // No business has price level 4 — produces zero results
-      fireEvent.click(screen.getByRole("button", { name: "Price $$$$" }));
+      openPriceFilters();
+      fireEvent.click(screen.getByRole("menuitemcheckbox", { name: "$$$$" }));
 
       expect(screen.getByText("No places found")).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));

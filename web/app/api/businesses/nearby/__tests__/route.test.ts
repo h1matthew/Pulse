@@ -52,6 +52,7 @@ describe("GET /api/businesses/nearby", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("filters out school/institution entries from results", async () => {
@@ -152,5 +153,44 @@ describe("GET /api/businesses/nearby", () => {
     expect(ids.has("biz-249")).toBe(true);
     expect(ids.has("biz-250")).toBe(false);
     expect(ids.has("biz-599")).toBe(false);
+  });
+
+  it("requests meat-market place types when refreshing food and drink results", async () => {
+    vi.stubEnv("GOOGLE_PLACES_API_KEY", "test-google-key");
+
+    mockFrom.mockImplementation(() => makeQuery([]));
+
+    let googleRequestBody: { includedTypes?: string[] } | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
+        const urlString = String(url);
+
+        if (urlString.includes("places.googleapis.com")) {
+          googleRequestBody = JSON.parse(String(init?.body));
+          return {
+            ok: true,
+            json: async () => ({ places: [] }),
+            text: async () => "",
+          };
+        }
+
+        return {
+          ok: true,
+          json: async () => ({ elements: [] }),
+          text: async () => "",
+        };
+      })
+    );
+
+    const request = new NextRequest(
+      "http://localhost/api/businesses/nearby?lat=29.4252&lng=-98.4946&radius=16093&category=food-drink&refresh=true"
+    );
+    const response = await GET(request);
+
+    expect(response.status).toBe(200);
+    expect(googleRequestBody?.includedTypes).toEqual(
+      expect.arrayContaining(["butcher_shop", "food_store", "farmers_market", "market"])
+    );
   });
 });

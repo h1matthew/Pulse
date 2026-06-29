@@ -30,6 +30,7 @@
  * ============================================================================
  */
 
+import { useCallback, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useHydrationSafeQuery } from '@/hooks/useHydrationSafeQuery'
 import { useAnnouncer } from '@/hooks/useAnnouncer'
@@ -117,12 +118,16 @@ async function fetchFeaturedBusinesses(): Promise<BusinessWithCategory[]> {
 async function fetchNearbyBusinesses(
   location: LatLng,
   radius = 10000,
-  category?: string
+  category?: string,
+  refresh = false
 ): Promise<BusinessWithCategory[]> {
   const params = new URLSearchParams()
   params.set('lat', location.lat.toString())
   params.set('lng', location.lng.toString())
   params.set('radius', radius.toString())
+  if (refresh) {
+    params.set('refresh', 'true')
+  }
   if (category && category !== 'all') {
     params.set('category', category)
   }
@@ -238,9 +243,18 @@ export function useFeaturedBusinesses() {
  */
 export function useNearbyBusinesses(location?: LatLng | null, radius = 10000, category?: string) {
   const { announceLoading, announceSuccess } = useAnnouncer()
+  const queryClient = useQueryClient()
+  const queryLocation = useMemo(
+    () => location || { lat: 0, lng: 0 },
+    [location]
+  )
+  const queryKey = useMemo(
+    () => businessKeys.nearby(queryLocation, radius, category),
+    [category, queryLocation, radius]
+  )
 
-  return useHydrationSafeQuery({
-    queryKey: businessKeys.nearby(location || { lat: 0, lng: 0 }, radius, category),
+  const query = useHydrationSafeQuery({
+    queryKey,
     queryFn: async () => {
       announceLoading('Finding nearby businesses...')
       const result = await fetchNearbyBusinesses(location!, radius, category)
@@ -250,6 +264,21 @@ export function useNearbyBusinesses(location?: LatLng | null, radius = 10000, ca
     enabled: !!location,
     staleTime: 5 * 60 * 1000,
   })
+
+  const refreshNearbyBusinesses = useCallback(async () => {
+    if (!location) return []
+
+    announceLoading('Refreshing nearby businesses...')
+    const result = await fetchNearbyBusinesses(location, radius, category, true)
+    queryClient.setQueryData(queryKey, result)
+    announceSuccess(`Found ${result.length} businesses nearby`)
+    return result
+  }, [announceLoading, announceSuccess, category, location, queryClient, queryKey, radius])
+
+  return {
+    ...query,
+    refreshNearbyBusinesses,
+  }
 }
 
 /** Mutation to create a new business listing. Invalidates all business list queries on success. */
