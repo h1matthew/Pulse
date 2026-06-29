@@ -1,18 +1,22 @@
 'use client'
 
-import { useEffect, useMemo, useCallback, useRef, memo } from 'react'
+import { useEffect, useMemo, useCallback, useRef, useState, memo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker } from 'react-leaflet'
+import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
 import { useTheme } from '@/components/providers/theme-provider'
 import { centeredBounds } from '@/lib/discover/mapBounds'
 import { buildBusinessPhotoUrl, buildBusinessFallbackImageUrl, getBusinessReviewLabel } from '@/lib/business/display'
+import { cn } from '@/lib/utils'
 import type { BusinessWithCategory } from '@/types/business'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 delete (L.Icon.Default.prototype as any)._getIconUrl
 
-const TILES = {
+// Street-map tiles (theme-aware) and a satellite layer the user can toggle to.
+const MAP_TILES = {
   light: {
     url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://carto.com/">CARTO</a>',
@@ -21,6 +25,31 @@ const TILES = {
     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · <a href="https://carto.com/">CARTO</a>',
   },
+}
+const SATELLITE_TILE = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics',
+}
+
+// Zillow-style cluster bubble: a brand-blue circle with the count, sized by how
+// many pins it represents.
+function makeClusterIcon(isDark: boolean) {
+  const bg = isDark ? '#3b82f6' : '#2563eb'
+  return (cluster: { getChildCount: () => number }): L.DivIcon => {
+    const count = cluster.getChildCount()
+    const size = count < 10 ? 34 : count < 50 ? 40 : count < 200 ? 48 : 56
+    return L.divIcon({
+      className: '',
+      html: `<div style="
+          width:${size}px;height:${size}px;background:${bg};color:#fff;
+          border:2px solid #fff;border-radius:9999px;
+          display:flex;align-items:center;justify-content:center;
+          font:700 ${count > 999 ? 11 : 13}px/1 ui-sans-serif,system-ui,-apple-system,sans-serif;
+          box-shadow:0 3px 10px rgba(0,0,0,0.35);
+        ">${count}</div>`,
+      iconSize: [size, size],
+    })
+  }
 }
 
 // Clean Zillow-style pill markers: a white pill with an amber star + rating by
@@ -106,45 +135,24 @@ interface BusinessMarkerProps {
  */
 const BusinessMarker = memo(function BusinessMarker({ business, isActive, isDark, onClick, onHover }: BusinessMarkerProps) {
   const markerRef = useRef<L.Marker>(null)
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const icon = useMemo(
     () => createPinIcon(business.average_rating, isActive, isDark),
     [business.average_rating, isActive, isDark],
   )
 
-  // Keep the popup open while the cursor is on the pin OR the card. Leaving
-  // either schedules a close; entering the other cancels it, so moving from the
-  // pin to the card doesn't dismiss the popup. Leaving both closes it.
-  const cancelClose = useCallback(() => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current)
-      closeTimer.current = null
-    }
-  }, [])
-  const scheduleClose = useCallback(() => {
-    cancelClose()
-    closeTimer.current = setTimeout(() => markerRef.current?.closePopup(), 150)
-  }, [cancelClose])
-  useEffect(() => () => cancelClose(), [cancelClose])
-
-  const open = useCallback(() => {
-    cancelClose()
-    onHover(business.id)
-    markerRef.current?.openPopup()
-  }, [business.id, onHover, cancelClose])
-  const close = useCallback(() => {
-    onHover(null)
-    scheduleClose()
-  }, [onHover, scheduleClose])
-
+  // The photo card opens on CLICK only. Hovering a pin just highlights the
+  // matching list card (and vice-versa) — it never pops the card open.
   const eventHandlers = useMemo(
     () => ({
-      click: () => onClick(business.id),
-      mouseover: open,
-      mouseout: close,
+      click: () => {
+        onClick(business.id)
+        markerRef.current?.openPopup()
+      },
+      mouseover: () => onHover(business.id),
+      mouseout: () => onHover(null),
     }),
-    [business.id, onClick, open, close],
+    [business.id, onClick, onHover],
   )
 
   const locationLine = [business.city, business.state].filter(Boolean).join(', ')
@@ -161,11 +169,9 @@ const BusinessMarker = memo(function BusinessMarker({ business, isActive, isDark
       zIndexOffset={isActive ? 1000 : 0}
       eventHandlers={eventHandlers}
     >
-      <Popup className="biz-popup" maxWidth={260} minWidth={240} autoPan={false} closeButton>
+      <Popup className="biz-popup" maxWidth={260} minWidth={240} autoPan closeButton>
         <a
           href={`/business/${business.id}`}
-          onMouseEnter={open}
-          onMouseLeave={close}
           style={{ display: 'block', width: 240, color: 'var(--foreground)', textDecoration: 'none' }}
         >
           <div style={{ position: 'relative', height: 132, width: '100%', background: 'var(--muted)' }}>
@@ -235,19 +241,6 @@ const BusinessMarker = memo(function BusinessMarker({ business, isActive, isDark
   )
 })
 
-function ThemeSwapper() {
-  const { theme } = useTheme()
-  const map = useMap()
-  useEffect(() => {
-    map.eachLayer((layer) => {
-      if (layer instanceof L.TileLayer) map.removeLayer(layer)
-    })
-    const t = TILES[theme]
-    L.tileLayer(t.url, { attribution: t.attribution }).addTo(map)
-  }, [theme, map])
-  return null
-}
-
 function ViewManager({ center, businesses }: { center: [number, number]; businesses: BusinessWithCategory[] }) {
   const map = useMap()
 
@@ -295,60 +288,81 @@ interface DiscoverMapProps {
 export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHover }: DiscoverMapProps) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
+  const [baseLayer, setBaseLayer] = useState<'map' | 'satellite'>('map')
   const withCoords = useMemo(() => businesses.filter(b => b.latitude && b.longitude), [businesses])
-  const tile = TILES[theme]
+
+  const tile = baseLayer === 'satellite' ? SATELLITE_TILE : MAP_TILES[theme]
+  // Re-key the tile layer so switching map/satellite (or theme) swaps cleanly.
+  const tileKey = `${baseLayer}-${theme}`
 
   // Stable hover handler so memoized markers don't re-render every time the
   // parent re-renders (only when their own active state actually changes).
   const handleHover = useCallback((id: string | null) => onPinHover?.(id), [onPinHover])
+  const clusterIcon = useMemo(() => makeClusterIcon(isDark), [isDark])
 
   return (
-    <MapContainer
-      center={center}
-      zoom={13}
-      style={{ height: '100%', width: '100%' }}
-      zoomControl={true}
-    >
-      <TileLayer url={tile.url} attribution={tile.attribution} />
-      <ThemeSwapper />
-      <ViewManager center={center} businesses={withCoords} />
-
-      {/* "You are here" dot */}
-      <CircleMarker
+    <div className="relative h-full w-full">
+      <MapContainer
         center={center}
-        radius={8}
-        pathOptions={{
-          fillColor: '#3b82f6',
-          fillOpacity: 1,
-          color: '#ffffff',
-          weight: 3,
-          opacity: 1,
-        }}
+        zoom={13}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl={true}
       >
-        <Popup><span style={{ fontWeight: 600, fontSize: 13 }}>Your location</span></Popup>
-      </CircleMarker>
-      <CircleMarker
-        center={center}
-        radius={20}
-        pathOptions={{
-          fillColor: '#3b82f6',
-          fillOpacity: 0.15,
-          color: '#3b82f6',
-          weight: 1,
-          opacity: 0.3,
-        }}
-      />
+        <TileLayer key={tileKey} url={tile.url} attribution={tile.attribution} />
+        <ViewManager center={center} businesses={withCoords} />
 
-      {withCoords.map(business => (
-        <BusinessMarker
-          key={business.id}
-          business={business}
-          isActive={hoveredId === business.id}
-          isDark={isDark}
-          onClick={onPinClick}
-          onHover={handleHover}
+        {/* "You are here" dot + soft halo (kept out of the cluster group) */}
+        <CircleMarker
+          center={center}
+          radius={8}
+          pathOptions={{ fillColor: '#3b82f6', fillOpacity: 1, color: '#ffffff', weight: 3, opacity: 1 }}
+        >
+          <Popup><span style={{ fontWeight: 600, fontSize: 13 }}>Your location</span></Popup>
+        </CircleMarker>
+        <CircleMarker
+          center={center}
+          radius={20}
+          pathOptions={{ fillColor: '#3b82f6', fillOpacity: 0.15, color: '#3b82f6', weight: 1, opacity: 0.3 }}
         />
-      ))}
-    </MapContainer>
+
+        {/* Pins cluster into count bubbles when zoomed out, split apart on zoom in. */}
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={48}
+          showCoverageOnHover={false}
+          spiderfyOnMaxZoom={false}
+          iconCreateFunction={clusterIcon}
+        >
+          {withCoords.map(business => (
+            <BusinessMarker
+              key={business.id}
+              business={business}
+              isActive={hoveredId === business.id}
+              isDark={isDark}
+              onClick={onPinClick}
+              onHover={handleHover}
+            />
+          ))}
+        </MarkerClusterGroup>
+      </MapContainer>
+
+      {/* Map / Satellite toggle */}
+      <div className="absolute bottom-4 left-4 z-[1000] flex overflow-hidden rounded-full border border-border bg-card/95 text-xs font-medium shadow-md backdrop-blur">
+        {(['map', 'satellite'] as const).map((layer) => (
+          <button
+            key={layer}
+            type="button"
+            onClick={() => setBaseLayer(layer)}
+            aria-pressed={baseLayer === layer}
+            className={cn(
+              'px-3 py-1.5 capitalize transition-colors',
+              baseLayer === layer ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+            )}
+          >
+            {layer}
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }

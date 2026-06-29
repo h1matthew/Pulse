@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 // Lives in the browser bundle, so it survives client-side navigations but
 // resets on a full page load — exactly when the watercolor splash replays.
@@ -15,6 +16,7 @@ let introPlayed = false
  * global override in theme.css.
  */
 export default function Template({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   const [delayed] = useState(() => {
     // SSR always emits the delayed intro; it hydrates as the first load.
     if (typeof window === 'undefined') return true
@@ -23,8 +25,11 @@ export default function Template({ children }: { children: React.ReactNode }) {
     return true
   })
 
+  // Business detail pages opt out of the page-entrance animation entirely.
+  const animate = delayed && !pathname?.startsWith('/business/')
+
   return (
-    <div className={delayed ? 'animate-page-enter-delayed' : undefined}>
+    <div className={animate ? 'animate-page-enter-delayed' : undefined}>
       {children}
     </div>
   )

@@ -376,15 +376,17 @@ describe("business display helpers", () => {
   });
 
   describe("buildBusinessFallbackImageUrl", () => {
-    it("returns an SVG data URI", () => {
+    it("returns a decorative SVG data URI with the initials (no baked-in name)", () => {
       const url = buildBusinessFallbackImageUrl({
         name: "Northside Coffee",
         categoryName: "Food & Drink",
       });
 
       expect(url.startsWith("data:image/svg+xml")).toBe(true);
-      expect(url).toContain("Northside%20Coffee");
-      expect(url).toContain("Food%20%26amp%3B%20Drink");
+      // Initials are shown; the full name/category are NOT baked in (the card
+      // overlays those, so including them here caused doubled text).
+      expect(url).toContain("NC");
+      expect(url).not.toContain("Northside");
     });
 
     it("is deterministic for identical input", () => {

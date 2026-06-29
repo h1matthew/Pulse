@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   MapPin,
@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { cn } from "@/lib/utils";
 import { useBusiness } from "@/hooks/useBusinesses";
 import { useClaimDeal } from "@/hooks/useDeals";
@@ -67,6 +66,24 @@ import {
   paginateCombinedReviewFeed,
 } from "@/lib/business/review-feed";
 import { createReviewSchema } from "@/lib/validation";
+
+/**
+ * Business detail pages render content instantly — no entrance or scroll-reveal
+ * animations. This local no-op shadows the shared AnimatedSection so the markup
+ * below stays unchanged while every section simply appears in place.
+ */
+function AnimatedSection({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+  animation?: string;
+  delay?: number;
+  once?: boolean;
+}) {
+  return <div className={className}>{children}</div>;
+}
 
 /**
  * ============================================================================
