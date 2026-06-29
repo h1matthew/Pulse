@@ -69,7 +69,7 @@ import { useHydrationSafeQuery } from "@/hooks/useHydrationSafeQuery";
 import { useBusinesses } from "@/hooks/useBusinesses";
 import type { BusinessWithCategory } from "@/types/business";
 
-const DASHBOARD_SPOTLIGHT_LOCATION = { lat: 34.0286, lng: -117.8208 };
+const DASHBOARD_SPOTLIGHT_LOCATION = { lat: 29.4187, lng: -98.4842 };
 const DASHBOARD_SPOTLIGHT_RADIUS_METERS = 10000;
 
 async function fetchRecentActivity() {

@@ -103,37 +103,131 @@ export function getDemoActivity(): DemoActivityItem[] {
     {
       id: 'demo-checkin-1',
       type: 'check_in',
-      business: 'Riverfront Coffee Roasters',
+      business: 'Rosario\'s Mexican Cafe y Cantina',
       time: '2 hours ago',
       impact: 5,
     },
     {
       id: 'demo-review-1',
       type: 'review',
-      business: 'Maple Street Market',
+      business: 'The Friendly Spot Ice House',
       time: '6 hours ago',
       impact: 25,
     },
     {
       id: 'demo-deal-1',
       type: 'deal_claimed',
-      business: 'Northside Books',
+      business: 'The Twig Book Shop',
       time: '1 day ago',
       impact: 10,
     },
     {
       id: 'demo-bookmark-1',
       type: 'bookmark',
-      business: 'Harbor Hardware',
+      business: 'Alamo Candy Company',
       time: '2 days ago',
       impact: 2,
     },
     {
       id: 'demo-checkin-2',
       type: 'check_in',
-      business: 'Sunrise Bakery',
+      business: 'Bakery Lorraine',
       time: '3 days ago',
       impact: 5,
+    },
+  ]
+}
+
+export function getDemoMissionProgress(userId: string) {
+  const now = new Date()
+  const thirtyDaysFromNow = new Date(now)
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30)
+  const fourteenDaysFromNow = new Date(now)
+  fourteenDaysFromNow.setDate(fourteenDaysFromNow.getDate() + 14)
+  const sevenDaysAgo = new Date(now)
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+  return [
+    {
+      id: 'demo-progress-1',
+      mission_id: 'demo-mission-1',
+      user_id: userId,
+      current_count: 2,
+      is_completed: false,
+      completed_at: null,
+      reward_claimed: false,
+      reward_claimed_at: null,
+      created_at: sevenDaysAgo.toISOString(),
+      updated_at: now.toISOString(),
+      mission: {
+        id: 'demo-mission-1',
+        title: 'SA Coffee Crawl',
+        description: 'Visit 3 local coffee shops in San Antonio',
+        mission_type: 'visit_count' as const,
+        target_count: 3,
+        target_category_id: null,
+        reward_deal_id: null,
+        reward_description: '15% off your next local coffee order',
+        start_date: sevenDaysAgo.toISOString(),
+        end_date: thirtyDaysFromNow.toISOString(),
+        is_active: true,
+        created_at: sevenDaysAgo.toISOString(),
+        category: { id: 'cat-1', name: 'Food & Drink', slug: 'food-drink', icon: '🍽️' },
+      },
+    },
+    {
+      id: 'demo-progress-2',
+      mission_id: 'demo-mission-2',
+      user_id: userId,
+      current_count: 4,
+      is_completed: false,
+      completed_at: null,
+      reward_claimed: false,
+      reward_claimed_at: null,
+      created_at: sevenDaysAgo.toISOString(),
+      updated_at: now.toISOString(),
+      mission: {
+        id: 'demo-mission-2',
+        title: 'Southtown Explorer',
+        description: 'Leave reviews for 5 businesses in the Southtown district',
+        mission_type: 'review_count' as const,
+        target_count: 5,
+        target_category_id: null,
+        reward_deal_id: null,
+        reward_description: 'Exclusive Southtown Supporter badge',
+        start_date: sevenDaysAgo.toISOString(),
+        end_date: fourteenDaysFromNow.toISOString(),
+        is_active: true,
+        created_at: sevenDaysAgo.toISOString(),
+        category: { id: 'cat-2', name: 'Arts & Culture', slug: 'arts-culture', icon: '🎨' },
+      },
+    },
+    {
+      id: 'demo-progress-3',
+      mission_id: 'demo-mission-3',
+      user_id: userId,
+      current_count: 3,
+      is_completed: true,
+      completed_at: sevenDaysAgo.toISOString(),
+      reward_claimed: false,
+      reward_claimed_at: null,
+      created_at: sevenDaysAgo.toISOString(),
+      updated_at: now.toISOString(),
+      mission: {
+        id: 'demo-mission-3',
+        title: 'Support 3 New Local Shops',
+        description: 'Check in at 3 businesses you haven\'t visited before',
+        mission_type: 'visit_count' as const,
+        target_count: 3,
+        target_category_id: null,
+        reward_deal_id: null,
+        reward_description: 'Local Champion sticker pack',
+        start_date: null,
+        end_date: null,
+        is_active: true,
+        created_at: sevenDaysAgo.toISOString(),
+        category: { id: 'cat-3', name: 'Retail', slug: 'retail', icon: '🛍️' },
+      },
     },
   ]
 }
@@ -176,28 +270,28 @@ export function getDemoImpactReport(dateRange: {
     ],
     businesses: [
       {
-        name: 'Riverfront Coffee Roasters',
+        name: 'Rosario\'s Mexican Cafe y Cantina',
         category: 'Food & Drink',
         checkIns: 6,
         totalSpent: 410,
         lastVisit: checkInOneDate,
       },
       {
-        name: 'Maple Street Market',
-        category: 'Retail',
+        name: 'The Friendly Spot Ice House',
+        category: 'Food & Drink',
         checkIns: 4,
         totalSpent: 360,
         lastVisit: checkInTwoDate,
       },
       {
-        name: 'Northside Books',
+        name: 'The Twig Book Shop',
         category: 'Retail',
         checkIns: 3,
         totalSpent: 180,
         lastVisit: checkInThreeDate,
       },
       {
-        name: 'Sunrise Bakery',
+        name: 'Bakery Lorraine',
         category: 'Food & Drink',
         checkIns: 5,
         totalSpent: 295,
@@ -206,28 +300,28 @@ export function getDemoImpactReport(dateRange: {
     ],
     reviews: [
       {
-        businessName: 'Maple Street Market',
+        businessName: 'The Friendly Spot Ice House',
         rating: 5,
-        content: 'Fast checkout and great local produce selection.',
+        content: 'Great patio vibes and awesome local craft beer selection.',
         createdAt: reviewOneDate,
       },
       {
-        businessName: 'Riverfront Coffee Roasters',
+        businessName: 'Rosario\'s Mexican Cafe y Cantina',
         rating: 4,
-        content: 'Excellent cold brew and friendly staff.',
+        content: 'Incredible enchiladas and friendly staff.',
         createdAt: reviewTwoDate,
       },
     ],
     deals: [
       {
         dealTitle: 'Buy 1 Get 1 Latte',
-        businessName: 'Riverfront Coffee Roasters',
+        businessName: 'Bakery Lorraine',
         claimedAt: dealDate,
         redeemedAt: null,
       },
       {
         dealTitle: '20% Off New Releases',
-        businessName: 'Northside Books',
+        businessName: 'The Twig Book Shop',
         claimedAt: checkInThreeDate,
         redeemedAt: checkInTwoDate,
       },
@@ -235,19 +329,19 @@ export function getDemoImpactReport(dateRange: {
     timeline: [
       {
         type: 'Check-in',
-        businessName: 'Riverfront Coffee Roasters',
+        businessName: 'Rosario\'s Mexican Cafe y Cantina',
         detail: 'Spent $42',
         date: checkInOneDate,
       },
       {
         type: 'Review',
-        businessName: 'Maple Street Market',
+        businessName: 'The Friendly Spot Ice House',
         detail: 'Rated 5/5',
         date: reviewOneDate,
       },
       {
         type: 'Deal Claimed',
-        businessName: 'Northside Books',
+        businessName: 'The Twig Book Shop',
         detail: '20% Off New Releases',
         date: dealDate,
       },
@@ -259,7 +353,7 @@ export function getDemoImpactReport(dateRange: {
       },
       {
         type: 'Bookmark',
-        businessName: 'Harbor Hardware',
+        businessName: 'Alamo Candy Company',
         detail: 'Saved to bookmarks',
         date: checkInFourDate,
       },

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getDemoMissionProgress, shouldUseDemoStatsForUser } from '@/lib/demo/demo-account-stats'
 
 export async function GET() {
   const supabase = await createClient()
@@ -12,6 +13,10 @@ export async function GET() {
         { error: 'Authentication required' },
         { status: 401 }
       )
+    }
+
+    if (shouldUseDemoStatsForUser(user)) {
+      return NextResponse.json(getDemoMissionProgress(user.id))
     }
 
     const { data: progress, error } = await supabase

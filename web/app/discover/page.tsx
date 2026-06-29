@@ -105,43 +105,14 @@ function FilterChip({ active, onClick, ariaLabel, children }: FilterChipProps) {
       aria-pressed={active}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-all",
+        "inline-flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors",
         active
-          ? "border-primary/40 bg-primary/10 text-primary shadow-[0_0_0_3px] shadow-primary/5"
-          : "border-border bg-card text-muted-foreground hover:border-primary/25 hover:text-foreground"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
       )}
     >
       {children}
     </button>
-  );
-}
-
-/** One option inside a joined segmented control (price bands, star bands). */
-function SegmentChip({ active, onClick, ariaLabel, children }: FilterChipProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      aria-label={ariaLabel}
-      className={cn(
-        "inline-flex h-8 items-center gap-1 px-3 text-sm font-medium transition-colors",
-        active
-          ? "bg-primary/15 text-primary"
-          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-/** Mono micro-label naming a cluster inside the filter console. */
-function ClusterLabel({ children }: { children: ReactNode }) {
-  return (
-    <span className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-      {children}
-    </span>
   );
 }
 
@@ -719,26 +690,15 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   )
 
   const filterPanel = (
-    <div className="space-y-4 p-4">
-      {/* Title + HUD */}
-      <div>
-        <h1 id="discover-heading" className="text-2xl font-semibold tracking-tight">
-          Discover places <span className="gradient-text">nearby</span>
+    <div className="space-y-0 p-4 pb-2">
+      {/* Header */}
+      <div className="mb-4">
+        <h1 id="discover-heading" className="text-xl font-semibold tracking-tight">
+          Discover
         </h1>
-        <div className="mt-2 flex divide-x divide-border overflow-hidden rounded-lg border border-border bg-card/80 text-xs">
-          <div className="px-3 py-2">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Found</p>
-            <p className="mt-0.5 font-semibold tabular-nums">{resultCountLabel}</p>
-          </div>
-          <div className="px-3 py-2">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Avg ★</p>
-            <p className="mt-0.5 font-semibold tabular-nums text-muted-foreground">{averageVisibleRating}</p>
-          </div>
-          <div className="px-3 py-2">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Radius</p>
-            <p className="mt-0.5 font-semibold tabular-nums text-muted-foreground">{radiusMiles} mi</p>
-          </div>
-        </div>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {isLoading ? 'Finding places nearby…' : `${sortedBusinesses.length} ${sortedBusinesses.length === 1 ? 'place' : 'places'} near ${locationControlLabel}`}
+        </p>
       </div>
 
       {/* Location Prompt */}
@@ -753,133 +713,144 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
 
       {/* Search and Filters */}
       {hasLocation && (
-        <section aria-label="Search and filters" className="overflow-hidden rounded-2xl border border-border bg-card/90 shadow-sm backdrop-blur-sm">
-          <div className="h-px bg-gradient-to-r from-primary/50 via-primary/10 to-transparent" aria-hidden="true" />
-          <div className="p-3">
-            <div className="flex gap-2">
-              <div role="search" aria-label="Search businesses" className="relative flex-1" data-tour="discover-search">
-                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                <Input
-                  placeholder="Name, food, or service"
-                  className="rounded-full bg-background/60 pl-10"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  aria-label="Search businesses"
-                />
-              </div>
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-                <SelectTrigger className="w-32 rounded-full" aria-label="Sort by">
-                  <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-                  <SelectValue placeholder="Sort" />
+        <section aria-label="Search and filters" className="space-y-3">
+          {/* Search bar */}
+          <div className="flex gap-2">
+            <div role="search" aria-label="Search businesses" className="relative flex-1" data-tour="discover-search">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+              <Input
+                placeholder="Search businesses…"
+                className="h-9 rounded-lg border-border bg-muted/50 pl-9 text-sm placeholder:text-muted-foreground/60"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search businesses"
+              />
+            </div>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+              <SelectTrigger className="h-9 w-[7.5rem] gap-1.5 rounded-lg border-border text-sm" aria-label="Sort by">
+                <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="distance">Nearest</SelectItem>
+                <SelectItem value="rating">Top rated</SelectItem>
+                <SelectItem value="review_count">Most reviewed</SelectItem>
+                <SelectItem value="name">A–Z</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0 rounded-lg border-border"
+              onClick={handleRefresh}
+              disabled={businessesFetching}
+              aria-label="Refresh results"
+            >
+              <RefreshCw className={cn("h-4 w-4", businessesFetching && "animate-spin")} aria-hidden="true" />
+            </Button>
+          </div>
+
+          {/* Categories */}
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by category" data-tour="discover-categories">
+            {CATEGORY_FILTERS.map((category) => (
+              <button key={category.id} type="button"
+                onClick={() => selectCategory(category.id)}
+                aria-pressed={selectedCategory === category.id}
+                className={cn(
+                  "inline-flex h-8 items-center rounded-lg px-3 text-[13px] font-medium transition-colors",
+                  selectedCategory === category.id
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >{category.name}</button>
+            ))}
+            <button type="button" onClick={() => selectCategory('bookmarks')}
+              aria-pressed={selectedCategory === 'bookmarks'}
+              className={cn(
+                "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium transition-colors",
+                selectedCategory === 'bookmarks'
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <Heart className="h-3.5 w-3.5" aria-hidden="true" />
+              Bookmarks
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-border" aria-hidden="true" />
+
+          {/* Filters row */}
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Refine results">
+            <FilterChip active={independentOnly} onClick={() => setIndependentOnly((v) => !v)}>
+              <Store className="h-3.5 w-3.5" aria-hidden="true" />
+              Independent
+            </FilterChip>
+            <FilterChip active={openNowOnly} onClick={() => setOpenNowOnly((v) => !v)}>
+              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+              Open now
+            </FilterChip>
+
+            <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
+
+            {PRICE_LEVELS.map((level) => (
+              <FilterChip key={`p${level}`} active={selectedPrices.includes(level)} onClick={() => togglePrice(level)} ariaLabel={`Price ${'$'.repeat(level)}`}>
+                {'$'.repeat(level)}
+              </FilterChip>
+            ))}
+
+            <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
+
+            {RATING_LEVELS.map((level) => (
+              <FilterChip key={`r${level}`} active={ratingBand === level}
+                onClick={() => setRatingBand((v) => (v === level ? 0 : level))}
+                ariaLabel={level >= 5 ? '5 stars' : `${level} to ${level + 1} stars`}
+              >
+                <Star className={cn("h-3 w-3", ratingBand === level ? "fill-primary" : "fill-muted-foreground/40")} aria-hidden="true" />
+                {ratingBandLabel(level)}
+              </FilterChip>
+            ))}
+
+            {hasSbaBusinesses && (
+              <>
+                <span className="mx-1 h-4 w-px bg-border" aria-hidden="true" />
+                <FilterChip active={sbaOnly} onClick={() => setSbaOnly((v) => !v)}>
+                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  SBA
+                </FilterChip>
+              </>
+            )}
+
+            {hasExtraFilters && (
+              <button type="button" onClick={resetExtraFilters} className="ml-auto text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-border" aria-hidden="true" />
+
+          {/* Location bar */}
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+            <span className="truncate font-medium">{locationControlLabel}</span>
+            <button type="button" className="shrink-0 text-xs font-medium text-primary transition-colors hover:text-primary/80" onClick={() => setChangeLocationOpen(true)}>
+              Change
+            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">within</span>
+              <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
+                <SelectTrigger className="h-7 w-[4.5rem] rounded-md border-border text-xs" aria-label="Search radius">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="distance">Nearest</SelectItem>
-                  <SelectItem value="rating">Top rated</SelectItem>
-                  <SelectItem value="review_count">Most reviewed</SelectItem>
-                  <SelectItem value="name">A-Z</SelectItem>
+                  {RADIUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-full shrink-0"
-                onClick={handleRefresh}
-                disabled={businessesFetching}
-                aria-label="Refresh results"
-              >
-                <RefreshCw className={cn("h-4 w-4", businessesFetching && "animate-spin")} aria-hidden="true" />
-              </Button>
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by category" data-tour="discover-categories">
-              {CATEGORY_FILTERS.map((category) => (
-                <Button key={category.id} variant="ghost" size="sm"
-                  onClick={() => selectCategory(category.id)}
-                  aria-pressed={selectedCategory === category.id}
-                  className={cn(
-                    "h-7 rounded-full border border-transparent px-3 text-xs text-muted-foreground transition-colors",
-                    selectedCategory === category.id
-                      ? "border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background"
-                      : "hover:border-border hover:text-foreground"
-                  )}
-                >{category.name}</Button>
-              ))}
-              <Button variant="ghost" size="sm" onClick={() => selectCategory('bookmarks')}
-                aria-pressed={selectedCategory === 'bookmarks'}
-                className={cn(
-                  "h-7 rounded-full border border-transparent px-3 text-xs text-muted-foreground transition-colors",
-                  selectedCategory === 'bookmarks'
-                    ? "border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background"
-                    : "hover:border-border hover:text-foreground"
-                )}
-              >
-                <Heart className="h-3 w-3" aria-hidden="true" /> Bookmarks
-              </Button>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border pt-3" role="group" aria-label="More filters">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <FilterChip active={independentOnly} onClick={() => setIndependentOnly((v) => !v)}>
-                  <Store className="h-3.5 w-3.5" aria-hidden="true" />
-                  {independentOnly ? `Independent (${independentCount})` : 'Independent'}
-                </FilterChip>
-                <FilterChip active={openNowOnly} onClick={() => setOpenNowOnly((v) => !v)}>
-                  <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                  Open now
-                </FilterChip>
-              </div>
-              <div className="flex items-center gap-2">
-                <ClusterLabel>Price</ClusterLabel>
-                <div className="inline-flex divide-x divide-border overflow-hidden rounded-full border border-border bg-card">
-                  {PRICE_LEVELS.map((level) => (
-                    <SegmentChip key={level} active={selectedPrices.includes(level)} onClick={() => togglePrice(level)} ariaLabel={`Price ${'$'.repeat(level)}`}>
-                      <span className="font-mono text-xs">{'$'.repeat(level)}</span>
-                    </SegmentChip>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <ClusterLabel>Stars</ClusterLabel>
-                <div className="inline-flex divide-x divide-border overflow-hidden rounded-full border border-border bg-card">
-                  {RATING_LEVELS.map((level) => (
-                    <SegmentChip key={level} active={ratingBand === level}
-                      onClick={() => setRatingBand((v) => (v === level ? 0 : level))}
-                      ariaLabel={level >= 5 ? '5 stars' : `${level} to ${level + 1} stars`}
-                    >
-                      <Star className={cn("h-3 w-3", ratingBand === level && "fill-primary")} aria-hidden="true" />
-                      {ratingBandLabel(level)}
-                    </SegmentChip>
-                  ))}
-                </div>
-              </div>
-              {hasSbaBusinesses && (
-                <FilterChip active={sbaOnly} onClick={() => setSbaOnly((v) => !v)}>
-                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> SBA certified
-                </FilterChip>
-              )}
-              {hasExtraFilters && (
-                <Button variant="ghost" size="xs" onClick={resetExtraFilters} className="ml-auto text-muted-foreground hover:text-foreground">Reset</Button>
-              )}
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 border-t border-border pt-3 text-sm">
-              <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Location</span>
-              <span className="truncate font-medium">{locationControlLabel}</span>
-              <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" onClick={() => setChangeLocationOpen(true)}>Change</Button>
-              <div className="ml-auto flex items-center gap-1.5">
-                <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Within</span>
-                <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
-                  <SelectTrigger className="h-8 w-[5.5rem] rounded-full" aria-label="Search radius">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RADIUS_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           </div>
         </section>
@@ -887,18 +858,18 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
 
       {/* Active missions */}
       {missionsInView.length > 0 && (
-        <section aria-label="Active missions" className="space-y-2">
+        <section aria-label="Active missions" className="mt-3 space-y-2">
           {missionsInView.map((detail) => (
             <div key={detail.progress.id} className="relative flex flex-col gap-2 overflow-hidden rounded-xl border border-primary/25 bg-primary/5 p-4 pl-5 sm:flex-row sm:items-center sm:gap-4">
               <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-chart-2" aria-hidden="true" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold">Mission: {detail.progress.mission.title}</p>
-                <p className="text-xs text-muted-foreground">Check in with your receipt to log a verified visit.</p>
+                <p className="text-sm font-semibold">{detail.progress.mission.title}</p>
+                <p className="text-xs text-muted-foreground">Check in to log a verified visit</p>
               </div>
-              <div className="w-full sm:w-40">
+              <div className="w-full sm:w-36">
                 <div className="mb-1 flex justify-between text-xs">
-                  <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Progress</span>
-                  <span className="font-mono font-medium tabular-nums">{detail.progress.current_count}/{detail.progress.mission.target_count}</span>
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="font-medium tabular-nums">{detail.progress.current_count}/{detail.progress.mission.target_count}</span>
                 </div>
                 <Progress value={detail.percentageComplete} className="h-1.5" />
               </div>
