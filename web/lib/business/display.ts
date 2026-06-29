@@ -446,13 +446,12 @@ export function buildBusinessFallbackImageUrl(
     { start: "#1f2937", end: "#334155", accent: "#a78bfa" },
   ];
 
+  // Decorative only: the card/hero overlays the business name and category, so
+  // baking them into the cover too produced doubled, overlapping text. Keep just
+  // the centered initials on a branded gradient.
   const key = `${normalizeText(input.name)}-${normalizeText(input.categoryName)}`;
   const palette = palettes[hashString(key) % palettes.length];
   const initials = escapeSvgText(buildInitials(input.name));
-  const categoryName = escapeSvgText(
-    normalizeText(input.categoryName) || "Local Business"
-  );
-  const businessName = escapeSvgText(normalizeText(input.name) || "Neighborhood Spot");
 
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
@@ -467,12 +466,9 @@ export function buildBusinessFallbackImageUrl(
   </defs>
   <rect width="1200" height="720" fill="url(#g)" />
   <rect width="1200" height="720" fill="url(#grid)" />
-  <circle cx="1030" cy="100" r="180" fill="${palette.accent}" fill-opacity="0.22" />
-  <circle cx="160" cy="620" r="220" fill="${palette.accent}" fill-opacity="0.18" />
-  <rect x="120" y="100" width="220" height="220" rx="32" fill="rgba(255,255,255,0.12)" />
-  <text x="230" y="245" text-anchor="middle" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="96" font-weight="700" fill="white">${initials}</text>
-  <text x="120" y="420" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="44" font-weight="700" fill="white">${businessName}</text>
-  <text x="120" y="472" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="28" fill="rgba(255,255,255,0.85)">${categoryName}</text>
+  <circle cx="1040" cy="120" r="210" fill="${palette.accent}" fill-opacity="0.20" />
+  <circle cx="170" cy="600" r="230" fill="${palette.accent}" fill-opacity="0.16" />
+  <text x="600" y="360" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="220" font-weight="700" fill="rgba(255,255,255,0.92)">${initials}</text>
 </svg>`;
 
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
