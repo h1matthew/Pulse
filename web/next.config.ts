@@ -1,6 +1,4 @@
 import type { NextConfig } from "next";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 const securityHeaders = [
   {
@@ -45,9 +43,6 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  // Pin the workspace root to this app directory so Next doesn't infer the
-  // parent dir (a stray root lockfile triggers the multi-lockfile warning).
-  outputFileTracingRoot: path.dirname(fileURLToPath(import.meta.url)),
   transpilePackages: ['three'],
   // Allow ngrok/cloudflared tunnels and LAN dev origins
   allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.io', '*.trycloudflare.com', '192.168.*.*'],
