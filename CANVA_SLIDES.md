@@ -11,8 +11,8 @@ screenshots are Google Places content displayed with attribution.
 
 | # | Slide | On-slide copy (≤30 words) | Assets placed |
 |---|---|---|---|
-| 1 | Title | **Pulse** — Discover. Support. See your impact. / Felix Yin · Oscar Gao · Matthew Heng / Diamond Bar FBLA / Coding & Programming 2025–26 | `slides/logo.svg`, `assets/app-home.png` (faded backdrop) |
-| 2 | Problem & Solution | 68¢ of a local dollar stays local — 43¢ at a chain. Pulse: category sort · reviews & ratings · rating sort · bookmarks · deals & coupons · bot verification | `assets/app-home.png` |
+| 1 | Title | **Pulse** — Discover. Support. See your impact. / Felix Yin · Brady Chen · Matthew Heng / Diamond Bar FBLA / Coding & Programming 2025–26 | `slides/logo.svg`, `assets/app-home.png` (faded backdrop) |
+| 2 | Problem & Solution | 68¢ of a local dollar stays local — 43¢ at a chain. Source: AMIBA/Civic Economics. Pulse: category sort · reviews & ratings · rating sort · bookmarks · deals & coupons · bot verification | `assets/app-home.png` |
 | 3 | Language Selection | TypeScript + Next.js 16 — static types catch bugs at compile time; SSR, API routes, one production artifact. Considered: Python/Flask | `assets/code-language-tsconfig.png` |
 | 4 | Architecture & Modular Design | Organized by responsibility — routes, feature components, data hooks, utilities, typed contracts. Four single-purpose providers | `assets/code-module-tree.png`, `assets/code-modular-providers.png` |
 | 5 | Code Quality | Every file: User Journey · Input Validation · Accessibility · Design Rationale. One naming convention everywhere | `assets/code-comments.png` |
