@@ -597,7 +597,10 @@ export function OnboardingTour() {
 
   // Positions come from CSS variables set imperatively by the per-frame
   // tracker (see paint()); centered card for welcome/done and while waiting.
-  const cardStyle: React.CSSProperties =
+  // The wrapper holds positioning (top/left/transform) so the inner card's
+  // animate-scale-in animation can freely animate transform without
+  // overriding the centering translate.
+  const wrapperStyle: React.CSSProperties =
     isCentered || !showSpotlight
       ? { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
       : { top: 'var(--tour-ct, 50%)', left: 'var(--tour-cl, 1rem)' }
@@ -629,16 +632,18 @@ export function OnboardingTour() {
         <div className="pointer-events-auto absolute inset-0 bg-black/55" />
       )}
 
-      {/* Step card */}
-      <div
-        ref={cardRef}
-        role="dialog"
-        aria-modal="false"
-        aria-label={`Tour step ${stepIndex + 1} of ${TOUR_STEPS.length}: ${step.title}`}
-        tabIndex={-1}
-        className="pointer-events-auto absolute w-[min(360px,calc(100vw-28px))] rounded-2xl border border-border bg-background p-5 shadow-2xl outline-none animate-scale-in"
-        style={cardStyle}
-      >
+      {/* Step card — wrapper handles positioning (centered or near target)
+          so the inner card's animate-scale-in can freely animate transform
+          without overriding the centering translate. */}
+      <div className="absolute" style={wrapperStyle}>
+        <div
+          ref={cardRef}
+          role="dialog"
+          aria-modal="false"
+          aria-label={`Tour step ${stepIndex + 1} of ${TOUR_STEPS.length}: ${step.title}`}
+          tabIndex={-1}
+          className="pointer-events-auto w-[min(360px,calc(100vw-28px))] rounded-2xl border border-border bg-background p-5 shadow-2xl outline-none animate-scale-in"
+        >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <PulseLogo className="h-6 w-6" />
@@ -703,7 +708,8 @@ export function OnboardingTour() {
             </Button>
           </div>
         </div>
-      </div>
+      </div>  {/* card */}
+      </div>  {/* wrapper */}
     </div>
   )
 }
