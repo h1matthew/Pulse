@@ -35,6 +35,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { isRealBusinessPlaceTypes, isRealBusinessRecord } from '@/lib/business/display'
 import { isLikelySmallBusiness } from '@/lib/business/classify'
+import { isDemoContentEnabled, getDemoBusiness } from '@/lib/demo/demo-account-stats'
 import { NextResponse } from 'next/server'
 import type { LatLng } from '@/types/business'
 
@@ -794,6 +795,15 @@ export async function GET(request: Request) {
         review_count: business.review_count,
       })
     })
+
+    // Inject demo business when demo mode is active
+    if (isDemoContentEnabled()) {
+      const demoBiz = getDemoBusiness()
+      const alreadyPresent = withinRadius.some(b => b.id === demoBiz.id)
+      if (!alreadyPresent) {
+        withinRadius.unshift(demoBiz)
+      }
+    }
 
     // Sort by true (great-circle) distance, nearest first, and keep the closest N.
     const sorted = withinRadius

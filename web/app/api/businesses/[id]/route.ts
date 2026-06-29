@@ -15,7 +15,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { ExternalReview } from '@/types/business'
 import { DEMO_DEAL_TEMPLATES, dateDaysFromNow } from '@/lib/demo/demo-deals'
-import { isDemoContentEnabled } from '@/lib/demo/demo-account-stats'
+import { isDemoContentEnabled, DEMO_BUSINESS_ID, getDemoBusiness } from '@/lib/demo/demo-account-stats'
 
 const GOOGLE_PLACES_DETAILS_FIELD_MASK = 'reviews'
 
@@ -167,6 +167,19 @@ export async function GET(
   const supabase = await createClient()
 
   try {
+    if (id === DEMO_BUSINESS_ID && isDemoContentEnabled()) {
+      const demo = getDemoBusiness()
+      return NextResponse.json({
+        ...demo,
+        reviews: [],
+        external_reviews: [],
+        deals: [],
+        is_bookmarked: false,
+        user_check_in_count: 0,
+        local_review_count: 0,
+      })
+    }
+
     // Fetch business with category by internal ID first.
     const { data: byIdBusiness, error: byIdError } = await supabase
       .from('businesses')

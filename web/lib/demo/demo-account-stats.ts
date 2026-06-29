@@ -232,6 +232,98 @@ export function getDemoMissionProgress(userId: string) {
   ]
 }
 
+export const DEMO_BUSINESS_ID = 'demo-la-villita-cafe'
+
+export function getDemoBusiness() {
+  const now = new Date().toISOString()
+  return {
+    id: DEMO_BUSINESS_ID,
+    name: 'La Villita Cafe LLC',
+    slug: 'la-villita-cafe-llc',
+    category_id: 'cat-food-drink',
+    description: 'A beloved San Antonio cafe in the heart of the historic La Villita Arts Village, serving fresh wraps, breakfast tacos, and specialty coffee. A neighborhood favorite since opening on Villita Street.',
+    short_description: 'Fresh wraps, tacos & coffee in historic La Villita',
+    address: '418 Villita St',
+    city: 'San Antonio',
+    state: 'TX',
+    zip_code: '78205',
+    phone: '(210) 223-4700',
+    email: null,
+    website: null,
+    latitude: 29.4218,
+    longitude: -98.4890,
+    hours: {
+      monday: '7:00 AM - 3:00 PM',
+      tuesday: '7:00 AM - 3:00 PM',
+      wednesday: '7:00 AM - 3:00 PM',
+      thursday: '7:00 AM - 3:00 PM',
+      friday: '7:00 AM - 3:00 PM',
+      saturday: '8:00 AM - 4:00 PM',
+      sunday: '8:00 AM - 4:00 PM',
+    },
+    photos: [] as string[],
+    logo_url: null,
+    owner_id: null,
+    is_verified: true,
+    is_featured: true,
+    price_range: 1,
+    tags: ['breakfast', 'lunch', 'wraps', 'tacos', 'coffee'],
+    amenities: ['Dine-in', 'Outdoor seating', 'Takeout'],
+    average_rating: 4.6,
+    review_count: 142,
+    bookmark_count: 38,
+    place_id: null,
+    data_source: 'user_added' as const,
+    last_synced_at: null,
+    sync_status: 'active' as const,
+    claimed_at: null,
+    created_at: now,
+    updated_at: now,
+    ai_description: null,
+    ai_description_generated_at: null,
+    ai_description_source: null,
+    editorial_summary: null,
+    ai_business_summary: null,
+    category: {
+      id: 'cat-food-drink',
+      slug: 'food-drink',
+      name: 'Food & Drink',
+      description: 'Restaurants, cafes, bars, and food trucks',
+      icon: '🍽️',
+      color: '#f97316',
+      sort_order: 1,
+      is_active: true,
+      created_at: now,
+    },
+  }
+}
+
+export function getDemoCheckinResult() {
+  return {
+    message: 'Receipt verified — checked in!',
+    verification: {
+      merchant: 'La Villita Cafe LLC',
+      total: 15.97,
+      items: [{ name: 'Rio Wrap', price: 12.50 }],
+      date: '2026-06-29',
+    },
+    impact: {
+      dollarsKeptLocal: 15.97,
+      pointsEarned: 25,
+      jobsSupported: 1,
+    },
+    missionUpdates: [
+      {
+        missionId: 'demo-mission-1',
+        title: 'SA Coffee Crawl',
+        currentCount: 3,
+        targetCount: 3,
+        completed: true,
+      },
+    ],
+  }
+}
+
 function daysAgoIso(days: number): string {
   const date = new Date()
   date.setDate(date.getDate() - days)

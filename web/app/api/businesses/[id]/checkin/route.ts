@@ -11,6 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { verifyReceiptImage } from '@/lib/missions/verify-receipt'
 import { NextRequest, NextResponse } from 'next/server'
 import { enforceRateLimit } from '@/lib/security/rateLimitHelper'
+import { DEMO_BUSINESS_ID, getDemoCheckinResult, shouldUseDemoStatsForUser } from '@/lib/demo/demo-account-stats'
 
 const MAX_RECEIPT_BYTES = 8 * 1024 * 1024
 
@@ -96,6 +97,10 @@ export async function POST(
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (businessId === DEMO_BUSINESS_ID && shouldUseDemoStatsForUser(user)) {
+      return NextResponse.json(getDemoCheckinResult())
     }
 
     // Rate limiting
