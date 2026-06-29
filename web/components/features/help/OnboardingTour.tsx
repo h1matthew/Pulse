@@ -411,9 +411,19 @@ export function OnboardingTour() {
     // (no easing, so nothing lags or "corrects") and apply it imperatively, so
     // the spotlight rides the smooth scroll with no React render per frame.
     // Only repaints when the rect actually moves (≥0.5px).
+    // If the target was removed from the DOM (e.g. a route change mid-step),
+    // reset the spotlight so the card re-centers instead of snapping to (0,0).
     let applied: SpotlightRect | null = null
     const track = () => {
       if (cancelled) return
+      const el = targetRef.current
+      if (el && !el.isConnected) {
+        targetRef.current = null
+        setTargetFound(false)
+        setRevealed(false)
+        setRect(null)
+        return
+      }
       const r = readRect()
       if (r) {
         const hole = computeHole(r)
