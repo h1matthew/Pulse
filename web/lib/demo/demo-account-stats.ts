@@ -234,6 +234,115 @@ export function getDemoMissionProgress(userId: string) {
 
 export const DEMO_BUSINESS_ID = 'demo-la-villita-cafe'
 
+// Real Google Places photo for La Villita Cafe — a direct CDN URL, so the
+// photo proxy is bypassed and the image loads as-is.
+const DEMO_BUSINESS_PHOTO_URL =
+  'https://lh3.googleusercontent.com/gps-cs-s/APNQkAFKZms8SaTx9T_37_k7T_lbwt081CMcWGwgN8GtuymsNcnZe7QPa1pE0iVSrIkdCCXSqSl6lwwyOGGjx8ftWQT8MNCbqhdb-cFBLdpyL1Ib66vTAM6gF4VelKFHIksCLCDtIZRGsA=w289-h312-n-k-no'
+
+function isoDaysFromNow(days: number): string {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  return date.toISOString()
+}
+
+const DEMO_BUSINESS_DEALS = [
+  {
+    id: 'demo-la-villita-deal-1',
+    business_id: DEMO_BUSINESS_ID,
+    title: 'Weekday Lunch Special',
+    description: '15% off any lunch entrée, Monday through Friday before 3pm.',
+    deal_type: 'standard' as const,
+    discount_type: 'percentage' as const,
+    discount_value: 15,
+    minimum_purchase: null,
+    mission_requirement: null,
+    code: 'LUNCH15',
+    qr_code_url: null,
+    usage_limit: null,
+    usage_count: 42,
+    start_date: isoDaysFromNow(-20),
+    end_date: isoDaysFromNow(25),
+    is_active: true,
+    source: 'manual' as const,
+    created_at: isoDaysFromNow(-20),
+    updated_at: isoDaysFromNow(-2),
+  },
+  {
+    id: 'demo-la-villita-deal-2',
+    business_id: DEMO_BUSINESS_ID,
+    title: 'First Visit Treat',
+    description: '$5 off your first order of $20 or more — welcome to the neighborhood!',
+    deal_type: 'standard' as const,
+    discount_type: 'fixed_amount' as const,
+    discount_value: 5,
+    minimum_purchase: 20,
+    mission_requirement: null,
+    code: 'WELCOME5',
+    qr_code_url: null,
+    usage_limit: null,
+    usage_count: 88,
+    start_date: isoDaysFromNow(-30),
+    end_date: isoDaysFromNow(40),
+    is_active: true,
+    source: 'manual' as const,
+    created_at: isoDaysFromNow(-30),
+    updated_at: isoDaysFromNow(-5),
+  },
+  {
+    id: 'demo-la-villita-deal-3',
+    business_id: DEMO_BUSINESS_ID,
+    title: 'Boost Mission: Coffee Explorer',
+    description: 'Check in at 3 local coffee spots this month and unlock 20% off here.',
+    deal_type: 'boost_mission' as const,
+    discount_type: 'percentage' as const,
+    discount_value: 20,
+    minimum_purchase: null,
+    mission_requirement: 'Check in at 3 local coffee shops this month',
+    code: 'EXPLORER20',
+    qr_code_url: null,
+    usage_limit: null,
+    usage_count: 17,
+    start_date: isoDaysFromNow(-10),
+    end_date: isoDaysFromNow(30),
+    is_active: true,
+    source: 'manual' as const,
+    created_at: isoDaysFromNow(-10),
+    updated_at: isoDaysFromNow(-1),
+  },
+]
+
+const DEMO_BUSINESS_REVIEWERS = [
+  { name: 'Maya R.', rating: 5, content: 'My new go-to spot in La Villita. The breakfast tacos are unreal and the staff remember your name.' },
+  { name: 'Devon W.', rating: 5, content: 'Best cold brew in the neighborhood. Locally sourced and you can taste the difference. Highly recommend.' },
+  { name: 'Priya S.', rating: 4, content: 'Great patio and fresh wraps. Gets busy at lunch but the line moves fast. Loved the historic village setting.' },
+  { name: 'Carlos M.', rating: 5, content: 'Family-owned and it shows. Every dish feels made with care. The weekday lunch special is a steal.' },
+  { name: 'Jenna L.', rating: 4, content: 'Friendly service and genuinely good coffee. A true La Villita gem worth supporting.' },
+]
+
+const DEMO_BUSINESS_REVIEWS = DEMO_BUSINESS_REVIEWERS.map((reviewer, index) => ({
+  id: `demo-la-villita-review-${index + 1}`,
+  business_id: DEMO_BUSINESS_ID,
+  user_id: `demo-user-${index + 1}`,
+  rating: reviewer.rating,
+  content: reviewer.content,
+  photos: [] as string[],
+  verified_purchase: index % 2 === 0,
+  helpful_count: 12 - index * 2,
+  is_featured: index === 0,
+  source: 'pulse' as const,
+  external_id: null,
+  external_author_name: null,
+  external_author_photo: null,
+  external_time: null,
+  created_at: isoDaysFromNow(-(index + 1) * 4),
+  updated_at: isoDaysFromNow(-(index + 1) * 4),
+  user: {
+    id: `demo-user-${index + 1}`,
+    full_name: reviewer.name,
+    avatar_url: null,
+  },
+}))
+
 export function getDemoBusiness() {
   const now = new Date().toISOString()
   return {
@@ -261,7 +370,7 @@ export function getDemoBusiness() {
       saturday: '8:00 AM - 4:00 PM',
       sunday: '8:00 AM - 4:00 PM',
     },
-    photos: [] as string[],
+    photos: [DEMO_BUSINESS_PHOTO_URL] as string[],
     logo_url: null,
     owner_id: null,
     is_verified: true,
@@ -270,7 +379,7 @@ export function getDemoBusiness() {
     tags: ['breakfast', 'lunch', 'wraps', 'tacos', 'coffee'],
     amenities: ['Dine-in', 'Outdoor seating', 'Takeout'],
     average_rating: 4.6,
-    review_count: 142,
+    review_count: DEMO_BUSINESS_REVIEWS.length,
     bookmark_count: 38,
     place_id: null,
     data_source: 'user_added' as const,
@@ -295,6 +404,9 @@ export function getDemoBusiness() {
       is_active: true,
       created_at: now,
     },
+    reviews: DEMO_BUSINESS_REVIEWS,
+    deals: DEMO_BUSINESS_DEALS,
+    local_review_count: DEMO_BUSINESS_REVIEWS.length,
   }
 }
 

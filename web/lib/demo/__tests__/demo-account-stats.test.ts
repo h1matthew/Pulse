@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
   shouldUseDemoStatsForUser,
   isDemoContentEnabled,
+  getDemoBusiness,
+  DEMO_BUSINESS_ID,
 } from '../demo-account-stats'
 
 const user = { id: 'user-1', email: 'someone@example.com' }
@@ -62,5 +64,41 @@ describe('demo account stats gating', () => {
       shouldUseDemoStatsForUser({ id: 'x', email: 'demo@example.com' })
     ).toBe(true)
     expect(shouldUseDemoStatsForUser(user)).toBe(false)
+  })
+})
+
+describe('getDemoBusiness (La Villita Cafe)', () => {
+  it('always has a real photo so it never renders the gradient poster', () => {
+    const business = getDemoBusiness()
+    expect(business.photos.length).toBeGreaterThan(0)
+    const first = business.photos[0]
+    expect(typeof first).toBe('string')
+    expect(first).toMatch(/^https:\/\//)
+  })
+
+  it('is stocked with reviews so the detail page never looks empty', () => {
+    const business = getDemoBusiness()
+    expect(business.reviews.length).toBeGreaterThan(0)
+    expect(business.review_count).toBe(business.reviews.length)
+    expect(business.local_review_count).toBe(business.reviews.length)
+    for (const review of business.reviews) {
+      expect(review.business_id).toBe(DEMO_BUSINESS_ID)
+      expect(review.rating).toBeGreaterThanOrEqual(1)
+      expect(review.rating).toBeLessThanOrEqual(5)
+      expect(review.content.length).toBeGreaterThan(0)
+      expect(review.user?.full_name).toBeTruthy()
+    }
+  })
+
+  it('is stocked with active deals with future expiry and codes', () => {
+    const business = getDemoBusiness()
+    const now = Date.now()
+    expect(business.deals.length).toBeGreaterThan(0)
+    for (const deal of business.deals) {
+      expect(deal.business_id).toBe(DEMO_BUSINESS_ID)
+      expect(deal.is_active).toBe(true)
+      expect(deal.code).toBeTruthy()
+      expect(new Date(deal.end_date as string).getTime()).toBeGreaterThan(now)
+    }
   })
 })

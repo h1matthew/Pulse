@@ -171,12 +171,12 @@ export async function GET(
       const demo = getDemoBusiness()
       return NextResponse.json({
         ...demo,
-        reviews: [],
+        reviews: demo.reviews ?? [],
         external_reviews: [],
-        deals: [],
+        deals: demo.deals ?? [],
         is_bookmarked: false,
         user_check_in_count: 0,
-        local_review_count: 0,
+        local_review_count: demo.local_review_count ?? demo.reviews?.length ?? 0,
       })
     }
 
