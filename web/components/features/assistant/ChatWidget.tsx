@@ -223,6 +223,7 @@ export function ChatWidget() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             className="fixed bottom-6 right-6 z-50"
+            data-tour="chat-launcher"
           >
             <Button
               onClick={() => setIsOpen(true)}

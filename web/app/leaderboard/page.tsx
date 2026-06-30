@@ -59,7 +59,7 @@ export default function LeaderboardPage() {
         <div className="mx-auto max-w-4xl px-6">
           {/* Header */}
           <AnimatedSection animation="fade-up">
-            <div className="mb-8 text-center">
+            <div className="mb-8 text-center" data-tour="leaderboard">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm mb-4">
                 <Trophy className="h-4 w-4 text-primary" />
                 <span className="text-muted-foreground">Community Leaders</span>

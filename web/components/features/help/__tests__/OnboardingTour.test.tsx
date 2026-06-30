@@ -40,6 +40,8 @@ function mountAnchors() {
     'business-deals',
     'business-checkin',
     'business-bookmark',
+    'chat-launcher',
+    'leaderboard',
   ]
   for (const id of anchors) {
     const el = document.createElement('div')
@@ -399,6 +401,37 @@ describe('OnboardingTour (guided walkthrough)', () => {
 
     expect(screen.getByText('Grab deals & coupons')).toBeInTheDocument()
     expect(screen.getByText(/unique code/i)).toBeInTheDocument()
+  })
+
+  it('adds an AI assistant step pointing at the chat launcher', async () => {
+    mountAnchors()
+    sessionStorage.setItem(TOUR_STEP_KEY, '10') // assistant / chatbot
+    render(<OnboardingTour />)
+    await settleStep()
+
+    expect(screen.getByText('Ask the AI assistant')).toBeInTheDocument()
+    expect(screen.getByText(/Pulse Assistant/i)).toBeInTheDocument()
+  })
+
+  it('adds a leaderboard step that routes to the leaderboard page', async () => {
+    // Anchor isn't mounted here, so the step should navigate to where it lives.
+    sessionStorage.setItem(TOUR_STEP_KEY, '11') // leaderboard
+    render(<OnboardingTour />)
+    await settleStep()
+
+    expect(screen.getByText('Climb the leaderboard')).toBeInTheDocument()
+    expect(mockPush).toHaveBeenCalledWith('/leaderboard')
+  })
+
+  it('adds a centered impact-report step describing the data report', async () => {
+    // Centered explainer (no target) — shows on any page, no loading wait.
+    sessionStorage.setItem(TOUR_STEP_KEY, '12') // impact
+    render(<OnboardingTour />)
+    await settleStep()
+
+    expect(screen.getByText('Track your local impact')).toBeInTheDocument()
+    expect(screen.getByText(/CSV/)).toBeInTheDocument()
+    expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
   })
 
   it('restarts via the global help-menu hook', async () => {

@@ -5,9 +5,11 @@
  * UI elements (search, category filters, the sort menu, a business card, then
  * the reviews/deals tabs and the check-in and bookmark buttons on a business
  * page), and walks the user through the full discover → review → deal → visit
- * loop. A centered card also explains the bot-verification step that keeps
- * reviews authentic. Steps can navigate between routes, and the "open a
- * business" step advances when the user actually clicks the spotlighted card.
+ * loop before pointing out the AI assistant, the community leaderboard, and
+ * the personal impact dashboard. Centered cards also explain the
+ * bot-verification step that keeps reviews authentic and the exportable impact
+ * report. Steps can navigate between routes, and the "open a business" step
+ * advances when the user actually clicks the spotlighted card.
  *
  * Mechanics:
  * - Targets are located by [data-tour="…"] anchors rendered by the pages.
@@ -21,7 +23,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Check, PartyPopper, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { ArrowRight, BarChart3, Check, PartyPopper, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PulseLogo } from '@/components/ui/PulseLogo'
 import { useAccessibility } from '@/components/providers/AccessibilityProvider'
@@ -149,10 +151,29 @@ const TOUR_STEPS: GuidedStep[] = [
     businessPage: true,
   },
   {
+    id: 'assistant',
+    title: 'Ask the AI assistant',
+    body: 'Stuck or curious? The Pulse Assistant sits in the corner of every page — ask for recommendations or how anything works, anytime.',
+    target: '[data-tour="chat-launcher"]',
+  },
+  {
+    id: 'leaderboard',
+    title: 'Climb the leaderboard',
+    body: 'Your reviews, check-ins, and dollars kept local earn you a rank among the top local supporters — a little friendly competition for a good cause.',
+    target: '[data-tour="leaderboard"]',
+    route: '/leaderboard',
+  },
+  {
+    id: 'impact',
+    icon: BarChart3,
+    title: 'Track your local impact',
+    body: 'Your dashboard turns every visit into real numbers — dollars kept local, businesses supported, jobs impacted — and exports the full report as a CSV.',
+  },
+  {
     id: 'done',
     icon: PartyPopper,
     title: "That's the loop",
-    body: 'Discover, review, claim deals, and verify visits with a receipt — then watch your dashboard tally the dollars you keep local. Enjoy exploring!',
+    body: "That's the whole loop — discover, support, and watch your local impact add up. Enjoy exploring and keeping it local!",
     nextLabel: 'Get started',
   },
 ]
