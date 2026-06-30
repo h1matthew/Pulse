@@ -35,3 +35,7 @@ coverage/
 dist/
 github.html
 *.html
+
+# AI tooling
+
+
