@@ -504,4 +504,33 @@ describe('OnboardingTour (guided walkthrough)', () => {
     expect(screen.getByText('Welcome to Pulse')).toBeInTheDocument()
     expect(localStorage.getItem(ONBOARDING_KEY)).toBeNull()
   })
+
+  it('hides the tour overlay while a Radix Dialog is open so it never overlaps', async () => {
+    mountAnchors()
+    sessionStorage.setItem(TOUR_STEP_KEY, '8') // check-in step
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, '/business/onboarding-demo')
+    render(<OnboardingTour />)
+    await settleStep()
+
+    expect(screen.getByText('Make your visit count')).toBeInTheDocument()
+
+    // Simulate the receipt check-in dialog opening: a Radix DialogContent with
+    // data-state="open" is portaled into the body.
+    const dialog = document.createElement('div')
+    dialog.setAttribute('data-slot', 'dialog-content')
+    dialog.setAttribute('data-state', 'open')
+    dialog.textContent = 'Scan your receipt'
+    await act(async () => {
+      document.body.appendChild(dialog)
+    })
+
+    // The tour card + dimmer are suppressed while the dialog is open
+    expect(screen.queryByText('Make your visit count')).not.toBeInTheDocument()
+
+    // Closing the dialog brings the tour card back
+    await act(async () => {
+      dialog.remove()
+    })
+    expect(screen.getByText('Make your visit count')).toBeInTheDocument()
+  })
 })
