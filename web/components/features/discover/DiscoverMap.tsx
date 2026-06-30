@@ -272,7 +272,7 @@ function ViewManager({ center, businesses }: { center: [number, number]; busines
       return
     }
     const [sw, ne] = centeredBounds(center, pts)
-    map.fitBounds(L.latLngBounds(sw, ne), { padding: [40, 40], maxZoom: 18 })
+    map.fitBounds(L.latLngBounds(sw, ne), { padding: [40, 40], maxZoom: 19 })
   }, [center, businesses, map])
   return null
 }
@@ -305,6 +305,7 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
       <MapContainer
         center={center}
         zoom={14}
+        maxZoom={19}
         style={{ height: '100%', width: '100%' }}
         zoomControl={true}
       >

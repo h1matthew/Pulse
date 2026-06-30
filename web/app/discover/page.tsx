@@ -402,7 +402,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const [selectedCategory, setSelectedCategory] = useState(() =>
     resolveCategoryParam(resolvedSearchParams?.category)
   )
-  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('rating')
+  const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('distance')
   const [searchQuery, setSearchQuery] = useState('')
   const [independentOnly, setIndependentOnly] = useState(false)
   const [openNowOnly, setOpenNowOnly] = useState(false)
