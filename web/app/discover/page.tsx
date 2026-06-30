@@ -910,18 +910,23 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
               aria-label="Search businesses"
             />
           </div>
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-            <SelectTrigger className="h-9 w-32 shrink-0 rounded-full border-border bg-card shadow-sm" aria-label="Sort by">
-              <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="distance">Nearest</SelectItem>
-              <SelectItem value="rating">Top rated</SelectItem>
-              <SelectItem value="review_count">Most reviewed</SelectItem>
-              <SelectItem value="name">A-Z</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="shrink-0" data-tour="discover-sort">
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+              <SelectTrigger className="h-9 w-32 rounded-full border-border bg-card shadow-sm" aria-label="Sort by">
+                <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              {/* z-[130] keeps the dropdown above the onboarding tour's
+                  z-120 dimmer, so its options stay visible and clickable when
+                  the "Sort by rating or reviews" tour step spotlights it. */}
+              <SelectContent className="z-[130]">
+                <SelectItem value="distance">Nearest</SelectItem>
+                <SelectItem value="rating">Top rated</SelectItem>
+                <SelectItem value="review_count">Most reviewed</SelectItem>
+                <SelectItem value="name">A-Z</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             variant="outline"
             size="icon"

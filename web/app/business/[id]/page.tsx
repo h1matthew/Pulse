@@ -791,7 +791,11 @@ export default function BusinessDetailPage({
                     >
                       Reviews ({reviewTabCount})
                     </TabsTrigger>
-                    <TabsTrigger value="deals" className={underlineTabsTriggerClass}>
+                    <TabsTrigger
+                      value="deals"
+                      className={underlineTabsTriggerClass}
+                      data-tour="business-deals"
+                    >
                       Deals ({business.deals?.length || 0})
                     </TabsTrigger>
                   </TabsList>

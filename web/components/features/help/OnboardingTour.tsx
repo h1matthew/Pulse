@@ -2,11 +2,12 @@
  * OnboardingTour — guided product walkthrough
  *
  * A coach-mark tour over the REAL app: it dims the page, spotlights actual
- * UI elements (search, filters, a business card, the check-in and bookmark
- * buttons on a business page), and walks the user through their first
- * restaurant visit end-to-end. Steps can navigate between routes, and the
- * "open a business" step advances when the user actually clicks the
- * spotlighted card.
+ * UI elements (search, category filters, the sort menu, a business card, then
+ * the reviews/deals tabs and the check-in and bookmark buttons on a business
+ * page), and walks the user through the full discover → review → deal → visit
+ * loop. A centered card also explains the bot-verification step that keeps
+ * reviews authentic. Steps can navigate between routes, and the "open a
+ * business" step advances when the user actually clicks the spotlighted card.
  *
  * Mechanics:
  * - Targets are located by [data-tour="…"] anchors rendered by the pages.
@@ -20,7 +21,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Check, X } from 'lucide-react'
+import { ArrowRight, Check, PartyPopper, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PulseLogo } from '@/components/ui/PulseLogo'
 import { useAccessibility } from '@/components/providers/AccessibilityProvider'
@@ -49,6 +50,8 @@ interface GuidedStep {
   id: string
   title: string
   body: string
+  /** Hero icon shown on centered (targetless) cards — welcome, verify, done */
+  icon?: React.ComponentType<{ className?: string }>
   /** CSS selector of the element to spotlight; omit for a centered card */
   target?: string
   /** Route to push when the step starts and the target isn't on screen */
@@ -70,8 +73,9 @@ interface GuidedStep {
 const TOUR_STEPS: GuidedStep[] = [
   {
     id: 'welcome',
+    icon: Sparkles,
     title: 'Welcome to Pulse',
-    body: "Let's take a quick walk through the real thing — we'll find a local spot, open it, and show you how visits count. Takes about a minute.",
+    body: "Let's take a quick walk through the real thing — find a local spot, leave a review, grab a deal, and watch your visits strengthen the local economy. Takes about a minute.",
     nextLabel: 'Start the tour',
   },
   {
@@ -87,12 +91,19 @@ const TOUR_STEPS: GuidedStep[] = [
   },
   {
     id: 'categories',
-    title: 'Or browse by category',
-    body: 'One tap filters the whole feed — Food & Drink, Retail, Services… try tapping one.',
+    title: 'Sort by category',
+    body: 'One tap filters the whole feed by what you’re after — Food & Drink, Retail, Services, and more. Try tapping one.',
     target: '[data-tour="discover-categories"]',
     route: '/discover',
     interactEvent: 'click',
     interactedBody: 'Filtered! Tap around as much as you like, then press Next.',
+  },
+  {
+    id: 'sort',
+    title: 'Sort by rating or reviews',
+    body: 'The Sort menu reorders the whole feed in a tap — Top rated surfaces the best-loved spots, Most reviewed shows the proven favorites, or keep it Nearest.',
+    target: '[data-tour="discover-sort"]',
+    route: '/discover',
   },
   {
     id: 'open-business',
@@ -105,9 +116,22 @@ const TOUR_STEPS: GuidedStep[] = [
   },
   {
     id: 'reviews',
-    title: 'Real reviews',
-    body: 'Community and Google reviews live here — and you can add your own after you visit.',
+    title: 'Leave a review or rating',
+    body: 'Read community and Google reviews here — and once you sign in, add your own star rating and written review.',
     target: '[data-tour="business-reviews"]',
+    businessPage: true,
+  },
+  {
+    id: 'verify',
+    icon: ShieldCheck,
+    title: 'Real people, real reviews',
+    body: 'Before any review posts, a quick “are you human?” puzzle plus rate limits block bots — so the ratings you see come from real visitors you can trust.',
+  },
+  {
+    id: 'deals',
+    title: 'Grab deals & coupons',
+    body: 'The Deals tab gathers special offers — discounts, BOGOs, and mission rewards. Claim one and you get a unique code to show in-store.',
+    target: '[data-tour="business-deals"]',
     businessPage: true,
   },
   {
@@ -119,15 +143,16 @@ const TOUR_STEPS: GuidedStep[] = [
   },
   {
     id: 'bookmark',
-    title: 'Save it for later',
-    body: 'Bookmark spots you love to build your go-to list and hear about new deals.',
+    title: 'Save your favorites',
+    body: 'Bookmark spots you love to build your go-to list and hear about their new deals first.',
     target: '[data-tour="business-bookmark"]',
     businessPage: true,
   },
   {
     id: 'done',
+    icon: PartyPopper,
     title: "That's the loop",
-    body: 'Discover, visit, verify with a receipt — then watch your dashboard tally the dollars you keep local. Enjoy exploring!',
+    body: 'Discover, review, claim deals, and verify visits with a receipt — then watch your dashboard tally the dollars you keep local. Enjoy exploring!',
     nextLabel: 'Get started',
   },
 ]
@@ -686,6 +711,14 @@ export function OnboardingTour() {
             <X className="h-3.5 w-3.5" aria-hidden="true" />
           </Button>
         </div>
+
+        {isCentered && step.icon && (
+          <div className="mt-4 flex justify-center" aria-hidden="true">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <step.icon className="h-6 w-6" />
+            </div>
+          </div>
+        )}
 
         <h2 className="mt-3 text-lg font-semibold tracking-tight">{step.title}</h2>
         <p className="mt-1.5 text-sm leading-6 text-muted-foreground" aria-live="polite">

@@ -34,8 +34,10 @@ function mountAnchors() {
   const anchors = [
     'discover-search',
     'discover-categories',
+    'discover-sort',
     'business-card',
     'business-reviews',
+    'business-deals',
     'business-checkin',
     'business-bookmark',
   ]
@@ -142,7 +144,7 @@ describe('OnboardingTour (guided walkthrough)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     await settleStep()
 
-    expect(screen.getByText('Or browse by category')).toBeInTheDocument()
+    expect(screen.getByText('Sort by category')).toBeInTheDocument()
     // Mid-tour position survives reloads
     expect(sessionStorage.getItem(TOUR_STEP_KEY)).toBe('2')
   })
@@ -253,6 +255,8 @@ describe('OnboardingTour (guided walkthrough)', () => {
     await settleStep()
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     await settleStep()
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    await settleStep()
 
     expect(screen.getByText('Meet a local business')).toBeInTheDocument()
 
@@ -260,7 +264,7 @@ describe('OnboardingTour (guided walkthrough)', () => {
     fireEvent.click(document.querySelector('[data-tour="business-card"]')!)
     await settleStep()
 
-    expect(screen.getByText('Real reviews')).toBeInTheDocument()
+    expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
   })
 
   it('auto-skips a step whose anchor never appears', async () => {
@@ -279,18 +283,18 @@ describe('OnboardingTour (guided walkthrough)', () => {
       vi.advanceTimersByTime(8500) // past the target timeout
     })
 
-    // Skipped "categories" and landed on the business-card step
-    expect(screen.getByText('Meet a local business')).toBeInTheDocument()
+    // Skipped "categories" (anchor never mounted) and landed on the sort step
+    expect(screen.getByText('Sort by rating or reviews')).toBeInTheDocument()
   })
 
   it('resumes mid-tour after a reload', async () => {
     mountAnchors()
-    sessionStorage.setItem(TOUR_STEP_KEY, '4')
+    sessionStorage.setItem(TOUR_STEP_KEY, '5')
 
     render(<OnboardingTour />)
     await settleStep()
 
-    expect(screen.getByText('Real reviews')).toBeInTheDocument()
+    expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
   })
 
   it('remembers the opened business when the card is clicked', async () => {
@@ -308,6 +312,8 @@ describe('OnboardingTour (guided walkthrough)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     await settleStep() // categories
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    await settleStep() // sort
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     await settleStep() // open-business
 
     expect(screen.getByText('Meet a local business')).toBeInTheDocument()
@@ -316,20 +322,20 @@ describe('OnboardingTour (guided walkthrough)', () => {
     await settleStep()
 
     expect(sessionStorage.getItem(TOUR_BUSINESS_KEY)).toBe('/business/xyz-789')
-    expect(screen.getByText('Real reviews')).toBeInTheDocument()
+    expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
   })
 
   it('resumes a business-page step by navigating back to the remembered business', async () => {
     // The reviews step was reached, then the page reloaded while NOT on a
     // business page (e.g. on /discover). The remembered business lets the step
     // navigate back instead of stalling on a disabled "Taking you there…" card.
-    sessionStorage.setItem(TOUR_STEP_KEY, '4') // reviews
+    sessionStorage.setItem(TOUR_STEP_KEY, '5') // reviews
     sessionStorage.setItem(TOUR_BUSINESS_KEY, '/business/abc-123')
 
     render(<OnboardingTour />)
     await settleStep()
 
-    expect(screen.getByText('Real reviews')).toBeInTheDocument()
+    expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
     expect(mockPush).toHaveBeenCalledWith('/business/abc-123')
   })
 
@@ -337,15 +343,15 @@ describe('OnboardingTour (guided walkthrough)', () => {
     // Resumed on reviews with no remembered business and not on a business
     // page: unreachable, so it should auto-skip well before the 8s timeout
     // rather than holding a disabled card.
-    sessionStorage.setItem(TOUR_STEP_KEY, '4') // reviews, no business remembered
+    sessionStorage.setItem(TOUR_STEP_KEY, '5') // reviews, no business remembered
 
     render(<OnboardingTour />)
     await act(async () => {
       vi.advanceTimersByTime(1400) // past the short route-less timeout, far under 8s
     })
 
-    // reviews auto-skipped to the next business-page step
-    expect(screen.getByText('Make your visit count')).toBeInTheDocument()
+    // reviews auto-skipped to the next step (the centered verification explainer)
+    expect(screen.getByText('Real people, real reviews')).toBeInTheDocument()
     expect(mockPush).not.toHaveBeenCalled()
   })
 
@@ -361,6 +367,38 @@ describe('OnboardingTour (guided walkthrough)', () => {
     expect(localStorage.getItem(ONBOARDING_KEY)).toBe('true')
     expect(sessionStorage.getItem(TOUR_STEP_KEY)).toBeNull()
     expect(document.querySelector('[data-tour-overlay]')).toBeNull()
+  })
+
+  it('adds a sort step explaining ordering by rating and reviews', async () => {
+    mountAnchors()
+    sessionStorage.setItem(TOUR_STEP_KEY, '3') // sort
+    render(<OnboardingTour />)
+    await settleStep()
+
+    expect(screen.getByText('Sort by rating or reviews')).toBeInTheDocument()
+    expect(screen.getByText(/Most reviewed/i)).toBeInTheDocument()
+  })
+
+  it('includes a centered bot-verification explainer step', async () => {
+    // No anchors needed — it's a centered card with no spotlight target, so it
+    // shows on any page and never falls into the "Taking you there…" wait.
+    sessionStorage.setItem(TOUR_STEP_KEY, '6') // verify
+    render(<OnboardingTour />)
+    await settleStep()
+
+    expect(screen.getByText('Real people, real reviews')).toBeInTheDocument()
+    expect(screen.getByText(/block bots/i)).toBeInTheDocument()
+    expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
+  })
+
+  it('adds a deals step pointing at the deals tab', async () => {
+    mountAnchors()
+    sessionStorage.setItem(TOUR_STEP_KEY, '7') // deals
+    render(<OnboardingTour />)
+    await settleStep()
+
+    expect(screen.getByText('Grab deals & coupons')).toBeInTheDocument()
+    expect(screen.getByText(/unique code/i)).toBeInTheDocument()
   })
 
   it('restarts via the global help-menu hook', async () => {
