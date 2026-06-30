@@ -21,7 +21,7 @@
  */
 
 import 'dotenv/config'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 // ============================================================================
 // Photo reference helpers (exported for unit testing)
@@ -81,7 +81,9 @@ interface BusinessRow {
 // Loading
 // ============================================================================
 
-async function loadAll(supabase: ReturnType<typeof createClient>): Promise<BusinessRow[]> {
+async function loadAll(
+  supabase: SupabaseClient
+): Promise<BusinessRow[]> {
   const all: BusinessRow[] = []
   const PAGE = 1000
   let offset = 0
