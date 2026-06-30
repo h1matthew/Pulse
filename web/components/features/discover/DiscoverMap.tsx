@@ -301,7 +301,11 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
   const clusterIcon = useMemo(() => makeClusterIcon(isDark), [isDark])
 
   return (
-    <div className="relative h-full w-full">
+    // `isolate` keeps Leaflet's high z-index panes (tiles/markers/popups at
+    // z-200..700) and the map controls confined to this stacking context, so
+    // they can't paint over page-level overlays like the onboarding tour
+    // (z-120) when they overlap.
+    <div className="relative isolate h-full w-full">
       <MapContainer
         center={center}
         zoom={15}
