@@ -268,11 +268,11 @@ function ViewManager({ center, businesses }: { center: [number, number]; busines
     // possible while still showing every pin.
     const pts = (businesses ?? []).filter(b => b.latitude && b.longitude)
     if (!pts.length) {
-      map.setView(center, 14)
+      map.setView(center, 15)
       return
     }
     const [sw, ne] = centeredBounds(center, pts)
-    map.fitBounds(L.latLngBounds(sw, ne), { padding: [40, 40], maxZoom: 19 })
+    map.fitBounds(L.latLngBounds(sw, ne), { padding: [40, 40], maxZoom: 20 })
   }, [center, businesses, map])
   return null
 }
@@ -304,8 +304,8 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
     <div className="relative h-full w-full">
       <MapContainer
         center={center}
-        zoom={14}
-        maxZoom={19}
+        zoom={15}
+        maxZoom={20}
         style={{ height: '100%', width: '100%' }}
         zoomControl={true}
       >

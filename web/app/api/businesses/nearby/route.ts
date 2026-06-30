@@ -811,6 +811,16 @@ export async function GET(request: Request) {
       )
       .slice(0, MAX_NEARBY_RESULTS)
 
+    // Pin La Villita Cafe (the "receipt store") to #1 so it's always the
+    // first result near downtown San Antonio.
+    const laVillitaIdx = sorted.findIndex(
+      (b) => b.name?.toLowerCase().includes('la villita')
+    )
+    if (laVillitaIdx > 0) {
+      const [entry] = sorted.splice(laVillitaIdx, 1)
+      sorted.unshift(entry)
+    }
+
     return NextResponse.json(sorted)
   } catch (error) {
     console.error('Error in nearby businesses:', error)
