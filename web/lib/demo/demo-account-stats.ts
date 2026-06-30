@@ -237,7 +237,7 @@ export const DEMO_BUSINESS_ID = 'demo-la-villita-cafe'
 // Real Google Places photo for La Villita Cafe — a direct CDN URL, so the
 // photo proxy is bypassed and the image loads as-is.
 const DEMO_BUSINESS_PHOTO_URL =
-  'https://lh3.googleusercontent.com/gps-cs-s/APNQkAFKZms8SaTx9T_37_k7T_lbwt081CMcWGwgN8GtuymsNcnZe7QPa1pE0iVSrIkdCCXSqSl6lwwyOGGjx8ftWQT8MNCbqhdb-cFBLdpyL1Ib66vTAM6gF4VelKFHIksCLCDtIZRGsA=w289-h312-n-k-no'
+  'https://lh3.googleusercontent.com/gps-cs-s/APNQkAFKZms8SaTx9T_37_k7T_lbwt081CMcWGwgN8GtuymsNcnZe7QPa1pE0iVSrIkdCCXSqSl6lwwyOGGjx8ftWQT8MNCbqhdb-cFBLdpyL1Ib66vTAM6gF4VelKFHIksCLCDtIZRGsA=s1360-w1360-h1020-rw'
 
 function isoDaysFromNow(days: number): string {
   const date = new Date()
