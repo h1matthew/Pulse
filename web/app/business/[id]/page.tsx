@@ -37,6 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useBusiness } from "@/hooks/useBusinesses";
+import { TOUR_DEMO_BUSINESS_ID } from "@/lib/demo/demo-business";
 import { useClaimDeal } from "@/hooks/useDeals";
 import {
   useIsBookmarked,
@@ -604,9 +605,13 @@ export default function BusinessDetailPage({
     review_count: business.review_count,
     local_review_count: localReviewCount,
   });
+  const isTourDemo = business.id === TOUR_DEMO_BUSINESS_ID;
   const fallbackHeroImageUrl = buildBusinessFallbackImageUrl({
     name: business.name,
     categoryName: business.category?.name,
+    // The onboarding tour's demo business gets a plain "Demo" cover — no
+    // initials, grid, or accent circles.
+    ...(isTourDemo ? { label: "Demo", plain: true } : {}),
   });
   const googleReviewsUrl = getGoogleMapsReviewUrl({
     name: business.name,

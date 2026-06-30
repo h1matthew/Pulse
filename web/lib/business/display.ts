@@ -45,6 +45,10 @@ export interface BusinessPhotoOptions {
 export interface BusinessFallbackImageInput {
   name: string;
   categoryName?: string | null;
+  /** Render this exact text instead of derived initials (e.g. "Demo"). */
+  label?: string;
+  /** Drop the decorative grid + circles, keeping just the gradient and text. */
+  plain?: boolean;
 }
 
 type BusinessPhotoReference =
@@ -453,7 +457,18 @@ export function buildBusinessFallbackImageUrl(
   // the centered initials on a branded gradient.
   const key = `${normalizeText(input.name)}-${normalizeText(input.categoryName)}`;
   const palette = palettes[hashString(key) % palettes.length];
-  const initials = escapeSvgText(buildInitials(input.name));
+  // A `label` (e.g. "Demo") is shown verbatim; otherwise fall back to initials.
+  // A full word needs a smaller size than 1-2 initials to stay on the canvas.
+  const text = escapeSvgText(input.label ?? buildInitials(input.name));
+  const fontSize = input.label && input.label.length > 2 ? 180 : 220;
+
+  // `plain` covers omit the decorative grid + accent circles (used by the
+  // onboarding tour's demo business); everything else keeps them.
+  const decorations = input.plain
+    ? ""
+    : `<rect width="1200" height="720" fill="url(#grid)" />
+  <circle cx="1040" cy="120" r="210" fill="${palette.accent}" fill-opacity="0.20" />
+  <circle cx="170" cy="600" r="230" fill="${palette.accent}" fill-opacity="0.16" />`;
 
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
@@ -467,10 +482,8 @@ export function buildBusinessFallbackImageUrl(
     </pattern>
   </defs>
   <rect width="1200" height="720" fill="url(#g)" />
-  <rect width="1200" height="720" fill="url(#grid)" />
-  <circle cx="1040" cy="120" r="210" fill="${palette.accent}" fill-opacity="0.20" />
-  <circle cx="170" cy="600" r="230" fill="${palette.accent}" fill-opacity="0.16" />
-  <text x="600" y="360" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="220" font-weight="700" fill="rgba(255,255,255,0.92)">${initials}</text>
+  ${decorations}
+  <text x="600" y="360" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="${fontSize}" font-weight="700" fill="rgba(255,255,255,0.92)">${text}</text>
 </svg>`;
 
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;

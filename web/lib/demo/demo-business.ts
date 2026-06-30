@@ -142,7 +142,7 @@ const DEMO_REVIEWS: ReviewWithUser[] = DEMO_REVIEWERS.map((reviewer, index) => (
 export function getTourDemoBusiness(): BusinessWithDetails {
   return {
     id: TOUR_DEMO_BUSINESS_ID,
-    name: 'La Cosecha Market & Kitchen',
+    name: 'Demo',
     slug: TOUR_DEMO_BUSINESS_ID,
     category_id: DEMO_CATEGORY.id,
     description:
@@ -185,7 +185,7 @@ export function getTourDemoBusiness(): BusinessWithDetails {
     created_at: isoDaysFromNow(-365),
     updated_at: isoDaysFromNow(-1),
     ai_description:
-      'La Cosecha Market & Kitchen is a beloved San Antonio staple where neighbors gather over locally roasted coffee and made-from-scratch tacos. The family behind it sources from nearby farms and pours every bit of their heart into the community.',
+      'A beloved San Antonio staple where neighbors gather over locally roasted coffee and made-from-scratch tacos. The family behind it sources from nearby farms and pours every bit of their heart into the community.',
     ai_description_generated_at: isoDaysFromNow(-30),
     ai_description_source: 'demo',
     editorial_summary: 'Family-owned, locally sourced, and a true community hub.',

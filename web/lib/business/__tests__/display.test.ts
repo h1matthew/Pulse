@@ -401,5 +401,36 @@ describe("business display helpers", () => {
 
       expect(first).toBe(second);
     });
+
+    /** Decode the SVG out of the data URI for content assertions. */
+    function decodeSvg(url: string): string {
+      return decodeURIComponent(
+        url.replace(/^data:image\/svg\+xml;charset=UTF-8,/, "")
+      );
+    }
+
+    it("paints decorative grid + circles by default", () => {
+      const svg = decodeSvg(
+        buildBusinessFallbackImageUrl({ name: "Northside Coffee" })
+      );
+      expect(svg).toContain("<circle");
+      expect(svg).toContain('fill="url(#grid)"');
+    });
+
+    it("renders a plain labelled cover with no grid or circles", () => {
+      const svg = decodeSvg(
+        buildBusinessFallbackImageUrl({
+          name: "Demo",
+          categoryName: "Food & Drink",
+          label: "Demo",
+          plain: true,
+        })
+      );
+      // The exact label is shown, not derived initials...
+      expect(svg).toContain(">Demo</text>");
+      // ...and the decorative grid + circles are gone.
+      expect(svg).not.toContain("<circle");
+      expect(svg).not.toContain('fill="url(#grid)"');
+    });
   });
 });
