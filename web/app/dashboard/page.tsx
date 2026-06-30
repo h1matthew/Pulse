@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/chart";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { NavLink } from "@/components/ui/nav-link";
+import { buildBusinessPhotoUrl } from "@/lib/business/display";
 import { useUserImpact, useImpactDisplay, useCommunityPulse } from "@/hooks/useImpact";
 import { useMissionProgressDetails } from "@/hooks/useMissions";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -172,9 +173,8 @@ export default function DashboardPage() {
     const businesses = nearbyBusinesses.length > 0 ? nearbyBusinesses : listBusinesses;
     const bestBusiness = [...businesses]
       .filter((b) => {
-        const photo = Array.isArray(b.photos) ? b.photos[0] : null
-        const hasPhoto = typeof photo === 'string' && photo.startsWith('http')
-        return b.data_source === 'google' && !!b.place_id && hasPhoto && (b.review_count || 0) >= 10
+        const photoUrl = buildBusinessPhotoUrl(b.photos?.[0], { maxWidth: 200, maxHeight: 150 })
+        return !!photoUrl && (b.review_count || 0) >= 10
       })
       .sort((a, b) => {
         const scoreA = (a.average_rating || 0) * Math.log10(Math.max(a.review_count || 1, 1))
@@ -685,8 +685,7 @@ export default function DashboardPage() {
                     {featuredBusiness ? (
                       <>
                         {(() => {
-                          const photo = Array.isArray(featuredBusiness.photos) ? featuredBusiness.photos[0] : null
-                          const photoUrl = typeof photo === 'string' && photo.startsWith('http') ? photo : null
+                          const photoUrl = buildBusinessPhotoUrl(featuredBusiness.photos?.[0], { maxWidth: 480, maxHeight: 320 })
                           return photoUrl ? (
                             <div className="h-36 rounded-lg overflow-hidden mb-3">
                               <img src={photoUrl} alt={featuredBusiness.name} className="w-full h-full object-cover" />
