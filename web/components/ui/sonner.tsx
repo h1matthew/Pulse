@@ -23,7 +23,12 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       toastOptions={{
         classNames: {
-          description: "!opacity-90",
+          // Force the description to use the popover's foreground token so it
+          // always contrasts with --normal-bg (var(--popover)). Sonner's forced
+          // "dark" theme otherwise keeps a light-gray description color, which
+          // blends into the toast background when the app is in light mode
+          // (e.g. the "$15.97 kept local" check-in confirmation).
+          description: "!text-popover-foreground opacity-100",
         },
       }}
       style={
