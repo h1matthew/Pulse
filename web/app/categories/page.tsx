@@ -142,7 +142,7 @@ export default async function CategoriesPage() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="px-4 pb-12 pt-32 sm:px-6">
+      <main className="px-4 pb-12 pt-10 sm:px-6">
         <div className="mx-auto max-w-6xl">
           {/* Page header */}
           <AnimatedSection animation="fade-up">

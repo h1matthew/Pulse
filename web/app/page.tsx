@@ -48,7 +48,7 @@ export default function Home() {
 
       <section
         aria-label="Hero"
-        className="relative px-6 pb-16 pt-32 sm:pt-36 lg:pb-20"
+        className="relative px-6 pb-16 pt-10 sm:pt-12 lg:pb-20"
       >
         <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
           <AnimatedSection animation="fade-up">

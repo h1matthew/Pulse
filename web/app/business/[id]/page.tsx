@@ -502,7 +502,7 @@ export default function BusinessDetailPage({
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-28 pb-12">
+        <div className="pt-8 pb-12">
           <div className="mx-auto max-w-6xl px-6">
             <Skeleton className="h-64 w-full mb-6" />
             <Skeleton className="h-8 w-1/3 mb-4" />
@@ -524,7 +524,7 @@ export default function BusinessDetailPage({
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-28 pb-12">
+        <div className="pt-8 pb-12">
           <div className="mx-auto max-w-6xl px-6 text-center">
             <div className="text-6xl mb-4">🔍</div>
             <h1 className="text-2xl font-bold mb-2">Business not found</h1>
@@ -645,7 +645,7 @@ export default function BusinessDetailPage({
       <Header />
 
       {/* Immersive hero — identity and actions live on the photo itself */}
-      <div className="bg-gradient-to-b from-primary/5 via-background to-background pt-28 pb-8">
+      <div className="bg-gradient-to-b from-primary/5 via-background to-background pt-8 pb-8">
         <div className="mx-auto max-w-6xl px-6">
           <AnimatedSection animation="fade-up">
             <div className="relative h-[24rem] md:h-[27rem] rounded-3xl overflow-hidden shadow-xl shadow-primary/5">

@@ -278,7 +278,7 @@ export default function BookmarksPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-28 pb-12 flex items-center justify-center min-h-[60vh]">
+        <div className="pt-8 pb-12 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
@@ -289,7 +289,7 @@ export default function BookmarksPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-28 pb-12">
+        <div className="pt-8 pb-12">
           <div className="mx-auto max-w-6xl px-6 text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
               <Lock className="h-6 w-6 text-primary" aria-hidden="true" />
@@ -315,7 +315,7 @@ export default function BookmarksPage() {
       <div className="relative min-h-screen">
         <Header />
 
-        <div className="pt-28 pb-12">
+        <div className="pt-8 pb-12">
           <div className="mx-auto max-w-6xl px-6">
             {/* Header */}
             <AnimatedSection animation="fade-up">
@@ -407,7 +407,7 @@ export default function BookmarksPage() {
     <div className="relative min-h-screen">
       <Header />
 
-      <div className="pt-28 pb-12">
+      <div className="pt-8 pb-12">
         <div className="mx-auto max-w-6xl px-6">
           {/* Header */}
           <AnimatedSection animation="fade-up">

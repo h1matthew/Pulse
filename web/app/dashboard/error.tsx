@@ -13,7 +13,7 @@ export default function DashboardError({
   return (
     <div className="relative min-h-screen bg-background">
       <Header />
-      <div className="pt-28">
+      <div className="pt-8">
         <ErrorBoundaryContent
           error={error}
           reset={reset}

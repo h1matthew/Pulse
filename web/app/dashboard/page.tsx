@@ -262,7 +262,7 @@ export default function DashboardPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-28 pb-12 flex items-center justify-center min-h-[60vh]">
+        <div className="pt-8 pb-12 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
@@ -275,7 +275,7 @@ export default function DashboardPage() {
     <div className="relative min-h-screen">
       <Header />
 
-      <div className="pt-28 pb-12">
+      <div className="pt-8 pb-12">
         <div className="mx-auto max-w-7xl px-6">
           {/* Hero */}
           <AnimatedSection animation="fade-up">

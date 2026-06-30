@@ -269,7 +269,7 @@ export default function MissionsPage() {
     <div className="relative min-h-screen">
       <Header />
 
-      <div className="pt-28 pb-12">
+      <div className="pt-8 pb-12">
         <div className="mx-auto max-w-6xl px-6">
           {/* Header */}
           <AnimatedSection animation="fade-up">

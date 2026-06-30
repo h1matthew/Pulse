@@ -337,7 +337,7 @@ export default function SettingsPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-28 pb-12 flex items-center justify-center min-h-[60vh]">
+        <div className="pt-8 pb-12 flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
@@ -348,7 +348,7 @@ export default function SettingsPage() {
     return (
       <div className="relative min-h-screen">
         <Header />
-        <div className="pt-28 pb-12">
+        <div className="pt-8 pb-12">
           <div className="mx-auto max-w-4xl px-6 text-center">
             <div className="text-6xl mb-4">🔒</div>
             <h1 className="text-2xl font-bold mb-2">Sign in required</h1>
@@ -363,7 +363,7 @@ export default function SettingsPage() {
   return (
     <div className="relative min-h-screen">
       <Header />
-      <div className="pt-28 pb-12">
+      <div className="pt-8 pb-12">
         <div className="mx-auto max-w-4xl px-6">
           <AnimatedSection animation="fade-up">
             <div className="mb-8">

@@ -159,7 +159,7 @@ export default function DealsPage() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="px-6 pb-12 pt-32">
+      <main className="px-6 pb-12 pt-10">
         <div className="mx-auto max-w-6xl">
           <AnimatedSection animation="fade-up">
             <div className="mb-8 flex flex-col gap-5 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">

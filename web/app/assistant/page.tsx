@@ -156,7 +156,7 @@ export default function AssistantPage() {
     <div className="relative min-h-screen">
       <Header />
 
-      <div className="pt-16 pb-8 h-[calc(100vh-4rem)]">
+      <div className="pb-8 h-[calc(100vh-4rem)]">
         <div className="mx-auto max-w-6xl px-6 h-full">
           <div className="grid lg:grid-cols-[1fr,350px] gap-6 h-full">
             {/* Main Chat Area */}

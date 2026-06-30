@@ -876,7 +876,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   // Compact full-width top bar: title + live stats, then search/sort, then the
   // category and refine filters, with location + radius pushed to the right.
   const filterPanel = (
-    <div className="space-y-3 px-4 pb-3 pt-1.5" data-testid="discover-toolbar">
+    <div className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5" data-testid="discover-toolbar">
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2" role="group" aria-label="Discover summary">
         <h1 id="discover-heading" className="shrink-0 text-lg font-semibold tracking-tight">
           Discover places <span className="gradient-text">nearby</span>
@@ -1190,9 +1190,9 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
 
       {/* Search/filters on top, then list on the left and map on the right.
           pt clears the floating header (~86px) and leaves a comfortable gap. */}
-      <div className="flex flex-1 flex-col overflow-hidden pt-28">
-        {/* TOP — full-width search + filter bar */}
-        <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
+      <div className="flex flex-1 flex-col overflow-hidden pt-8">
+        {/* TOP — search + filter bar, presented as a card */}
+        <div className="shrink-0 px-4 sm:px-7">
           {filterPanel}
         </div>
 

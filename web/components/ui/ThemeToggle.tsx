@@ -7,9 +7,10 @@ import { cn } from '@/lib/utils'
 
 interface ThemeToggleProps {
   compact?: boolean
+  className?: string
 }
 
-export function ThemeToggle({ compact = false }: ThemeToggleProps) {
+export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
@@ -21,7 +22,8 @@ export function ThemeToggle({ compact = false }: ThemeToggleProps) {
       aria-label={mounted ? `Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle theme'}
       className={cn(
         "flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-300",
-        compact ? "h-7 w-7 rounded-full" : "h-8 w-8 rounded-lg"
+        compact ? "h-7 w-7 rounded-full" : "h-8 w-8 rounded-lg",
+        className
       )}
     >
       {mounted && resolvedTheme === 'dark' ? (
