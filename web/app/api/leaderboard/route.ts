@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { isDemoContentEnabled, shouldUseDemoStatsForUser, getDemoLeaderboard } from '@/lib/demo/demo-account-stats'
 
 export async function GET(request: Request) {
   try {
@@ -14,6 +15,10 @@ export async function GET(request: Request) {
     const {
       data: { user },
     } = await supabase.auth.getUser()
+
+    if (user && shouldUseDemoStatsForUser(user)) {
+      return NextResponse.json(getDemoLeaderboard(user.id))
+    }
 
     // Try to use the database function first
     const { data: leaderboardData, error: fnError } = await supabase.rpc(

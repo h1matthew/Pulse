@@ -452,3 +452,47 @@ export function getDemoImpactReport(dateRange: {
     ],
   }
 }
+
+export function getDemoLeaderboard(currentUserId: string) {
+  const entries = [
+    {
+      rank: 1,
+      user_id: 'demo-user-felix',
+      display_name: 'Felix Yin',
+      impact_score: 2450,
+      dollars_kept_local: 3200,
+      businesses_supported: 22,
+      missions_completed: 6,
+      reviews_left: 15,
+      avatar_url: null,
+    },
+    {
+      rank: 2,
+      user_id: currentUserId,
+      display_name: 'Matthew Heng',
+      impact_score: 1930,
+      dollars_kept_local: 1840,
+      businesses_supported: 14,
+      missions_completed: 4,
+      reviews_left: 9,
+      avatar_url: null,
+    },
+    {
+      rank: 3,
+      user_id: 'demo-user-brady',
+      display_name: 'Brady Chen',
+      impact_score: 1580,
+      dollars_kept_local: 1520,
+      businesses_supported: 11,
+      missions_completed: 3,
+      reviews_left: 7,
+      avatar_url: null,
+    },
+  ]
+
+  return {
+    entries,
+    userRank: 2,
+    totalCount: entries.length,
+  }
+}
