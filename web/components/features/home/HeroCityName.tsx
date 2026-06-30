@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { getCachedLocation, reverseGeocodeCity } from '@/lib/location'
 import type { LatLng } from '@/types/business'
 
-const DEFAULT_CITY = 'Your City'
+const DEFAULT_CITY = 'San Antonio'
 const CITY_CACHE_KEY = 'user_city_name'
 // Match the location cache TTL so the city follows location changes
 const CITY_CACHE_TTL = 60 * 60 * 1000

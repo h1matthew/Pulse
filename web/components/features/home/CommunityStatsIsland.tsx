@@ -10,9 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import type { BusinessWithCategory, LatLng } from '@/types/business'
 
-// Diamond Bar, CA — where the seeded data lives. Used when the visitor hasn't
-// shared their location, so the headline stats always reflect real businesses.
-const DEFAULT_LOCATION: LatLng = { lat: 34.0286, lng: -117.8103 }
+// San Antonio, TX — default location when the visitor hasn't shared theirs.
+const DEFAULT_LOCATION: LatLng = { lat: 29.4252, lng: -98.4946 }
 const RADIUS_METERS = 10000
 
 function isIndependent(b: BusinessWithCategory): boolean {
@@ -161,7 +160,7 @@ function positiveOr(value: number | undefined | null, fallback: number): number 
 
 /**
  * Headline stats. Three of the four are location-aware — they recompute from the
- * businesses near the visitor (falling back to the seeded Diamond Bar set), so
+ * businesses near the visitor (falling back to San Antonio), so
  * they change as the visitor's location changes:
  *   - Businesses      → independent shops nearby
  *   - Reviews         → total reviews across those shops

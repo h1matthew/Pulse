@@ -4,7 +4,7 @@
  * HeroPreview — the "Today near you" card in the homepage hero.
  *
  * Replaces the old hardcoded mock: this pulls REAL top-rated businesses near
- * the user (falling back to Diamond Bar so the card is always populated) and
+ * the user (falling back to San Antonio so the card is always populated) and
  * shows live counts (open now, independent, average rating). Gated behind a
  * mount flag so the server render and the client's first paint match (React
  * Query can hydrate persisted data, which would otherwise mismatch).
@@ -21,9 +21,8 @@ import { NavLink } from '@/components/ui/nav-link'
 import type { BusinessWithCategory, LatLng } from '@/types/business'
 import { cn } from '@/lib/utils'
 
-// Diamond Bar, CA — where the seeded data lives. Used when the visitor hasn't
-// shared their location, so the hero always shows real nearby businesses.
-const DEFAULT_LOCATION: LatLng = { lat: 34.0286, lng: -117.8103 }
+// San Antonio, TX — default location when the visitor hasn't shared theirs.
+const DEFAULT_LOCATION: LatLng = { lat: 29.4252, lng: -98.4946 }
 const RADIUS_METERS = 10000
 
 function coords(b: BusinessWithCategory): LatLng | null {
@@ -66,7 +65,7 @@ function CardShell({
 
 function PreviewSkeleton() {
   return (
-    <CardShell locationLabel="Diamond Bar" pill={<span className="inline-block h-3 w-10 animate-pulse rounded bg-muted" />}>
+    <CardShell locationLabel="San Antonio" pill={<span className="inline-block h-3 w-10 animate-pulse rounded bg-muted" />}>
       <div className="divide-y divide-border">
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex items-center justify-between px-4 py-4">
@@ -149,7 +148,7 @@ export function HeroPreview() {
 
   return (
     <CardShell
-      locationLabel={cityName ?? (location ? 'Near you' : 'Diamond Bar')}
+      locationLabel={cityName ?? (location ? 'Near you' : 'San Antonio')}
       pill={<span className="font-mono">{view.total} places</span>}
     >
       <div className="divide-y divide-border">

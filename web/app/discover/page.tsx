@@ -444,7 +444,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   } = useNearbyBusinesses(location, radiusMeters)
   const { data: bookmarkedIds } = useBookmarkedIds()
 
-  // Try to get cached location on mount, fall back to Diamond Bar for demo
+  // Try to get cached location on mount, fall back to San Antonio for demo
   useEffect(() => {
     const cached = getCachedLocation()
     const sourceInfo = getCachedLocationSource()

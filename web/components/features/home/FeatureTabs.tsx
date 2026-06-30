@@ -25,9 +25,8 @@ import { useIsBookmarked, useToggleBookmark } from '@/hooks/useBookmarks'
 import { isOpenNow } from '@/lib/business/hours'
 import type { BusinessWithCategory, LatLng } from '@/types/business'
 
-// Diamond Bar, CA — where the seeded data lives. Used when the visitor hasn't
-// shared their location, so the card always shows real nearby businesses.
-const DEFAULT_LOCATION: LatLng = { lat: 34.0286, lng: -117.8103 }
+// San Antonio, TX — default location when the visitor hasn't shared theirs.
+const DEFAULT_LOCATION: LatLng = { lat: 29.4252, lng: -98.4946 }
 const RADIUS_METERS = 10000
 
 const TABS = [
@@ -70,9 +69,9 @@ const SNAPSHOTS: Record<TabId, SnapshotContent> = {
     href: '/deals',
     cta: 'See deals',
     rows: [
-      { name: 'Weeknight bento', meta: 'H Mart Diamond Bar', value: '15%' },
-      { name: 'Seafood combo', meta: 'The Boiling Crab', value: '$8' },
-      { name: 'Family arcade pass', meta: 'Round1 Arcade', value: '20%' },
+      { name: 'Weekday lunch special', meta: 'La Villita Cafe LLC', value: '15%' },
+      { name: 'Buy 1 Get 1 Latte', meta: 'Bakery Lorraine', value: 'BOGO' },
+      { name: 'New releases discount', meta: 'The Twig Book Shop', value: '20%' },
     ],
   },
   impact: {
