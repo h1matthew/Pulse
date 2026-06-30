@@ -1,6 +1,6 @@
 "use client";
 
-import { Zap, Trophy, Clock, ChevronRight, LogIn, Loader2 } from "lucide-react";
+import { Zap, Trophy, Clock, ChevronRight, LogIn, Loader2, Flame, Users, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
@@ -240,6 +240,146 @@ function ActiveMissionCard({ mission, progressDetail, index, isLoggedIn }: Activ
   );
 }
 
+// ── Hotspot Businesses (2× points this week) ────────────────────────
+const HOTSPOT_BUSINESSES = [
+  {
+    id: "demo-la-villita-cafe",
+    name: "La Villita Cafe LLC",
+    category: "Food & Drink",
+    multiplier: 2,
+    reason: "Featured this week",
+    rating: 4.6,
+    distance: "0.3 mi",
+  },
+  {
+    id: "demo-hotspot-2",
+    name: "Bakery Lorraine",
+    category: "Food & Drink",
+    multiplier: 2,
+    reason: "New on Pulse",
+    rating: 4.8,
+    distance: "1.2 mi",
+  },
+  {
+    id: "demo-hotspot-3",
+    name: "The Twig Book Shop",
+    category: "Retail",
+    multiplier: 2,
+    reason: "Community pick",
+    rating: 4.7,
+    distance: "0.8 mi",
+  },
+];
+
+// ── Group Check-in Tiers ─────────────────────────────────────────────
+const GROUP_TIERS = [
+  { friends: 1, label: "Duo", bonus: "+25%", color: "text-chart-3" },
+  { friends: 2, label: "Trio", bonus: "+50%", color: "text-chart-5" },
+  { friends: 3, label: "Squad (4+)", bonus: "+100%", color: "text-primary" },
+];
+
+function HotspotSection() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+          <Flame className="h-4 w-4 text-orange-500" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Hotspots</h2>
+          <p className="text-xs text-muted-foreground">Earn 2× points at featured spots this week</p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {HOTSPOT_BUSINESSES.map((biz) => (
+          <Link key={biz.id} href={`/business/${biz.id}`}>
+            <Card className="hover:border-orange-500/30 transition-colors cursor-pointer group">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <Badge className="bg-orange-500 text-white border-0 text-[10px] px-1.5">
+                    {biz.multiplier}× POINTS
+                  </Badge>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Star className="h-3 w-3 fill-chart-5 text-chart-5" />
+                    {biz.rating}
+                  </div>
+                </div>
+                <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
+                  {biz.name}
+                </h3>
+                <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+                  <span>{biz.category}</span>
+                  <span>·</span>
+                  <span className="flex items-center gap-0.5">
+                    <MapPin className="h-3 w-3" />
+                    {biz.distance}
+                  </span>
+                </div>
+                <p className="text-[10px] text-orange-500/80 mt-2 font-medium uppercase tracking-wide">
+                  {biz.reason}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GroupCheckInSection() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Users className="h-4 w-4 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">Group Check-ins</h2>
+          <p className="text-xs text-muted-foreground">
+            Check in with friends at the same spot for bonus points
+          </p>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-5">
+          <div className="grid sm:grid-cols-3 gap-4">
+            {GROUP_TIERS.map((tier) => (
+              <div
+                key={tier.friends}
+                className="flex items-center gap-3 rounded-lg border border-border p-3"
+              >
+                <div className="flex -space-x-2">
+                  {Array.from({ length: tier.friends + 1 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center"
+                    >
+                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{tier.label}</p>
+                  <p className={cn("text-lg font-bold tabular-nums", tier.color)}>
+                    {tier.bonus}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            When you and your friends check in at the same business within 30 minutes,
+            everyone earns bonus points. The more friends, the bigger the bonus.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function MissionsPage() {
   const { isLoggedIn, userId, loading: authLoading } = useAuth();
   const { data: activeMissions, isLoading: missionsLoading, error: missionsError } = useActiveMissions();
@@ -338,6 +478,20 @@ export default function MissionsPage() {
                 </Card>
               </div>
             )}
+          </AnimatedSection>
+
+          {/* Hotspots — 2× point businesses */}
+          <AnimatedSection animation="fade-up" delay={0.12}>
+            <div className="mb-8">
+              <HotspotSection />
+            </div>
+          </AnimatedSection>
+
+          {/* Group Check-ins */}
+          <AnimatedSection animation="fade-up" delay={0.14}>
+            <div className="mb-8">
+              <GroupCheckInSection />
+            </div>
           </AnimatedSection>
 
           {/* Error State */}
