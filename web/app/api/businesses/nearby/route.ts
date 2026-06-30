@@ -543,7 +543,7 @@ async function syncPlacesToDatabase(
 
       const businessData = {
         name,
-        slug: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50)}-${placeId.substring(0, 8)}`,
+        slug: `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50)}-${placeId.replace(/[^a-z0-9]/gi, '').substring(0, 30)}`,
         description: desc,
         short_description: desc.substring(0, 100),
         address: place.formattedAddress || '',
