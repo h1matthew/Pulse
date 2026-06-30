@@ -944,7 +944,7 @@ export default function BusinessDetailPage({
 
                     {/* Write Review */}
                     {user && (
-                      <Card>
+                      <Card data-tour="review-form">
                         <CardContent className="p-6">
                           <h3 className="font-semibold mb-4">Write a Review</h3>
                           <div className="space-y-4">
@@ -1239,7 +1239,7 @@ export default function BusinessDetailPage({
                         )}
                       </>
                     ) : (
-                      <Card>
+                      <Card data-tour="review-empty">
                         <CardContent className="p-6 text-center">
                           {showGoogleReviewHint ? (
                             <>

@@ -73,6 +73,10 @@ interface GuidedStep {
   /** The target is a tab trigger — activate it on reveal so the user sees the
    *  tab's content (e.g. open the Reviews / Deals tab on the business page). */
   activateTab?: boolean
+  /** Click this selector to activate a tab before searching for the main
+   *  target. Use when the spotlight target lives inside a tab panel but
+   *  isn't the tab trigger itself. */
+  activateTabTarget?: string
   /** Open the Pulse Assistant chat when this step starts (and close it on
    *  exit) so the step can spotlight the live panel and let the user try it. */
   opensChat?: boolean
@@ -125,11 +129,11 @@ const TOUR_STEPS: GuidedStep[] = [
   },
   {
     id: 'reviews',
-    title: 'Leave a review or rating',
-    body: 'Read community and Google reviews here — and once you sign in, add your own star rating and written review.',
-    target: '[data-tour="business-reviews"]',
+    title: 'Share your experience',
+    body: 'Once you sign in you can leave a star rating and written review right here. Your honest take helps neighbors find the best local spots.',
+    target: '[data-tour="review-form"], [data-tour="review-empty"]',
     businessPage: true,
-    activateTab: true,
+    activateTabTarget: '[data-tour="business-reviews"]',
   },
   {
     id: 'verify',
@@ -567,8 +571,18 @@ export function OnboardingTour() {
     // route if it isn't, or auto-skip after the timeout. Returns true once
     // the step is settled so polling can stop.
     let poll: ReturnType<typeof setInterval> | null = null
+    let tabActivated = false
     const tick = (): boolean => {
       if (cancelled) return true
+      if (!tabActivated && currentStep.activateTabTarget) {
+        const tab = document.querySelector<HTMLElement>(currentStep.activateTabTarget)
+        if (tab) {
+          tab.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 }))
+          tab.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, button: 0 }))
+          tab.click()
+          tabActivated = true
+        }
+      }
       const el = document.querySelector<HTMLElement>(currentStep.target!)
       if (el) {
         targetRef.current = el

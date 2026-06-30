@@ -15,8 +15,8 @@ import type { BusinessWithDetails, Category, Deal, ReviewWithUser } from '@/type
 /** Reserved business id the tour navigates to: /business/onboarding-demo */
 export const TOUR_DEMO_BUSINESS_ID = 'onboarding-demo'
 
-/** Route the onboarding tour opens for its business steps. */
-export const TOUR_DEMO_BUSINESS_PATH = `/business/${TOUR_DEMO_BUSINESS_ID}`
+/** Route the onboarding tour opens for its business-page steps. */
+export const TOUR_DEMO_BUSINESS_PATH = '/business/demo-la-villita-cafe'
 
 /** ISO timestamp `days` in the past (negative) or future (positive). */
 function isoDaysFromNow(days: number): string {
