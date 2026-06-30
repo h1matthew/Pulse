@@ -200,8 +200,9 @@ export function useToggleBookmark() {
       isBookmarked: boolean
       note?: string
     }): Promise<{ bookmarked: boolean; local: boolean }> => {
-      // Guests: toggle on-device — no network calls
-      if (scope === 'local') {
+      // Guests or demo businesses: toggle on-device — no network calls
+      const isDemoId = businessId.startsWith('demo-') || businessId === 'onboarding-demo'
+      if (scope === 'local' || isDemoId) {
         const { bookmarked } = toggleLocalBookmark(businessId)
         return { bookmarked, local: true }
       }
