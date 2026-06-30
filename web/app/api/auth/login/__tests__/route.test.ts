@@ -48,7 +48,10 @@ describe('POST /api/auth/login', () => {
     vi.clearAllMocks()
     mockCheckRateLimit.mockResolvedValue(allowed)
     mockSignInWithPassword.mockResolvedValue({
-      data: { user: { id: 'user-1', email: 'a@b.com' } },
+      data: {
+        user: { id: 'user-1', email: 'a@b.com' },
+        session: { access_token: 'mock-token', refresh_token: 'mock-refresh' },
+      },
       error: null,
     })
   })
@@ -58,6 +61,7 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(200)
     const json = await res.json()
     expect(json.user.id).toBe('user-1')
+    expect(json.session.access_token).toBe('mock-token')
     expect(mockSignInWithPassword).toHaveBeenCalledWith({
       email: 'a@b.com',
       password: 'secret',

@@ -39,7 +39,7 @@ export default function LoginPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        router.replace("/dashboard")
+        window.location.href = "/dashboard"
       } else {
         setCheckingAuth(false)
       }
@@ -124,8 +124,23 @@ export default function LoginPage() {
       return
     }
 
-    router.push("/dashboard")
-    router.refresh()
+    const data = await response.json()
+
+    // Update the singleton Supabase browser client's in-memory session.
+    // createBrowserClient caches a single instance — the server API set
+    // the session cookie via Set-Cookie headers, but the in-memory state
+    // was initialized to null before the cookie existed.  setSession()
+    // writes the session into memory AND document.cookie so the hard
+    // navigation below picks it up on the fresh page load.
+    const supabase = createClient()
+    await supabase.auth.setSession({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    })
+
+    // Hard navigation forces a full page reload where the server reads
+    // the auth cookie and AuthProvider mounts with the correct session.
+    window.location.href = "/dashboard"
   }
 
   async function handleSignup(e: React.FormEvent) {

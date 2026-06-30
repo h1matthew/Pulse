@@ -24,11 +24,13 @@ const mockSignInWithPassword = vi.fn()
 const mockSignUp = vi.fn()
 const mockResetPasswordForEmail = vi.fn()
 const mockGetUser = vi.fn()
+const mockSetSession = vi.fn()
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {
       getUser: mockGetUser,
+      setSession: mockSetSession,
       signInWithPassword: mockSignInWithPassword,
       signUp: mockSignUp,
       resetPasswordForEmail: mockResetPasswordForEmail,
@@ -190,9 +192,13 @@ describe('LoginPage', () => {
     })
   })
 
-  it('redirects to dashboard on successful login', async () => {
+  it('calls setSession on successful login', async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
-    mockLoginResponse(200, { user: { id: 'user-1' } })
+    mockSetSession.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null })
+    mockLoginResponse(200, {
+      user: { id: 'user-1' },
+      session: { access_token: 'mock-token', refresh_token: 'mock-refresh' },
+    })
 
     render(<LoginPage />)
 
@@ -212,8 +218,21 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Complete CAPTCHA' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
+    // Verify the API was called
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/dashboard')
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'test@example.com', password: 'password123' }),
+      })
+    })
+
+    // Verify setSession was called with the session tokens from the API
+    await waitFor(() => {
+      expect(mockSetSession).toHaveBeenCalledWith({
+        access_token: 'mock-token',
+        refresh_token: 'mock-refresh',
+      })
     })
   })
 

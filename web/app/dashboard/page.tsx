@@ -134,7 +134,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/login');
+      let cancelled = false;
+      const verify = async () => {
+        const supabase = (await import('@/lib/supabase/client')).createClient();
+        const { data: { user: freshUser } } = await supabase.auth.getUser();
+        if (!cancelled && !freshUser) {
+          router.replace('/login');
+        }
+      };
+      const timer = setTimeout(verify, 500);
+      return () => { cancelled = true; clearTimeout(timer); };
     }
   }, [authLoading, user, router]);
 
