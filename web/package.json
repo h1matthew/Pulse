@@ -15,6 +15,7 @@
     "db:reset": "tsx supabase/scripts/db-reset.ts",
     "db:seed": "tsx supabase/scripts/db-seed.ts",
     "db:seed-businesses": "tsx supabase/scripts/seed-us-businesses.ts",
+    "db:backfill-photos": "tsx supabase/scripts/backfill-business-photos.ts",
     "db:types": "tsx supabase/scripts/db-types.ts",
     "db:validate": "tsx supabase/scripts/db-validate.ts",
     "db:watch": "tsx supabase/scripts/db-watch.ts",
