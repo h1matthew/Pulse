@@ -70,6 +70,9 @@ interface GuidedStep {
   interactedBody?: string
   /** Move focus into the target (e.g. the search field) so they can type */
   focusTarget?: boolean
+  /** The target is a tab trigger — activate it on reveal so the user sees the
+   *  tab's content (e.g. open the Reviews / Deals tab on the business page). */
+  activateTab?: boolean
   /** Open the Pulse Assistant chat when this step starts (and close it on
    *  exit) so the step can spotlight the live panel and let the user try it. */
   opensChat?: boolean
@@ -126,6 +129,7 @@ const TOUR_STEPS: GuidedStep[] = [
     body: 'Read community and Google reviews here — and once you sign in, add your own star rating and written review.',
     target: '[data-tour="business-reviews"]',
     businessPage: true,
+    activateTab: true,
   },
   {
     id: 'verify',
@@ -139,6 +143,7 @@ const TOUR_STEPS: GuidedStep[] = [
     body: 'The Deals tab gathers special offers — discounts, BOGOs, and mission rewards. Claim one and you get a unique code to show in-store.',
     target: '[data-tour="business-deals"]',
     businessPage: true,
+    activateTab: true,
   },
   {
     id: 'check-in',
@@ -584,6 +589,18 @@ export function OnboardingTour() {
           const focusable =
             el.querySelector<HTMLElement>('input, textarea, [contenteditable]') ?? el
           focusable.focus?.({ preventScroll: true })
+        }
+        if (currentStep.activateTab) {
+          // The target is a tab trigger — switch to it so its panel (e.g. the
+          // Reviews or Deals content) is on screen while we spotlight the tab.
+          // Radix Tabs activate on mousedown (button 0), not a bare .click().
+          el.dispatchEvent(
+            new MouseEvent('mousedown', { bubbles: true, cancelable: true, button: 0 })
+          )
+          el.dispatchEvent(
+            new MouseEvent('mouseup', { bubbles: true, cancelable: true, button: 0 })
+          )
+          el.click()
         }
         beginReveal()
         return true

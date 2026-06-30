@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import React from 'react'
 import { OnboardingTour, ONBOARDING_KEY, TOUR_STEPS } from '../OnboardingTour'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 
 const TOUR_STEP_KEY = 'pulse_tour_step'
 const TOUR_BUSINESS_KEY = 'pulse_tour_business'
@@ -403,6 +404,41 @@ describe('OnboardingTour (guided walkthrough)', () => {
 
     expect(screen.getByText('Grab deals & coupons')).toBeInTheDocument()
     expect(screen.getByText(/unique code/i)).toBeInTheDocument()
+  })
+
+  it('activates the real Radix deals tab so its panel opens', async () => {
+    // Render a real Radix Tabs (default = reviews) alongside the tour. The
+    // deals step must actually switch it to the Deals panel — not merely fire
+    // an event — so this guards the real activation contract (Radix needs
+    // mousedown with button 0, which a bare .click() never delivered).
+    sessionStorage.setItem(TOUR_STEP_KEY, '7') // deals
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, '/business/onboarding-demo')
+    render(
+      <>
+        <Tabs defaultValue="reviews">
+          <TabsList>
+            <TabsTrigger value="reviews" data-tour="business-reviews">
+              Reviews
+            </TabsTrigger>
+            <TabsTrigger value="deals" data-tour="business-deals">
+              Deals
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="reviews">reviews-panel</TabsContent>
+          <TabsContent value="deals">deals-panel</TabsContent>
+        </Tabs>
+        <OnboardingTour />
+      </>
+    )
+    await settleStep()
+
+    // Inactive Radix TabsContent is unmounted, so the deals panel appearing
+    // (and the reviews panel disappearing) proves the tab really switched.
+    expect(screen.getByText('deals-panel')).toBeInTheDocument()
+    expect(screen.queryByText('reviews-panel')).not.toBeInTheDocument()
+    expect(
+      document.querySelector('[data-tour="business-deals"]')?.getAttribute('data-state')
+    ).toBe('active')
   })
 
   it('opens the assistant and spotlights its live panel on the chatbot step', async () => {
