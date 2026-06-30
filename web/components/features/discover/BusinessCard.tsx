@@ -34,7 +34,7 @@ import { Button } from '@/components/ui/button'
 import { NavLink } from '@/components/ui/nav-link'
 import { AnimatedSection } from '@/components/features/home/AnimatedSection'
 import { calculateDistance, formatDistance } from '@/lib/location'
-import { formatTagLabel } from '@/lib/business/display'
+import { formatTagLabel, buildBusinessPhotoUrl } from '@/lib/business/display'
 import { toast } from 'sonner'
 
 import { useAuth } from '@/components/providers/AuthProvider'
@@ -128,9 +128,13 @@ function BusinessImage({
   business: BusinessWithCategory
   priority?: boolean
 }) {
-  // Get the first photo URL from the business
-  const photos = business.photos as string[] | unknown
-  const photoUrl = Array.isArray(photos) && photos.length > 0 ? photos[0] : null
+  // Get the first photo URL from the business — photos may be strings or
+  // {photo_reference, height, width} objects from Google Places.
+  const photos = business.photos as unknown[] | unknown
+  const firstPhoto = Array.isArray(photos) && photos.length > 0 ? photos[0] : null
+  const photoUrl = firstPhoto
+    ? buildBusinessPhotoUrl(firstPhoto as string | { photo_reference?: string | null })
+    : null
 
   const categoryIcon = business.category?.icon || '🏪'
 

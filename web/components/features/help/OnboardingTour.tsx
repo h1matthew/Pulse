@@ -307,6 +307,11 @@ export function OnboardingTour() {
   const [revealed, setRevealed] = useState(false)
   /** The user genuinely tried the spotlighted control on this step */
   const [interacted, setInteracted] = useState(false)
+  /** A Radix Dialog (e.g. the receipt check-in modal) is open — pause the
+   *  tour overlay so it doesn't overlap the dialog while the user demonstrates
+   *  the real flow (snap receipt, verify, screenshot). The tour reappears when
+   *  the dialog closes. */
+  const [dialogBlocking, setDialogBlocking] = useState(false)
   const targetRef = useRef<HTMLElement | null>(null)
   const cardRef = useRef<HTMLDivElement | null>(null)
   /** Tracks whether the card was placed above or below the hole so we stick
@@ -699,6 +704,29 @@ export function OnboardingTour() {
     return () => w.closePulseAssistant?.()
   }, [active, stepIndex])
 
+  // Detect a Radix Dialog opening (e.g. the receipt check-in modal opened from
+  // the spotlighted Check In button) and suppress the tour overlay while it's
+  // open. Without this the dimmer panels and the step card sit on top of the
+  // dialog, making it impossible to actually perform the check-in demo. The
+  // tour card itself is not a Radix dialog (no data-slot="dialog-content"), so
+  // it never trips this gate.
+  useEffect(() => {
+    if (!active) return
+    if (typeof MutationObserver === 'undefined') return
+    const queryOpenDialog = () =>
+      document.querySelector('[data-slot="dialog-content"][data-state="open"]') != null
+    const sync = () => setDialogBlocking(queryOpenDialog())
+    sync()
+    const observer = new MutationObserver(sync)
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-state'],
+    })
+    return () => observer.disconnect()
+  }, [active])
+
   if (!active) return null
 
   const isCentered = !step.target
@@ -719,7 +747,13 @@ export function OnboardingTour() {
     // The root layer must NOT catch clicks: the spotlight hole has to stay
     // truly open so the user can click and refocus the real control under it.
     // Only the dim panels and the card opt back into pointer events.
+    // While a Radix Dialog is open (dialogBlocking), everything inside is
+    // suppressed so the tour never overlaps the modal the user is interacting
+    // with — the root stays mounted so the per-frame tracker and refs persist
+    // and the card snaps back to its spot once the dialog closes.
     <div ref={rootRef} className="pointer-events-none fixed inset-0 z-120" data-tour-overlay>
+      {dialogBlocking ? null : (
+        <>
       {/* Dimmer: 4 panels around the spotlight hole so the target itself stays
           fully interactive (click the card, press the real buttons). Each
           panel sizes itself from the --tour-* hole vars, which the tracker
@@ -826,8 +860,10 @@ export function OnboardingTour() {
             </Button>
           </div>
         </div>
-      </div>  {/* card */}
-      </div>  {/* wrapper */}
+      </div>
+      </div>
+        </>
+      )}
     </div>
   )
 }

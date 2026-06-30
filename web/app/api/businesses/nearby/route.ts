@@ -702,21 +702,16 @@ export async function GET(request: Request) {
           }
         }
       } else {
-        // No category filter: fetch Google across categories for quality data
-        // with photos/ratings, plus Overpass for sheer volume and coverage.
-        const diverseCategories = Object.keys(CATEGORY_GOOGLE_TYPES)
-        const fetchPromises: Promise<GooglePlaceResult[]>[] = [overpassPromise]
-        for (const cat of diverseCategories) {
-          fetchPromises.push(fetchFromGooglePlaces(location, radius, cat))
-        }
-        const allResults = await Promise.all(fetchPromises)
+        // No category filter: single unfiltered Google call + Overpass for volume.
+        const [googleResults, osmResults] = await Promise.all([
+          fetchFromGooglePlaces(location, radius),
+          overpassPromise,
+        ])
         const seen = new Set<string>()
-        for (const batch of allResults) {
-          for (const p of batch) {
-            if (p.id && !seen.has(p.id)) {
-              seen.add(p.id)
-              places.push(p)
-            }
+        for (const p of [...googleResults, ...osmResults]) {
+          if (p.id && !seen.has(p.id)) {
+            seen.add(p.id)
+            places.push(p)
           }
         }
       }
@@ -794,9 +789,14 @@ export async function GET(request: Request) {
       })
     })
 
-    // Inject demo business when demo mode is active
+    // Inject demo business when demo mode is active, deduplicating by name
     if (isDemoContentEnabled()) {
       const demoBiz = getDemoBusiness()
+      const demoName = demoBiz.name.toLowerCase()
+      const dupeIdx = withinRadius.findIndex(
+        b => b.id !== demoBiz.id && b.name?.toLowerCase().includes('la villita')
+      )
+      if (dupeIdx >= 0) withinRadius.splice(dupeIdx, 1)
       const alreadyPresent = withinRadius.some(b => b.id === demoBiz.id)
       if (!alreadyPresent) {
         withinRadius.unshift(demoBiz)
