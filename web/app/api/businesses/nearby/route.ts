@@ -583,11 +583,9 @@ async function syncPlacesToDatabase(
   }
 }
 
-// Cap markers returned to the client. The map only needs the closest results;
-// returning every row in a dense metro (thousands) bloats the payload and makes
-// the map laggy (each result is a DOM marker). 250 keeps coverage while staying
-// smooth to pan/zoom.
-const MAX_NEARBY_RESULTS = 250
+// Cap markers returned to the client. 1000 ensures dense metros show full
+// coverage while staying manageable for the clustered map.
+const MAX_NEARBY_RESULTS = 1000
 
 // Great-circle distance in meters between two coordinates.
 function haversineMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {

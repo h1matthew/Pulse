@@ -98,11 +98,11 @@ const US_CITIES: CityTarget[] = [
  */
 const DEFAULT_PRIORITY_SLUGS = ['san-antonio']
 
-// Grid spacing for priority cities: rings=1 → 3×3 centers, ~8km apart, each
-// searched at a 6km radius. Covers roughly a 22km × 22km area with overlap.
-const PRIORITY_GRID_RINGS = 1
-const PRIORITY_GRID_STEP_METERS = 8000
-const PRIORITY_SEARCH_RADIUS = 6000
+// Grid spacing for priority cities: rings=2 → 5×5 centers, ~6km apart, each
+// searched at a 5km radius. Covers roughly a 30km × 30km area with dense overlap.
+const PRIORITY_GRID_RINGS = 2
+const PRIORITY_GRID_STEP_METERS = 6000
+const PRIORITY_SEARCH_RADIUS = 5000
 
 // Same category → Google place types mapping as the live sync pipeline
 const CATEGORY_GOOGLE_TYPES: Record<string, string[]> = {

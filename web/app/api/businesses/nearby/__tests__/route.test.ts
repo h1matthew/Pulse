@@ -125,9 +125,9 @@ describe("GET /api/businesses/nearby", () => {
     expect(json.every((b: { id: string }) => b.id.startsWith("near-"))).toBe(true);
   });
 
-  it("returns the nearest results first and caps the count at 250", async () => {
-    // 600 businesses at strictly increasing distance from the center.
-    const dataset = Array.from({ length: 600 }).map((_, i) => ({
+  it("returns the nearest results first and caps the count at 1000", async () => {
+    // 1200 businesses at strictly increasing distance from the center.
+    const dataset = Array.from({ length: 1200 }).map((_, i) => ({
       id: `biz-${i}`,
       name: `Spot ${i}`,
       latitude: 37.77 + i * 0.00005, // monotonic distance, all within radius
@@ -145,14 +145,14 @@ describe("GET /api/businesses/nearby", () => {
     const json = await response.json();
 
     // Capped at MAX_NEARBY_RESULTS.
-    expect(json).toHaveLength(250);
+    expect(json).toHaveLength(1000);
     // Nearest first.
     expect(json[0].id).toBe("biz-0");
     // The farther results were dropped by distance, not an arbitrary slice.
     const ids = new Set(json.map((b: { id: string }) => b.id));
-    expect(ids.has("biz-249")).toBe(true);
-    expect(ids.has("biz-250")).toBe(false);
-    expect(ids.has("biz-599")).toBe(false);
+    expect(ids.has("biz-999")).toBe(true);
+    expect(ids.has("biz-1000")).toBe(false);
+    expect(ids.has("biz-1199")).toBe(false);
   });
 
   it("requests meat-market place types when refreshing food and drink results", async () => {

@@ -80,7 +80,7 @@ const RADIUS_OPTIONS = [
   { value: 50, label: '50 mi' },
 ]
 const MAX_RADIUS_MILES = 50
-const DEFAULT_RADIUS_MILES = 5
+const DEFAULT_RADIUS_MILES = 10
 const MILES_TO_METERS = 1609.34
 
 // Default location: San Antonio, TX (Pulse seeds this metro most densely)
