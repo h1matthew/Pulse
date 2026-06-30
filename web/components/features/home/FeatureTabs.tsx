@@ -18,7 +18,8 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { NavLink } from '@/components/ui/nav-link'
 import { Button } from '@/components/ui/button'
-import { useLocation, calculateDistance, formatDistance } from '@/hooks/useLocation'
+import { calculateDistance, formatDistance } from '@/hooks/useLocation'
+import { getCachedLocation } from '@/lib/location'
 import { useCityName } from '@/hooks/useCityName'
 import { useNearbyBusinesses } from '@/hooks/useBusinesses'
 import { useIsBookmarked, useToggleBookmark } from '@/hooks/useBookmarks'
@@ -210,7 +211,7 @@ function NearbyRows() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  const { location } = useLocation()
+  const location = getCachedLocation()
   const effectiveLocation = location ?? DEFAULT_LOCATION
   const { data, isLoading } = useNearbyBusinesses(effectiveLocation, RADIUS_METERS)
 
@@ -234,7 +235,7 @@ export function FeatureTabs() {
   const content = SNAPSHOTS[active]
   const Icon = ICONS[active]
 
-  const { location } = useLocation()
+  const location = getCachedLocation()
   const cityName = useCityName(location)
 
   return (

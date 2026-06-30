@@ -6,17 +6,21 @@ import { render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
 const mockUseNearby = vi.fn()
-const mockUseLocation = vi.fn()
+const mockGetCachedLocation = vi.fn()
 
 vi.mock('@/hooks/useBusinesses', () => ({
   useNearbyBusinesses: (...args: unknown[]) => mockUseNearby(...args),
 }))
 
 vi.mock('@/hooks/useLocation', () => ({
-  useLocation: () => mockUseLocation(),
   // Deterministic distance/format helpers
   calculateDistance: () => 1.2,
   formatDistance: (mi: number) => `${mi} mi`,
+}))
+
+vi.mock('@/lib/location', () => ({
+  getCachedLocation: () => mockGetCachedLocation(),
+  reverseGeocodeCity: vi.fn(async () => null),
 }))
 
 // NavLink relies on the Next router, which isn't mounted in unit tests.
@@ -72,7 +76,7 @@ const ROWS: Row[] = [
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockUseLocation.mockReturnValue({ location: null })
+  mockGetCachedLocation.mockReturnValue(null)
   mockUseNearby.mockReturnValue({ data: ROWS, isLoading: false })
 })
 
@@ -113,7 +117,7 @@ describe('HeroPreview', () => {
   })
 
   it('labels the location "Near you" when the visitor shared their location', async () => {
-    mockUseLocation.mockReturnValue({ location: { lat: 34.0, lng: -117.8 } })
+    mockGetCachedLocation.mockReturnValue({ lat: 34.0, lng: -117.8 })
     render(<HeroPreview />)
     await waitFor(() => expect(screen.getByText('Near you')).toBeInTheDocument())
   })

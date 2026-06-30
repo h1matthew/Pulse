@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useCommunityPulse } from '@/hooks/useImpact'
-import { useLocation } from '@/hooks/useLocation'
+import { getCachedLocation } from '@/lib/location'
 import { useNearbyBusinesses } from '@/hooks/useBusinesses'
 import { isChainBusiness } from '@/lib/business/classify'
 import { Card, CardContent } from '@/components/ui/card'
@@ -169,7 +169,7 @@ function positiveOr(value: number | undefined | null, fallback: number): number 
  */
 export function HeroStats() {
   const { data: pulse, isLoading: pulseLoading } = useCommunityPulse()
-  const { location } = useLocation()
+  const location = getCachedLocation()
   const effectiveLocation = location ?? DEFAULT_LOCATION
   const { data: nearby, isLoading: nearbyLoading } = useNearbyBusinesses(
     effectiveLocation,

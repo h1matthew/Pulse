@@ -20,15 +20,15 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock the hooks
 const mockUseCommunityPulse = vi.fn()
-const mockUseLocation = vi.fn()
+const mockGetCachedLocation = vi.fn()
 const mockUseNearby = vi.fn()
 
 vi.mock('@/hooks/useImpact', () => ({
   useCommunityPulse: () => mockUseCommunityPulse(),
 }))
 
-vi.mock('@/hooks/useLocation', () => ({
-  useLocation: () => mockUseLocation(),
+vi.mock('@/lib/location', () => ({
+  getCachedLocation: () => mockGetCachedLocation(),
 }))
 
 vi.mock('@/hooks/useBusinesses', () => ({
@@ -74,7 +74,7 @@ describe('HeroStats', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUseCommunityPulse.mockReturnValue({ data: mockPulseData, isLoading: false })
-    mockUseLocation.mockReturnValue({ location: null })
+    mockGetCachedLocation.mockReturnValue(null)
     mockUseNearby.mockReturnValue({ data: NEARBY, isLoading: false })
   })
 

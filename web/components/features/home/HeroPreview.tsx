@@ -12,7 +12,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Clock, MapPin, Star } from 'lucide-react'
-import { useLocation, calculateDistance, formatDistance } from '@/hooks/useLocation'
+import { calculateDistance, formatDistance } from '@/hooks/useLocation'
+import { getCachedLocation } from '@/lib/location'
 import { useCityName } from '@/hooks/useCityName'
 import { useNearbyBusinesses } from '@/hooks/useBusinesses'
 import { isOpenNow } from '@/lib/business/hours'
@@ -93,7 +94,7 @@ export function HeroPreview() {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  const { location } = useLocation()
+  const location = getCachedLocation()
   const effectiveLocation = location ?? DEFAULT_LOCATION
   const cityName = useCityName(location)
   const { data, isLoading } = useNearbyBusinesses(effectiveLocation, RADIUS_METERS)

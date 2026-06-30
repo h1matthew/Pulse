@@ -14,13 +14,13 @@ function toTitleCase(name: string): string {
 }
 
 /**
- * Hero headline city — resolves the visitor's city from their location and
- * renders it in the brand gradient, falling back to "Your City".
+ * Hero headline city — resolves the visitor's city from their explicitly
+ * chosen location (cached by the Discover page's location picker) and renders
+ * it in the brand gradient, falling back to "San Antonio".
  *
- * Resolution order: cached city name → cached coordinates (set by the
- * Discover page) → GPS read. The GPS read may show the browser's permission
- * prompt on first visit; if the user has denied location, it is skipped and
- * the default stays.
+ * The homepage never auto-reads live GPS, so the hero is deterministic for
+ * first-time visitors and presentations: it shows San Antonio unless the
+ * visitor has explicitly set a different location via Discover.
  */
 export function HeroCityName() {
   const [city, setCity] = useState(DEFAULT_CITY)
@@ -56,42 +56,12 @@ export function HeroCityName() {
       // localStorage not available
     }
 
+    // Use the visitor's explicitly chosen location (set via Discover), if any.
     const cachedLocation = getCachedLocation()
     if (cachedLocation) {
       void lookup(cachedLocation)
-      return () => {
-        cancelled = true
-      }
     }
-
-    // GPS read — skipped only when the user has explicitly denied location
-    const readPosition = () => {
-      if (cancelled || !navigator.geolocation) return
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          if (cancelled) return
-          void lookup({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          })
-        },
-        () => {
-          // Denied or unavailable — keep the default
-        },
-        { maximumAge: CITY_CACHE_TTL, timeout: 10000 }
-      )
-    }
-
-    if (navigator.permissions?.query) {
-      navigator.permissions
-        .query({ name: 'geolocation' })
-        .then((status) => {
-          if (status.state !== 'denied') readPosition()
-        })
-        .catch(readPosition)
-    } else {
-      readPosition()
-    }
+    // No cached location → keep the San Antonio default.
 
     return () => {
       cancelled = true

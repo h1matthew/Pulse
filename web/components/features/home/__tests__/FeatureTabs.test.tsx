@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const mockUseNearby = vi.fn();
-const mockUseLocation = vi.fn();
+const mockGetCachedLocation = vi.fn();
 const mockMutateAsync = vi.fn();
 const mockIsBookmarked = vi.fn();
 const mockToastSuccess = vi.fn();
@@ -30,10 +30,13 @@ vi.mock("@/hooks/useBusinesses", () => ({
 }));
 
 vi.mock("@/hooks/useLocation", () => ({
-  useLocation: () => mockUseLocation(),
   // Deterministic distance/format helpers
   calculateDistance: () => 1.2,
   formatDistance: (mi: number) => `${mi} mi`,
+}));
+
+vi.mock("@/lib/location", () => ({
+  getCachedLocation: () => mockGetCachedLocation(),
 }));
 
 // Deterministic open-now: businesses tagged "OPEN" in their hours are open.
@@ -91,7 +94,7 @@ const ROWS: Row[] = [
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseLocation.mockReturnValue({ location: null });
+  mockGetCachedLocation.mockReturnValue(null);
   mockUseNearby.mockReturnValue({ data: ROWS, isLoading: false });
   mockIsBookmarked.mockReturnValue(false);
   mockMutateAsync.mockResolvedValue({ bookmarked: true, local: true });
