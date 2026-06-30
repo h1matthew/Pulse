@@ -174,8 +174,16 @@ export default function BusinessDetailPage({
   // Submit review with a specific CAPTCHA token (called directly from CAPTCHA onVerify)
   const submitReviewWithToken = async (token: string) => {
     if (!business?.id || !user) return;
+    const isDemoBusiness = business.id.startsWith('demo-') || business.id === 'onboarding-demo';
     setIsSubmittingReview(true);
     try {
+      if (isDemoBusiness) {
+        toast.success("Review submitted", { description: "Thank you for sharing your experience!" });
+        setReviewText("");
+        setReviewRating(5);
+        setReviewCaptchaToken(null);
+        return;
+      }
       const response = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -317,7 +325,17 @@ export default function BusinessDetailPage({
       return;
     }
 
+    const isDemoBusiness = business.id.startsWith('demo-') || business.id === 'onboarding-demo';
+
     try {
+      if (isDemoBusiness) {
+        toast.success("Review submitted", { description: "Thank you for sharing your experience!" });
+        setReviewText("");
+        setReviewRating(5);
+        setReviewCaptchaToken(null);
+        return;
+      }
+
       const response = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
