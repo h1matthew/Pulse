@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AppBackground } from "@/components/layout/AppBackground";
 import { QueryProvider } from "@/components/providers/QueryProvider";
@@ -12,14 +13,6 @@ import { ChatWidget } from "@/components/features/assistant";
 import { OnboardingTour } from "@/components/features/help/OnboardingTour";
 import "katex/dist/katex.min.css";
 import "./globals.css";
-
-const fallbackFontVars: CSSProperties = {
-  // Local font stack to avoid network font fetch during build/demo.
-  ["--font-geist-sans" as string]:
-    'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
-  ["--font-geist-mono" as string]:
-    'ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace',
-};
 
 // No-flash theme init: applies the saved theme class before the page paints.
 // Server-rendered (not inside a client component), so it does not trigger
@@ -41,10 +34,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <body
         className="antialiased"
-        style={fallbackFontVars}
         suppressHydrationWarning
       >
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
