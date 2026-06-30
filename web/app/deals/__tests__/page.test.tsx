@@ -262,7 +262,7 @@ describe("DealsPage", () => {
       render(<DealsPage />);
 
       const eyebrow = screen.getByText(/^save local$/i);
-      expect(eyebrow.classList.contains("font-mono")).toBe(true);
+      expect(eyebrow.classList.contains("font-semibold")).toBe(true);
       expect(eyebrow.classList.contains("uppercase")).toBe(true);
       expect(eyebrow.tagName).not.toBe("H1");
     });

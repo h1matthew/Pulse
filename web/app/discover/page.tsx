@@ -141,7 +141,7 @@ function FilterMenuTrigger({ active, ariaLabel, children, className, ...props }:
 
 function FilterMenuLabel({ children }: { children: ReactNode }) {
   return (
-    <DropdownMenuLabel className="px-2 pb-1 pt-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+    <DropdownMenuLabel className="px-2 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
       {children}
     </DropdownMenuLabel>
   );
@@ -883,15 +883,15 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
         </h1>
         <div className="flex shrink-0 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card text-xs shadow-sm">
           <div className="px-2.5 py-1">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Found</p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Found</p>
             <p className="font-semibold tabular-nums">{resultCountLabel}</p>
           </div>
           <div className="px-2.5 py-1">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Avg ★</p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Avg ★</p>
             <p className="font-semibold tabular-nums text-muted-foreground">{averageVisibleRating}</p>
           </div>
           <div className="px-2.5 py-1">
-            <p className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Radius</p>
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Radius</p>
             <p className="font-semibold tabular-nums text-muted-foreground">{radiusMiles} mi</p>
           </div>
         </div>
@@ -1099,10 +1099,10 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
 
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2 text-sm">
               <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Location</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Location</span>
               <span className="truncate font-medium">{locationControlLabel}</span>
               <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" onClick={() => setChangeLocationOpen(true)}>Change</Button>
-              <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Within</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Within</span>
               <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
                 <SelectTrigger className="h-8 w-[5.5rem] rounded-full" aria-label="Search radius">
                   <SelectValue />
@@ -1132,7 +1132,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
           </div>
           <div className="w-full sm:w-40">
             <div className="mb-1 flex justify-between text-xs">
-              <span className="font-mono text-[10px] font-medium uppercase tracking-widest text-muted-foreground">Progress</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Progress</span>
               <span className="font-mono font-medium tabular-nums">{detail.progress.current_count}/{detail.progress.mission.target_count}</span>
             </div>
             <Progress value={detail.percentageComplete} className="h-1.5" />
@@ -1145,7 +1145,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const resultsList = hasLocation ? (
     <section aria-label="Business results" aria-live="polite" aria-atomic="false" className="px-4 pb-6 pt-4">
       <div className="mb-3 flex items-baseline gap-3">
-        <h2 className="font-mono text-xs font-semibold uppercase tracking-[0.18em]">Results</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-[0.18em]">Results</h2>
         <span className="h-px flex-1 self-center bg-border" aria-hidden="true" />
         <p className="text-xs text-muted-foreground">{sanitizedSearch ? `"${sanitizedSearch}"` : categoryLabel}</p>
       </div>

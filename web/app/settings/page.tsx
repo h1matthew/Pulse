@@ -367,7 +367,7 @@ export default function SettingsPage() {
         <div className="mx-auto max-w-4xl px-6">
           <AnimatedSection animation="fade-up">
             <div className="mb-8">
-              <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Your account
               </p>
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Settings</h1>

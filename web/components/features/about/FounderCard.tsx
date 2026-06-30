@@ -19,7 +19,7 @@ export function FounderCard({ founder, index }: FounderCardProps) {
   return (
     <div className="rounded-lg border border-border bg-card p-6 transition-colors hover:border-primary/30">
       <p
-        className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground"
+        className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
         aria-hidden="true"
       >
         {String(index + 1).padStart(2, '0')}

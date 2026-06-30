@@ -241,7 +241,7 @@ export function FeatureTabs() {
   return (
     <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
       <div>
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">Local snapshot</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Local snapshot</p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           Today nearby
         </h2>

@@ -414,7 +414,7 @@ export default function MissionsPage() {
           {/* Header */}
           <AnimatedSection animation="fade-up">
             <div className="mb-8 border-b border-border pb-6">
-              <p className="mb-2 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Challenges &amp; rewards
               </p>
               <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">

@@ -147,7 +147,7 @@ export default async function CategoriesPage() {
           {/* Page header */}
           <AnimatedSection animation="fade-up">
             <div className="mb-10 border-b border-border pb-8">
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Browse the directory
               </p>
               <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">

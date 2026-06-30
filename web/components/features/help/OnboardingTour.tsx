@@ -805,7 +805,7 @@ export function OnboardingTour() {
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <PulseLogo className="h-6 w-6" />
-            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               Step {stepIndex + 1} of {TOUR_STEPS.length}
             </p>
           </div>

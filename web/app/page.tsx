@@ -53,7 +53,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
           <AnimatedSection animation="fade-up">
             <div className="max-w-2xl">
-              <p className="mb-5 font-mono text-xs uppercase tracking-[0.18em] text-muted-foreground">Pulse local guide</p>
+              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Pulse local guide</p>
               <h1 className="text-balance text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
                 Feel the <span className="gradient-text">Pulse</span> of <HeroCityName />
               </h1>

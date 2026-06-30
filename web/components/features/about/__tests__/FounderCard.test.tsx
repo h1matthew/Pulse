@@ -26,12 +26,12 @@ describe('FounderCard', () => {
     expect(screen.getByText('Co-founder')).toBeInTheDocument()
   })
 
-  it('renders a zero-padded mono index from the index prop', () => {
+  it('renders a zero-padded index from the index prop', () => {
     const { rerender } = render(<FounderCard founder={FOUNDER} index={0} />)
-    expect(screen.getByText('01')).toHaveClass('font-mono')
+    expect(screen.getByText('01')).toHaveClass('font-semibold')
 
     rerender(<FounderCard founder={FOUNDER} index={2} />)
-    expect(screen.getByText('03')).toHaveClass('font-mono')
+    expect(screen.getByText('03')).toHaveClass('font-semibold')
   })
 
   it('uses card surface tokens with a hairline border', () => {

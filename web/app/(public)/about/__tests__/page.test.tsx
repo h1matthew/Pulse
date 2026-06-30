@@ -121,11 +121,11 @@ describe('AboutPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the mono eyebrow labels for each section', () => {
+  it('renders the eyebrow labels for each section', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    expect(screen.getByText('About Pulse')).toHaveClass('font-mono')
-    expect(screen.getByText('The Founders')).toHaveClass('font-mono')
-    expect(screen.getByText('Our Story')).toHaveClass('font-mono')
+    expect(screen.getByText('About Pulse')).toHaveClass('font-semibold')
+    expect(screen.getByText('The Founders')).toHaveClass('font-semibold')
+    expect(screen.getByText('Our Story')).toHaveClass('font-semibold')
   })
 
   it('renders the founder count as a mono stat', () => {
