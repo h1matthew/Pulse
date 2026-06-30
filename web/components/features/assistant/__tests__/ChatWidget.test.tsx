@@ -3,7 +3,7 @@
  */
 import type { CSSProperties, ReactNode } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { ChatWidget } from "../ChatWidget";
 
 interface MotionDivProps {
@@ -104,6 +104,26 @@ describe("ChatWidget", () => {
 
     fireEvent.keyDown(window, { key: "Escape" });
 
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("exposes openPulseAssistant/closePulseAssistant so the onboarding tour can drive it", () => {
+    render(<ChatWidget />);
+    const w = window as Window & {
+      openPulseAssistant?: () => void;
+      closePulseAssistant?: () => void;
+    };
+
+    expect(typeof w.openPulseAssistant).toBe("function");
+    expect(typeof w.closePulseAssistant).toBe("function");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    act(() => w.openPulseAssistant!());
+    expect(
+      screen.getByRole("dialog", { name: "Pulse Assistant" })
+    ).toBeInTheDocument();
+
+    act(() => w.closePulseAssistant!());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 

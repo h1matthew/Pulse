@@ -35,6 +35,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useHydrationSafeQuery } from '@/hooks/useHydrationSafeQuery'
 import { useAnnouncer } from '@/hooks/useAnnouncer'
 import type { Business, BusinessWithCategory, BusinessWithDetails, BusinessSearchFilters, LatLng } from '@/types/business'
+import { TOUR_DEMO_BUSINESS_ID, getTourDemoBusiness } from '@/lib/demo/demo-business'
 
 // ============================================================================
 // Query Keys
@@ -82,6 +83,11 @@ async function fetchBusinesses(
 }
 
 async function fetchBusiness(id: string): Promise<BusinessWithDetails> {
+  // The onboarding tour opens a dedicated fake business (always stocked with
+  // deals + reviews) so its business steps never look empty. Serve it locally
+  // without touching the API/database.
+  if (id === TOUR_DEMO_BUSINESS_ID) return getTourDemoBusiness()
+
   const response = await fetch(`/api/businesses/${id}`)
   if (!response.ok) throw new Error('Failed to fetch business')
   return response.json()

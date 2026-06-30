@@ -127,6 +127,22 @@ export function ChatWidget() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen]);
 
+  // Let the onboarding tour open/close the assistant so its "Ask the AI
+  // assistant" step can spotlight the live panel and let the user try it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const w = window as Window & {
+      openPulseAssistant?: () => void;
+      closePulseAssistant?: () => void;
+    };
+    w.openPulseAssistant = () => setIsOpen(true);
+    w.closePulseAssistant = () => setIsOpen(false);
+    return () => {
+      delete w.openPulseAssistant;
+      delete w.closePulseAssistant;
+    };
+  }, []);
+
   const handleSend = async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
     if (!text || isLoading) return;
@@ -247,6 +263,7 @@ export function ChatWidget() {
             transition={{ duration: 0.2 }}
             className="fixed bottom-6 right-6 z-50 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)]"
             style={{ width: size.width, height: size.height }}
+            data-tour="chat-panel"
           >
             <div
               role="dialog"

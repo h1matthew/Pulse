@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, BarChart3, Check, PartyPopper, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { TOUR_DEMO_BUSINESS_PATH } from '@/lib/demo/demo-business'
 import { Button } from '@/components/ui/button'
 import { PulseLogo } from '@/components/ui/PulseLogo'
 import { useAccessibility } from '@/components/providers/AccessibilityProvider'
@@ -69,6 +70,9 @@ interface GuidedStep {
   interactedBody?: string
   /** Move focus into the target (e.g. the search field) so they can type */
   focusTarget?: boolean
+  /** Open the Pulse Assistant chat when this step starts (and close it on
+   *  exit) so the step can spotlight the live panel and let the user try it. */
+  opensChat?: boolean
   nextLabel?: string
 }
 
@@ -153,8 +157,9 @@ const TOUR_STEPS: GuidedStep[] = [
   {
     id: 'assistant',
     title: 'Ask the AI assistant',
-    body: 'Stuck or curious? The Pulse Assistant sits in the corner of every page — ask for recommendations or how anything works, anytime.',
-    target: '[data-tour="chat-launcher"]',
+    body: "This is the Pulse Assistant — tap a suggested question or type your own to see it in action. It's one tap away on every page.",
+    target: '[data-tour="chat-panel"]',
+    opensChat: true,
   },
   {
     id: 'leaderboard',
@@ -531,12 +536,17 @@ export function OnboardingTour() {
       }
     }
 
-    const advanceFromClick = () => {
+    const advanceFromClick = (event: Event) => {
       if (cancelled) return
-      // Remember the opened business so the business-page steps (reviews,
-      // check-in, bookmark) can navigate back here if the tour later resumes
-      // on a different page.
-      rememberTourBusiness(targetRef.current?.querySelector('a')?.getAttribute('href'))
+      // Open the tour's dedicated demo business instead of whatever real
+      // business this card links to — the demo always has deals + reviews, so
+      // the business-page steps never look empty. Stop the card's own
+      // navigation and route to the demo, remembering it so the business-page
+      // steps (reviews, check-in, bookmark) resolve there on resume too.
+      event.preventDefault()
+      event.stopPropagation()
+      rememberTourBusiness(TOUR_DEMO_BUSINESS_PATH)
+      routerRef.current.push(TOUR_DEMO_BUSINESS_PATH)
       goToStepRef.current(stepIndex + 1)
     }
     const markInteracted = () => {
@@ -658,6 +668,18 @@ export function OnboardingTour() {
   useEffect(() => {
     if (active && !TOUR_STEPS[stepIndex].focusTarget)
       cardRef.current?.focus({ preventScroll: true })
+  }, [active, stepIndex])
+
+  // The assistant step opens the live Pulse Assistant so the user can try it;
+  // closing it on exit keeps the panel from lingering over the next step.
+  useEffect(() => {
+    if (!active || !TOUR_STEPS[stepIndex].opensChat) return
+    const w = window as Window & {
+      openPulseAssistant?: () => void
+      closePulseAssistant?: () => void
+    }
+    w.openPulseAssistant?.()
+    return () => w.closePulseAssistant?.()
   }, [active, stepIndex])
 
   if (!active) return null

@@ -299,10 +299,11 @@ describe('OnboardingTour (guided walkthrough)', () => {
     expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
   })
 
-  it('remembers the opened business when the card is clicked', async () => {
+  it('opens the dedicated demo business when the card is clicked', async () => {
     mountAnchors()
-    // The real card wraps a link to the business; give the anchor one so the
-    // tour can capture which business was opened.
+    // The real card wraps a link to a real business, but the tour always opens
+    // its dedicated demo business (guaranteed deals + reviews) instead, so the
+    // card's own navigation is suppressed.
     const card = document.querySelector('[data-tour="business-card"]')!
     const link = document.createElement('a')
     link.setAttribute('href', '/business/xyz-789')
@@ -323,7 +324,8 @@ describe('OnboardingTour (guided walkthrough)', () => {
     fireEvent.click(card)
     await settleStep()
 
-    expect(sessionStorage.getItem(TOUR_BUSINESS_KEY)).toBe('/business/xyz-789')
+    expect(sessionStorage.getItem(TOUR_BUSINESS_KEY)).toBe('/business/onboarding-demo')
+    expect(mockPush).toHaveBeenCalledWith('/business/onboarding-demo')
     expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
   })
 
@@ -403,14 +405,35 @@ describe('OnboardingTour (guided walkthrough)', () => {
     expect(screen.getByText(/unique code/i)).toBeInTheDocument()
   })
 
-  it('adds an AI assistant step pointing at the chat launcher', async () => {
-    mountAnchors()
+  it('opens the assistant and spotlights its live panel on the chatbot step', async () => {
+    // The step opens the chat via window.openPulseAssistant (exposed by the
+    // ChatWidget); mock it to mount the panel the step spotlights.
+    const w = window as Window & {
+      openPulseAssistant?: () => void
+      closePulseAssistant?: () => void
+    }
+    const openSpy = vi.fn(() => {
+      const panel = document.createElement('div')
+      panel.setAttribute('data-tour', 'chat-panel')
+      panel.id = 'mock-chat-panel'
+      document.body.appendChild(panel)
+    })
+    const closeSpy = vi.fn(() => {
+      document.getElementById('mock-chat-panel')?.remove()
+    })
+    w.openPulseAssistant = openSpy
+    w.closePulseAssistant = closeSpy
+
     sessionStorage.setItem(TOUR_STEP_KEY, '10') // assistant / chatbot
     render(<OnboardingTour />)
     await settleStep()
 
+    expect(openSpy).toHaveBeenCalled()
     expect(screen.getByText('Ask the AI assistant')).toBeInTheDocument()
     expect(screen.getByText(/Pulse Assistant/i)).toBeInTheDocument()
+
+    delete w.openPulseAssistant
+    delete w.closePulseAssistant
   })
 
   it('adds a leaderboard step that routes to the leaderboard page', async () => {
