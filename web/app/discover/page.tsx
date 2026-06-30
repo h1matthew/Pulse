@@ -767,6 +767,8 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
         return a.name.localeCompare(b.name)
       case 'distance':
       default:
+        // Featured businesses pinned above all others at similar distances
+        if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1
         // Distance sort: nearest first; businesses without coords sink to bottom
         if (location) {
           const distA = a.latitude && a.longitude
