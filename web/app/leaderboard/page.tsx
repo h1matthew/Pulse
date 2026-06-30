@@ -110,33 +110,33 @@ export default function LeaderboardPage() {
               <Card>
                 <CardContent className="p-4 text-center" suppressHydrationWarning>
                   <DollarSign className="h-5 w-5 text-primary mx-auto mb-1" />
-                  <p className="text-2xl font-bold">
+                  <div className="text-2xl font-bold">
                     {isLoading ? (
                       <Skeleton className="h-8 w-16 mx-auto" />
                     ) : (
                       `$${(entries.reduce((sum, e) => sum + e.dollars_kept_local, 0) / 1000).toFixed(0)}K`
                     )}
-                  </p>
+                  </div>
                   <p className="text-xs text-muted-foreground">Total Impact</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center" suppressHydrationWarning>
                   <Users className="h-5 w-5 text-chart-2 mx-auto mb-1" />
-                  <p className="text-2xl font-bold">
+                  <div className="text-2xl font-bold">
                     {isLoading ? (
                       <Skeleton className="h-8 w-16 mx-auto" />
                     ) : (
                       entries.length
                     )}
-                  </p>
+                  </div>
                   <p className="text-xs text-muted-foreground">Contributors</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center" suppressHydrationWarning>
                   <Trophy className="h-5 w-5 text-chart-3 mx-auto mb-1" />
-                  <p className="text-2xl font-bold">
+                  <div className="text-2xl font-bold">
                     {isLoading ? (
                       <Skeleton className="h-8 w-16 mx-auto" />
                     ) : entries.length > 0 ? (
@@ -144,7 +144,7 @@ export default function LeaderboardPage() {
                     ) : (
                       '0'
                     )}
-                  </p>
+                  </div>
                   <p className="text-xs text-muted-foreground">Top Score</p>
                 </CardContent>
               </Card>
