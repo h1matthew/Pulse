@@ -12,6 +12,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { cn } from "@/lib/utils";
+import 'katex/dist/katex.min.css';
 
 export interface AssistantChatMessage {
   id: string;

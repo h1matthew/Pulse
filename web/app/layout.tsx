@@ -9,9 +9,8 @@ import { AccessibilityProvider } from "@/components/providers/AccessibilityProvi
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Analytics } from "@vercel/analytics/next"
-import { ChatWidget } from "@/components/features/assistant";
+import { ChatWidgetLazy } from "@/components/features/assistant/ChatWidgetLazy";
 import { OnboardingTour } from "@/components/features/help/OnboardingTour";
-import "katex/dist/katex.min.css";
 import "./globals.css";
 
 // No-flash theme init: applies the saved theme class before the page paints.
@@ -59,7 +58,7 @@ export default function RootLayout({
                   </main>
                 <Toaster />
                 <Analytics />
-                <ChatWidget />
+                <ChatWidgetLazy />
                 <OnboardingTour />
                 </TooltipProvider>
               </AccessibilityProvider>

@@ -43,7 +43,6 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['three'],
   // Allow ngrok/cloudflared tunnels and LAN dev origins
   allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.io', '*.trycloudflare.com', '192.168.*.*'],
   images: {
@@ -108,20 +107,6 @@ const nextConfig: NextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=604800, stale-while-revalidate=86400',
-          },
-        ],
-      },
-      // 3D model caching
-      {
-        source: '/models/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          {
-            key: 'Content-Type',
-            value: 'model/gltf-binary',
           },
         ],
       },
