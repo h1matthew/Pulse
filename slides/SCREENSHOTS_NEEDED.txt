@@ -154,7 +154,7 @@ PRESENTATION_SCRIPT.txt — In the project root (Pulse/PRESENTATION_SCRIPT.txt)
 
 
 --------------------------------------------------------------------------------
-CHECKLIST BEFORE UPLOADING TO YOUR AI ASSISTANT
+CHECKLIST
 --------------------------------------------------------------------------------
 
 [ ] tsconfig.png
@@ -169,8 +169,3 @@ CHECKLIST BEFORE UPLOADING TO YOUR AI ASSISTANT
 [ ] readme-techstack.png
 [ ] logo.svg (already here)
 [ ] SLIDE_CONTENT.txt (already here)
-
-Upload this entire slides/ folder to your AI assistant and say:
-"Build me a Google Slides presentation using SLIDE_CONTENT.txt for the
-structure and speaker notes, and these screenshots for the visuals.
-Dark theme, teal accent color #0d9488, clean sans-serif font."
