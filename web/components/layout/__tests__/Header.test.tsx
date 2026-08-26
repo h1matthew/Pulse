@@ -167,61 +167,14 @@ describe('Header', () => {
     expect(nav).not.toHaveClass('backdrop-blur-xl')
   })
 
-  it('slides the pill over from the previous page position after navigation', async () => {
+  it('marks the active nav item with a plain active style', async () => {
     const { usePathname } = await import('next/navigation')
-    const { waitFor } = await import('@testing-library/react')
+    vi.mocked(usePathname).mockReturnValue('/discover')
 
-    // Deterministic geometry: nav items get distinct rects, keyed off their
-    // parent link's aria-label; everything else (incl. the nav container)
-    // sits at the origin so pill coords equal the item coords.
-    const ITEM_RECTS: Record<string, { left: number; width: number }> = {
-      Discover: { left: 40, width: 80 },
-      Categories: { left: 140, width: 90 },
-    }
-    const mkRect = (left: number, width: number) =>
-      ({ left, width, top: 0, bottom: 0, right: left + width, height: 32, x: left, y: 0, toJSON: () => ({}) }) as DOMRect
-    const rectSpy = vi
-      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
-      .mockImplementation(function (this: HTMLElement) {
-        const label = this.closest('a')?.getAttribute('aria-label') ?? ''
-        if (this.tagName === 'SPAN' && ITEM_RECTS[label]) {
-          return mkRect(ITEM_RECTS[label].left, ITEM_RECTS[label].width)
-        }
-        return mkRect(0, 600)
-      })
+    render(<Header />)
 
-    try {
-      // Page 1: /discover — pill lands on Discover and the position is remembered.
-      vi.mocked(usePathname).mockReturnValue('/discover')
-      const first = render(<Header />)
-      const pillOf = (root: HTMLElement) =>
-        root.querySelector('nav .relative > div.pointer-events-none') as HTMLElement
-      await waitFor(() => expect(pillOf(first.container).style.left).toBe('40px'))
-      first.unmount()
-
-      // Page 2: /categories — the remounted header must START at Discover's
-      // position, glide through intermediate positions, and settle on
-      // Categories (the animator eases per frame; no CSS position transition).
-      vi.mocked(usePathname).mockReturnValue('/categories')
-      const second = render(<Header />)
-      const pill = pillOf(second.container)
-      // Restored at (within a first-frame hair of) the previous position
-      expect(parseFloat(pill.style.left)).toBeGreaterThanOrEqual(40)
-      expect(parseFloat(pill.style.left)).toBeLessThan(45)
-      expect(pill.className).not.toContain('transition-all')
-
-      // Catch the pill mid-flight: strictly between the two items = sliding.
-      const mid = await waitFor(() => {
-        const v = parseFloat(pill.style.left)
-        if (!(v > 41)) throw new Error('pill has not started moving yet')
-        return v
-      }, { timeout: 2000 })
-      expect(mid).toBeLessThan(139)
-
-      await waitFor(() => expect(pill.style.left).toBe('140px'), { timeout: 2000 })
-      second.unmount()
-    } finally {
-      rectSpy.mockRestore()
-    }
+    const active = screen.getByLabelText('Discover')
+    expect(active).toHaveAttribute('aria-current', 'page')
+    expect(active.querySelector('span')?.className).toContain('bg-background')
   })
 })

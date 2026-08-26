@@ -25,7 +25,7 @@ export function MobileSidebar({ email, fullName, isAdmin }: MobileSidebarProps) 
   return (
     <>
       {/* Mobile header bar */}
-      <header className="md:hidden flex h-14 items-center justify-between border-b border-border/30 bg-background/60 backdrop-blur-xl px-4">
+      <header className="md:hidden flex h-14 items-center justify-between border-b border-border/30 bg-background px-4">
         <NavLink href="/" className="flex items-center gap-2">
           <PulseLogo className="h-10 w-10 text-foreground" />
           <span className="text-lg font-semibold tracking-tight text-foreground">
@@ -47,7 +47,7 @@ export function MobileSidebar({ email, fullName, isAdmin }: MobileSidebarProps) 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="left"
-          className="w-64 p-0 bg-background/80 backdrop-blur-xl border-r border-border/30"
+          className="w-64 p-0 bg-background border-r border-border/30"
           showCloseButton={false}
         >
           <SheetTitle className="sr-only">Navigation menu</SheetTitle>

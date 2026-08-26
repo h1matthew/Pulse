@@ -11,7 +11,7 @@ interface SidebarProps {
 
 export function Sidebar({ email, fullName, isAdmin }: SidebarProps) {
   return (
-    <aside className="hidden md:flex w-64 h-screen flex-col border-r border-border/30 bg-background/60 backdrop-blur-xl">
+    <aside className="hidden md:flex w-64 h-screen flex-col border-r border-border/30 bg-background">
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-border/30 px-6">
         <NavLink href="/" className="flex items-center gap-2">
