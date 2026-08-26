@@ -18,11 +18,10 @@ describe('HeroCityName', () => {
     vi.mocked(reverseGeocodeCity).mockResolvedValue(null)
   })
 
-  it('defaults to "San Antonio" in the brand gradient when no location is set', () => {
+  it('defaults to "San Antonio" when no location is set', () => {
     render(<HeroCityName />)
 
-    const city = screen.getByText('San Antonio')
-    expect(city).toHaveClass('gradient-text')
+    expect(screen.getByText('San Antonio')).toBeInTheDocument()
   })
 
   it('shows the cached city name, capitalized', () => {

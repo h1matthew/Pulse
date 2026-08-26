@@ -15,8 +15,8 @@ function toTitleCase(name: string): string {
 
 /**
  * Hero headline city — resolves the visitor's city from their explicitly
- * chosen location (cached by the Discover page's location picker) and renders
- * it in the brand gradient, falling back to "San Antonio".
+ * chosen location (cached by the Discover page's location picker), falling
+ * back to "San Antonio".
  *
  * The homepage never auto-reads live GPS, so the hero is deterministic for
  * first-time visitors and presentations: it shows San Antonio unless the
@@ -68,5 +68,5 @@ export function HeroCityName() {
     }
   }, [])
 
-  return <span className="gradient-text">{city}</span>
+  return <span>{city}</span>
 }

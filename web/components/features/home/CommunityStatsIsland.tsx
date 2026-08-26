@@ -143,19 +143,9 @@ function PulseCardSkeleton() {
 // Exported Components
 // ============================================================================
 
-// Fallback values shown when the database has no real data yet
-const FALLBACK_STATS = {
-  dollars: 284600,
-  businesses: 312,
-  reviews: 1847,
-  supported: 96,
-  activeUsers: 2340,
-  pulseScore: 7420,
-}
-
-/** Return `value` when it's a positive number, otherwise the fallback. Handles 0, NaN, undefined, and string zeros from Supabase. */
-function positiveOr(value: number | undefined | null, fallback: number): number {
-  return typeof value === 'number' && value > 0 ? value : fallback
+/** Coerce a Supabase numeric (may arrive as undefined, NaN or a string zero) to a count. */
+function count(value: number | undefined | null): number {
+  return typeof value === 'number' && value > 0 ? value : 0
 }
 
 /**
@@ -194,10 +184,13 @@ export function HeroStats() {
     )
   }
 
-  const businesses = positiveOr(local.businesses, FALLBACK_STATS.businesses)
-  const reviews = positiveOr(local.reviews, FALLBACK_STATS.reviews)
-  const supported = positiveOr(local.supported, FALLBACK_STATS.supported)
-  const activeUsers = positiveOr(pulse?.active_users, FALLBACK_STATS.activeUsers)
+  const businesses = count(local.businesses)
+  const reviews = count(local.reviews)
+  const supported = count(local.supported)
+  const activeUsers = count(pulse?.active_users)
+
+  // Nothing measured yet (empty install): show nothing rather than stand-in numbers.
+  if (!businesses && !reviews && !supported && !activeUsers) return null
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto">
@@ -225,14 +218,17 @@ export function CommunityPulseCard() {
   const { data, isLoading } = useCommunityPulse()
 
   const mounted = useMounted()
-  const dollars = positiveOr(data?.total_dollars_kept_local, FALLBACK_STATS.dollars)
-  const businesses = positiveOr(data?.total_businesses_supported, FALLBACK_STATS.businesses)
-  const pulseScore = positiveOr(data?.pulse_score, FALLBACK_STATS.pulseScore)
+  const dollars = count(data?.total_dollars_kept_local)
+  const businesses = count(data?.total_businesses_supported)
+  const pulseScore = count(data?.pulse_score)
   const jobs = Math.max(0, Math.floor(dollars / 15_000))
 
   if (!mounted || isLoading) {
     return <PulseCardSkeleton />
   }
+
+  // Nothing measured yet (empty install): show nothing rather than stand-in numbers.
+  if (!dollars && !businesses && !pulseScore) return null
 
   return (
     <Card className="relative bg-card">

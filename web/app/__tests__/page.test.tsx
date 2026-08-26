@@ -45,9 +45,6 @@ vi.mock('@/components/features/home/AnimatedSection', () => ({
   AnimatedSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
-vi.mock('@/components/features/home/ParallaxGlow', () => ({
-  ParallaxGlow: () => <div data-testid="parallax-glow" />,
-}))
 
 vi.mock('@/components/features/home/FeatureTabs', () => ({
   FeatureTabs: () => <div data-testid="feature-tabs">Local Snapshot</div>,

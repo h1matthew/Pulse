@@ -183,7 +183,7 @@ function NearbyBusinessRow({ row }: { row: NearbyRow }) {
         <div className="mt-1 text-xs text-muted-foreground">{row.meta}</div>
       </NavLink>
       <div className="flex items-center gap-1 text-sm font-mono font-semibold text-foreground">
-        <Star className="h-3.5 w-3.5 fill-primary text-primary" aria-hidden="true" />
+        <Star className="h-3.5 w-3.5 fill-muted-foreground text-muted-foreground" aria-hidden="true" />
         {row.rating ?? '—'}
       </div>
       <Button
@@ -272,7 +272,7 @@ export function FeatureTabs() {
         <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
           <div>
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Icon className="h-4 w-4 text-primary" />
+              <Icon className="h-4 w-4 text-muted-foreground" />
               {content.eyebrow}
             </div>
             <h3 className="mt-3 text-xl font-semibold tracking-tight text-foreground">{content.title}</h3>

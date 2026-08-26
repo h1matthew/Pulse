@@ -128,17 +128,14 @@ describe('HeroStats', () => {
     expect(screen.getByText('Community Members')).toBeInTheDocument()
   })
 
-  it('shows fallback values when there is no nearby or community data', () => {
+  it('renders nothing when there is no nearby or community data', () => {
     mockUseCommunityPulse.mockReturnValue({ data: undefined, isLoading: false })
     mockUseNearby.mockReturnValue({ data: [], isLoading: false })
 
-    render(<HeroStats />, { wrapper: createTestWrapper() })
+    const { container } = render(<HeroStats />, { wrapper: createTestWrapper() })
 
-    // Fallback stats: businesses 312, reviews 1.8K, supported 96, members 2.3K
-    expect(screen.getByText('312')).toBeInTheDocument()
-    expect(screen.getByText('1.8K')).toBeInTheDocument()
-    expect(screen.getByText('96')).toBeInTheDocument()
-    expect(screen.getByText('2.3K')).toBeInTheDocument()
+    // No measured data — the block hides rather than showing stand-in numbers.
+    expect(container).toBeEmptyDOMElement()
   })
 })
 
@@ -193,15 +190,11 @@ describe('CommunityPulseCard', () => {
     expect(screen.getByText('160')).toBeInTheDocument()
   })
 
-  it('renders fallback values when data is undefined', () => {
+  it('renders nothing when data is undefined', () => {
     mockUseCommunityPulse.mockReturnValue({ data: undefined, isLoading: false })
 
-    render(<CommunityPulseCard />, { wrapper: createTestWrapper() })
+    const { container } = render(<CommunityPulseCard />, { wrapper: createTestWrapper() })
 
-    // Fallback stats: pulseScore=7420, dollars=284600, businesses=312
-    expect(screen.getByText('7,420')).toBeInTheDocument()
-    expect(screen.getByText('Community Pulse Score')).toBeInTheDocument()
-    expect(screen.getByText('$284.6K')).toBeInTheDocument()
-    expect(screen.getByText('312')).toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
   })
 })
