@@ -11,7 +11,7 @@ export function PulseLogo({ className }: PulseLogoProps) {
       className={className}
     >
       <g transform="translate(0, 5)">
-        <polygon points="100,25 65,40 100,55" fill="#BFDBFE" className="transition-colors duration-300 hover:fill-[#DBEAFE]" />
+        <polygon points="100,25 65,40 100,55" fill="#BFDBFE" />
         <polygon points="100,25 135,40 100,55" fill="#93C5FD" />
         <polygon points="65,40 50,75 80,75" fill="#93C5FD" />
         <polygon points="135,40 150,75 120,75" fill="#3B82F6" />
