@@ -259,15 +259,6 @@ function escapeSvgText(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function hashString(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
-
 function buildInitials(name: string): string {
   const parts = normalizeText(name).split(" ").filter(Boolean).slice(0, 2);
   if (parts.length === 0) return "LB";
@@ -441,47 +432,38 @@ export function buildBusinessPhotoUrl(
   return `/api/businesses/photo?${params.toString()}`;
 }
 
+// Neutral ground for placeholder covers. The cover is an <img> data URI, a
+// document of its own, so page-level CSS custom properties can't reach it.
+const FALLBACK_COVER_FILL = "#334155";
+
 export function buildBusinessFallbackImageUrl(
   input: BusinessFallbackImageInput
 ): string {
-  const palettes = [
-    { start: "#0f172a", end: "#334155", accent: "#22d3ee" },
-    { start: "#111827", end: "#1f2937", accent: "#34d399" },
-    { start: "#1e1b4b", end: "#312e81", accent: "#f59e0b" },
-    { start: "#3f1d2e", end: "#5b2e48", accent: "#fb7185" },
-    { start: "#1f2937", end: "#334155", accent: "#a78bfa" },
-  ];
-
   // Decorative only: the card/hero overlays the business name and category, so
   // baking them into the cover too produced doubled, overlapping text. Keep just
-  // the centered initials on a branded gradient.
-  const key = `${normalizeText(input.name)}-${normalizeText(input.categoryName)}`;
-  const palette = palettes[hashString(key) % palettes.length];
+  // the centered initials on a neutral ground — the category icon beside the
+  // cover already carries the meaning, so the fill never varies by business.
   // A `label` (e.g. "Demo") is shown verbatim; otherwise fall back to initials.
   // A full word needs a smaller size than 1-2 initials to stay on the canvas.
   const text = escapeSvgText(input.label ?? buildInitials(input.name));
   const fontSize = input.label && input.label.length > 2 ? 180 : 220;
 
-  // `plain` covers omit the decorative grid + accent circles (used by the
-  // onboarding tour's demo business); everything else keeps them.
+  // `plain` covers omit the decorative grid + circles (used by the onboarding
+  // tour's demo business); everything else keeps them.
   const decorations = input.plain
     ? ""
     : `<rect width="1200" height="720" fill="url(#grid)" />
-  <circle cx="1040" cy="120" r="210" fill="${palette.accent}" fill-opacity="0.20" />
-  <circle cx="170" cy="600" r="230" fill="${palette.accent}" fill-opacity="0.16" />`;
+  <circle cx="1040" cy="120" r="210" fill="#ffffff" fill-opacity="0.05" />
+  <circle cx="170" cy="600" r="230" fill="#ffffff" fill-opacity="0.04" />`;
 
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="${palette.start}" />
-      <stop offset="100%" stop-color="${palette.end}" />
-    </linearGradient>
     <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
       <path d="M 48 0 L 0 0 0 48" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
     </pattern>
   </defs>
-  <rect width="1200" height="720" fill="url(#g)" />
+  <rect width="1200" height="720" fill="${FALLBACK_COVER_FILL}" />
   ${decorations}
   <text x="600" y="360" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif" font-size="${fontSize}" font-weight="700" fill="rgba(255,255,255,0.92)">${text}</text>
 </svg>`;

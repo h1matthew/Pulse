@@ -668,10 +668,10 @@ export default function BusinessDetailPage({
       <Header />
 
       {/* Immersive hero — identity and actions live on the photo itself */}
-      <div className="bg-gradient-to-b from-primary/5 via-background to-background pt-28 pb-8">
+      <div className="pt-28 pb-8">
         <div className="mx-auto max-w-6xl px-6">
           <AnimatedSection animation="fade-up">
-            <div className="relative h-[24rem] md:h-[27rem] rounded-3xl overflow-hidden shadow-xl shadow-primary/5">
+            <div className="relative h-[24rem] md:h-[27rem] rounded-3xl overflow-hidden">
               {(() => {
                 const photoUrl = buildBusinessPhotoUrl(business.photos?.[0], {
                   maxWidth: 800,
@@ -1126,7 +1126,7 @@ export default function BusinessDetailPage({
                                   <>
                                     <div className="flex items-start justify-between mb-3">
                                       <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                                           <span className="font-medium">
                                             {item.review.user?.full_name?.[0] || "U"}
                                           </span>
@@ -1158,7 +1158,7 @@ export default function BusinessDetailPage({
                                   <>
                                     <div className="flex items-start justify-between mb-3">
                                       <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                                           <span className="font-medium">
                                             {item.review.author_name?.[0] || "G"}
                                           </span>
@@ -1178,7 +1178,7 @@ export default function BusinessDetailPage({
                                       <div className="flex items-center gap-2">
                                         <Badge
                                           variant="outline"
-                                          className="text-[10px] border-primary/40 text-primary"
+                                          className="text-[10px] border-border text-muted-foreground"
                                         >
                                           Google
                                         </Badge>
@@ -1434,7 +1434,7 @@ export default function BusinessDetailPage({
                   <CardContent className="divide-y divide-border/60">
                     <div className="flex items-center justify-between gap-3 py-2.5 pt-0 text-sm">
                       <span className="flex items-center gap-2.5 text-muted-foreground">
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                           <Heart className="h-3.5 w-3.5" aria-hidden="true" />
                         </span>
                         Bookmarked by
@@ -1445,7 +1445,7 @@ export default function BusinessDetailPage({
                     </div>
                     <div className="flex items-center justify-between gap-3 py-2.5 text-sm">
                       <span className="flex items-center gap-2.5 text-muted-foreground">
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                           <Star className="h-3.5 w-3.5" aria-hidden="true" />
                         </span>
                         {business.data_source === "google" ? "Total ratings" : "Total reviews"}
@@ -1456,7 +1456,7 @@ export default function BusinessDetailPage({
                     </div>
                     <div className="flex items-center justify-between gap-3 py-2.5 pb-0 text-sm">
                       <span className="flex items-center gap-2.5 text-muted-foreground">
-                        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                           <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
                         </span>
                         Average rating

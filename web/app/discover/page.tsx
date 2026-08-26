@@ -262,8 +262,8 @@ const BusinessCard = memo(function BusinessCard({
       onMouseEnter={() => onHoverChange?.(business.id)}
       onMouseLeave={() => onHoverChange?.(null)}
       className={cn(
-        "group relative h-56 overflow-hidden rounded-2xl border bg-muted transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/10",
-        isHovered ? "border-primary/60 shadow-lg shadow-primary/15 -translate-y-0.5" : "border-border"
+        "group relative h-56 overflow-hidden rounded-2xl border bg-muted transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl",
+        isHovered ? "border-primary/60 shadow-lg -translate-y-0.5" : "border-border"
       )}
     >
       {/* Full-bleed image */}
@@ -879,7 +879,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
     <div className="space-y-3 px-4 pb-3 pt-1.5" data-testid="discover-toolbar">
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2" role="group" aria-label="Discover summary">
         <h1 id="discover-heading" className="shrink-0 text-lg font-semibold tracking-tight">
-          Discover places <span className="gradient-text">nearby</span>
+          Discover places nearby
         </h1>
         <div className="flex shrink-0 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card text-xs shadow-sm">
           <div className="px-2.5 py-1">
@@ -1098,7 +1098,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
             </div>
 
             <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2 text-sm">
-              <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+              <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Location</span>
               <span className="truncate font-medium">{locationControlLabel}</span>
               <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" onClick={() => setChangeLocationOpen(true)}>Change</Button>
@@ -1124,8 +1124,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const missionsBanner = missionsInView.length > 0 ? (
     <section aria-label="Active missions" className="space-y-2 px-4 pt-4">
       {missionsInView.map((detail) => (
-        <div key={detail.progress.id} className="relative flex flex-col gap-2 overflow-hidden rounded-xl border border-primary/25 bg-primary/5 p-4 pl-5 sm:flex-row sm:items-center sm:gap-4">
-          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-primary to-chart-2" aria-hidden="true" />
+        <div key={detail.progress.id} className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-4 sm:flex-row sm:items-center sm:gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">Mission: {detail.progress.mission.title}</p>
             <p className="text-xs text-muted-foreground">Check in with your receipt to log a verified visit.</p>
@@ -1197,7 +1196,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
           pt clears the floating header (~86px) and leaves a comfortable gap. */}
       <div className="flex flex-1 flex-col overflow-hidden pt-28">
         {/* TOP — full-width search + filter bar */}
-        <div className="shrink-0 border-b border-border bg-background/95 backdrop-blur">
+        <div className="shrink-0 border-b border-border bg-background">
           {filterPanel}
         </div>
 

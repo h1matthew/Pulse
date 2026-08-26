@@ -137,7 +137,7 @@ This email was sent from the Pulse contact form.
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .header { background: #225dec; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
     .content { background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; }
     .field { margin-bottom: 15px; }
     .label { font-weight: 600; color: #64748b; font-size: 12px; text-transform: uppercase; }
@@ -219,14 +219,14 @@ The Pulse Team
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 30px 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .header { background: #225dec; color: white; padding: 30px 20px; border-radius: 8px 8px 0 0; text-align: center; }
     .header h1 { margin: 0; font-size: 28px; }
     .content { background: #f8fafc; padding: 30px 20px; border: 1px solid #e2e8f0; border-top: none; }
     .features { margin: 20px 0; }
     .feature { display: flex; align-items: flex-start; margin-bottom: 12px; }
-    .feature-icon { width: 24px; height: 24px; margin-right: 12px; color: #3b82f6; }
+    .feature-icon { width: 24px; height: 24px; margin-right: 12px; color: #225dec; }
     .cta { text-align: center; margin: 30px 0; }
-    .cta-button { display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+    .cta-button { display: inline-block; background: #225dec; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; }
     .footer { background: #1e293b; color: #94a3b8; padding: 20px; border-radius: 0 0 8px 8px; text-align: center; font-size: 12px; }
   </style>
 </head>
@@ -299,10 +299,10 @@ Pulse - Powering the Heart of Local Business
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .header { background: #225dec; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
     .content { background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; }
     .cta { text-align: center; margin: 25px 0; }
-    .cta-button { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+    .cta-button { display: inline-block; background: #225dec; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; }
     .footer { margin-top: 20px; font-size: 12px; color: #94a3b8; text-align: center; }
   </style>
 </head>

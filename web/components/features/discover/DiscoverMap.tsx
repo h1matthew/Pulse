@@ -31,54 +31,37 @@ const SATELLITE_TILE = {
   attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics',
 }
 
-// Zillow-style cluster bubble: a brand-blue circle with the count, sized by how
-// many pins it represents.
-function makeClusterIcon(isDark: boolean) {
-  const bg = isDark ? '#3b82f6' : '#2563eb'
+// Cluster bubble: a primary-filled circle with the count, sized by how many
+// pins it represents. Colors read from the theme tokens - the markup is built
+// outside React, but CSS custom properties still cascade into it.
+function makeClusterIcon() {
   return (cluster: { getChildCount: () => number }): L.DivIcon => {
     const count = cluster.getChildCount()
     const size = count < 10 ? 34 : count < 50 ? 40 : count < 200 ? 48 : 56
     return L.divIcon({
       className: '',
       html: `<div style="
-          width:${size}px;height:${size}px;background:${bg};color:#fff;
-          border:2px solid #fff;border-radius:9999px;
+          width:${size}px;height:${size}px;
+          background:var(--primary);color:var(--primary-foreground);
+          border:2px solid var(--card);border-radius:9999px;
           display:flex;align-items:center;justify-content:center;
           font:700 ${count > 999 ? 11 : 13}px/1 ui-sans-serif,system-ui,-apple-system,sans-serif;
-          box-shadow:0 3px 10px rgba(0,0,0,0.35);
         ">${count}</div>`,
       iconSize: [size, size],
     })
   }
 }
 
-// Clean Zillow-style pill markers: a white pill with an amber star + rating by
-// default, switching to a filled brand-blue pill (and lifting above its
-// neighbors) when it's the active/hovered result.
-function createPinIcon(rating: number | null, hovered: boolean, isDark: boolean): L.DivIcon {
+// Pill markers: a card-surface pill with the star + rating, switching to a
+// primary fill (and lifting above its neighbors) when it's the active/hovered
+// result. The star inherits the pill's text color.
+function createPinIcon(rating: number | null, hovered: boolean): L.DivIcon {
   const hasRating = rating != null && rating > 0
   const label = hasRating ? rating.toFixed(1) : 'New'
 
-  let bg: string, color: string, star: string, ring: string, shadow: string
-  if (hovered) {
-    bg = '#2563eb'
-    color = '#ffffff'
-    star = '#ffffff'
-    ring = isDark ? 'rgba(255,255,255,0.65)' : '#ffffff'
-    shadow = '0 6px 16px rgba(37,99,235,0.45)'
-  } else if (isDark) {
-    bg = '#1f2937'
-    color = '#f8fafc'
-    star = '#fbbf24'
-    ring = 'rgba(255,255,255,0.18)'
-    shadow = '0 2px 6px rgba(0,0,0,0.55)'
-  } else {
-    bg = '#ffffff'
-    color = '#0f172a'
-    star = '#f59e0b'
-    ring = 'rgba(15,23,42,0.08)'
-    shadow = '0 2px 6px rgba(0,0,0,0.28)'
-  }
+  const bg = hovered ? 'var(--primary)' : 'var(--card)'
+  const color = hovered ? 'var(--primary-foreground)' : 'var(--foreground)'
+  const ring = hovered ? 'var(--primary)' : 'var(--border)'
 
   const h = 26
   // Approximate the pill width from its content so the tail stays centered.
@@ -86,7 +69,7 @@ function createPinIcon(rating: number | null, hovered: boolean, isDark: boolean)
   const w = Math.ceil(18 + starW + label.length * 7.5)
   const scale = hovered ? 1.12 : 1
   const starSpan = hasRating
-    ? `<span style="color:${star};margin-right:3px;font-size:12px;line-height:1;">★</span>`
+    ? '<span style="margin-right:3px;font-size:12px;line-height:1;">★</span>'
     : ''
 
   return L.divIcon({
@@ -96,10 +79,10 @@ function createPinIcon(rating: number | null, hovered: boolean, isDark: boolean)
         display:flex;align-items:center;justify-content:center;
         width:${w}px;height:${h}px;
         background:${bg};color:${color};border-radius:9999px;
-        border:1px solid ${ring};box-shadow:${shadow};
+        border:1px solid ${ring};
         font:600 12px/1 ui-sans-serif,system-ui,-apple-system,sans-serif;
         white-space:nowrap;position:relative;
-        transition:transform 120ms ease, box-shadow 120ms ease;
+        transition:transform 120ms ease;
       ">${starSpan}${label}<span style="
         position:absolute;left:50%;bottom:-4px;
         width:9px;height:9px;background:${bg};
@@ -123,7 +106,6 @@ function cardPhotoUrl(business: BusinessWithCategory): string {
 interface BusinessMarkerProps {
   business: BusinessWithCategory
   isActive: boolean
-  isDark: boolean
   onClick: (id: string) => void
   onHover: (id: string | null) => void
 }
@@ -133,12 +115,12 @@ interface BusinessMarkerProps {
  * its own active/hover state flips. Without this, changing the hovered pin
  * re-rendered all ~hundreds of markers at once (the main source of map lag).
  */
-const BusinessMarker = memo(function BusinessMarker({ business, isActive, isDark, onClick, onHover }: BusinessMarkerProps) {
+const BusinessMarker = memo(function BusinessMarker({ business, isActive, onClick, onHover }: BusinessMarkerProps) {
   const markerRef = useRef<L.Marker>(null)
 
   const icon = useMemo(
-    () => createPinIcon(business.average_rating, isActive, isDark),
-    [business.average_rating, isActive, isDark],
+    () => createPinIcon(business.average_rating, isActive),
+    [business.average_rating, isActive],
   )
 
   // The photo card opens on CLICK only. Hovering a pin just highlights the
@@ -287,7 +269,6 @@ interface DiscoverMapProps {
 
 export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHover }: DiscoverMapProps) {
   const { theme } = useTheme()
-  const isDark = theme === 'dark'
   const [baseLayer, setBaseLayer] = useState<'map' | 'satellite'>('map')
   const withCoords = useMemo(() => businesses.filter(b => b.latitude && b.longitude), [businesses])
 
@@ -298,7 +279,7 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
   // Stable hover handler so memoized markers don't re-render every time the
   // parent re-renders (only when their own active state actually changes).
   const handleHover = useCallback((id: string | null) => onPinHover?.(id), [onPinHover])
-  const clusterIcon = useMemo(() => makeClusterIcon(isDark), [isDark])
+  const clusterIcon = useMemo(() => makeClusterIcon(), [])
 
   return (
     // `isolate` keeps Leaflet's high z-index panes (tiles/markers/popups at
@@ -320,14 +301,14 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
         <CircleMarker
           center={center}
           radius={8}
-          pathOptions={{ fillColor: '#3b82f6', fillOpacity: 1, color: '#ffffff', weight: 3, opacity: 1 }}
+          pathOptions={{ fillColor: 'var(--primary)', fillOpacity: 1, color: 'var(--card)', weight: 3, opacity: 1 }}
         >
           <Popup><span style={{ fontWeight: 600, fontSize: 13 }}>Your location</span></Popup>
         </CircleMarker>
         <CircleMarker
           center={center}
           radius={20}
-          pathOptions={{ fillColor: '#3b82f6', fillOpacity: 0.15, color: '#3b82f6', weight: 1, opacity: 0.3 }}
+          pathOptions={{ fillColor: 'var(--primary)', fillOpacity: 0.15, color: 'var(--primary)', weight: 1, opacity: 0.3 }}
         />
 
         {/* Pins cluster into count bubbles when zoomed out, split apart on zoom in. */}
@@ -342,7 +323,6 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
               key={business.id}
               business={business}
               isActive={hoveredId === business.id}
-              isDark={isDark}
               onClick={onPinClick}
               onHover={handleHover}
             />
@@ -351,7 +331,7 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
       </MapContainer>
 
       {/* Map / Satellite toggle */}
-      <div className="absolute bottom-4 left-4 z-[1000] flex overflow-hidden rounded-full border border-border bg-card/95 text-xs font-medium shadow-md backdrop-blur">
+      <div className="absolute bottom-4 left-4 z-[1000] flex overflow-hidden rounded-full border border-border bg-card text-xs font-medium shadow-md">
         {(['map', 'satellite'] as const).map((layer) => (
           <button
             key={layer}
