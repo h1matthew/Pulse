@@ -6,9 +6,6 @@ import { render, screen } from '@testing-library/react'
 import React from 'react'
 
 // Mock components
-vi.mock('@/components/features/home/SpaceBackground', () => ({
-  SpaceBackground: () => <div data-testid="space-background" />,
-}))
 
 vi.mock('@/components/layout/Header', () => ({
   Header: () => <header data-testid="header">Header</header>,
