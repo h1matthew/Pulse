@@ -27,9 +27,8 @@ export function AboutContent({ founders }: AboutContentProps) {
         </AnimatedSection>
 
         <AnimatedSection animation="fade-up" delay={0.08}>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            A passionate team on a mission to strengthen local communities through business
-            discovery.
+          <p className="mt-6 max-w-[68ch] text-lg leading-8 text-muted-foreground">
+            The people building Pulse, and the reason we started it.
           </p>
         </AnimatedSection>
       </section>
@@ -75,28 +74,24 @@ export function AboutContent({ founders }: AboutContentProps) {
           </AnimatedSection>
 
           <AnimatedSection animation="fade-up" delay={0.08}>
-            <div className="max-w-2xl space-y-6 text-base leading-7 text-muted-foreground">
+            <div className="max-w-[68ch] space-y-6 text-base leading-7 text-muted-foreground">
               <p>
-                We started Pulse because we believe local businesses are the heartbeat of our
-                communities. Every neighborhood has unique shops, restaurants, and services that
-                give it character &mdash; but too often, these gems go undiscovered while big
-                chains dominate the conversation.
+                We started Pulse because the shops, restaurants, and services on our own street
+                were hard to find online. Search results led to chains a few towns over, and the
+                place two doors down had no hours listed anywhere.
               </p>
               <p>
-                Pulse has a clear goal: make it easy to discover and support local businesses. We
-                want to show you the impact your choices make &mdash; how every dollar spent
-                locally circulates through your community, supporting jobs and creating vibrant
-                neighborhoods. No barriers, no gatekeeping &mdash; just a simple way to keep your
-                community thriving.
+                Pulse has a clear goal: make local businesses easy to find and easy to support.
+                Hours, ratings, and current deals in one list, plus a plain record of what your
+                spending kept nearby. No account required to browse.
               </p>
               <p>
-                Whether you are a local business owner looking to connect with customers, or a
-                community member who wants to make a difference with your spending, Pulse is here
-                to help you power the heart of local business.
+                Owners can claim a listing, post deals, and answer reviews. Everyone else can
+                browse, check in, and leave a note about what was worth the trip.
               </p>
               <div className="flex items-center gap-3 pt-2 text-sm">
                 <span className="h-px w-8 bg-border" aria-hidden="true" />
-                <span>Power the heart of your community</span>
+                <span>Local discovery, kept simple</span>
               </div>
             </div>
           </AnimatedSection>

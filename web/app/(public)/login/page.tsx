@@ -180,7 +180,7 @@ export default function LoginPage() {
     <>
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-6">
         <div className="w-full max-w-sm animate-scale-in">
-          <Card className="border-border/50 shadow-xl shadow-primary/5 transition-shadow duration-300 hover:shadow-2xl hover:shadow-primary/10">
+          <Card className="border-border/50">
             <CardHeader className="text-center pb-2">
               <CardTitle className="text-2xl font-bold">
                 {showForgotPassword ? "Reset Password" : "Welcome"}
@@ -203,8 +203,8 @@ export default function LoginPage() {
                     Back to login
                   </button>
                   <form onSubmit={handleForgotPassword} className="space-y-4">
-                    <div className="group space-y-2">
-                      <Label htmlFor="reset-email" className="text-sm font-medium transition-colors duration-200 group-focus-within:text-primary">Email</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email" className="text-sm font-medium">Email</Label>
                       <Input
                         id="reset-email"
                         type="email"
@@ -212,7 +212,7 @@ export default function LoginPage() {
                         value={resetEmail}
                         onChange={(e) => setResetEmail(e.target.value)}
                         required
-                        className="h-10 transition-all duration-200 hover:border-primary/40 focus:shadow-md focus:shadow-primary/10 focus:border-primary"
+                        className="h-10"
                       />
                     </div>
                     {error && (
@@ -227,7 +227,7 @@ export default function LoginPage() {
                     )}
                     <Button
                       type="submit"
-                      className="w-full h-10 shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
+                      className="w-full h-10"
                       disabled={resetLoading}
                     >
                       {resetLoading ? "Sending..." : "Send reset link"}
@@ -244,8 +244,8 @@ export default function LoginPage() {
                   <div className="min-h-[296px] relative">
                     <TabsContent value="login" className="mt-0 data-[state=active]:animate-fade-in-up [&[data-state=active]]:![animation-duration:0.3s]">
                       <form onSubmit={handleLogin} className="space-y-4">
-                        <div className="group space-y-2">
-                          <Label htmlFor="login-email" className="text-sm font-medium transition-colors duration-200 group-focus-within:text-primary">Email</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="login-email" className="text-sm font-medium">Email</Label>
                           <Input
                             id="login-email"
                             type="email"
@@ -254,11 +254,11 @@ export default function LoginPage() {
                             onChange={(e) => setEmail(e.target.value)}
                             required
                             onFocus={() => setError(null)}
-                            className="h-10 transition-all duration-200 hover:border-primary/40 focus:shadow-md focus:shadow-primary/10 focus:border-primary"
+                            className="h-10"
                           />
                         </div>
-                        <div className="group space-y-2">
-                          <Label htmlFor="login-password" className="text-sm font-medium transition-colors duration-200 group-focus-within:text-primary">Password</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="login-password" className="text-sm font-medium">Password</Label>
                           <Input
                             id="login-password"
                             type="password"
@@ -266,7 +266,7 @@ export default function LoginPage() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             onFocus={() => setError(null)}
-                            className="h-10 transition-all duration-200 hover:border-primary/40 focus:shadow-md focus:shadow-primary/10 focus:border-primary"
+                            className="h-10"
                           />
                         </div>
                         {error && (
@@ -296,7 +296,7 @@ export default function LoginPage() {
                         </div>
                         <Button
                           type="submit"
-                          className="w-full h-10 shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
+                          className="w-full h-10"
                           disabled={loading}
                         >
                           {loading ? "Signing in..." : "Sign in"}
@@ -320,8 +320,8 @@ export default function LoginPage() {
 
                     <TabsContent value="signup" className="mt-0 data-[state=active]:animate-fade-in-up [&[data-state=active]]:![animation-duration:0.3s]">
                       <form onSubmit={handleSignup} className="space-y-4">
-                        <div className="group space-y-2">
-                          <Label htmlFor="signup-name" className="text-sm font-medium transition-colors duration-200 group-focus-within:text-primary">Full name</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-name" className="text-sm font-medium">Full name</Label>
                           <Input
                             id="signup-name"
                             type="text"
@@ -329,11 +329,11 @@ export default function LoginPage() {
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
                             required
-                            className="h-10 transition-all duration-200 hover:border-primary/40 focus:shadow-md focus:shadow-primary/10 focus:border-primary"
+                            className="h-10"
                           />
                         </div>
-                        <div className="group space-y-2">
-                          <Label htmlFor="signup-email" className="text-sm font-medium transition-colors duration-200 group-focus-within:text-primary">Email</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
                           <Input
                             id="signup-email"
                             type="email"
@@ -341,11 +341,11 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="h-10 transition-all duration-200 hover:border-primary/40 focus:shadow-md focus:shadow-primary/10 focus:border-primary"
+                            className="h-10"
                           />
                         </div>
-                        <div className="group space-y-2">
-                          <Label htmlFor="signup-password" className="text-sm font-medium transition-colors duration-200 group-focus-within:text-primary">Password</Label>
+                        <div className="space-y-2">
+                          <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
                           <Input
                             id="signup-password"
                             type="password"
@@ -354,7 +354,7 @@ export default function LoginPage() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                             minLength={6}
-                            className="h-10 transition-all duration-200 hover:border-primary/40 focus:shadow-md focus:shadow-primary/10 focus:border-primary"
+                            className="h-10"
                           />
                         </div>
                         {error && (
@@ -369,7 +369,7 @@ export default function LoginPage() {
                         )}
                         <Button
                           type="submit"
-                          className="w-full h-10 shadow-md shadow-primary/20 transition-all duration-200 hover:shadow-lg hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]"
+                          className="w-full h-10"
                           disabled={loading}
                         >
                           {loading ? "Creating account..." : "Create account"}
@@ -390,7 +390,7 @@ export default function LoginPage() {
 
       {showLoginCaptchaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-border bg-background p-4 shadow-xl space-y-3">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-background p-4 shadow-xl space-y-3">
             <h3 className="text-base font-semibold">Security Check</h3>
             <p className="text-sm text-muted-foreground">
               Complete this CAPTCHA to continue signing in.

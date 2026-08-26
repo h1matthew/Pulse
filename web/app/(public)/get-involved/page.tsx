@@ -18,7 +18,7 @@ const WAYS_TO_HELP = [
     icon: Store,
     title: 'Shop Local',
     description:
-      'Choose local businesses over chains whenever you can. Studies show 68 cents of every dollar spent locally recirculates in your community.',
+      'Choose local businesses over chains when you have the option. More of what you spend stays with people who work and hire in your area.',
     href: '/discover',
     cta: 'Find Businesses',
   },
@@ -48,22 +48,20 @@ export default function GetInvolvedPage() {
           {/* Header */}
           <div className="mb-16 text-center">
             <AnimatedSection animation="fade-up">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-muted-foreground">
                 <Heart className="h-4 w-4" />
                 Get Involved
               </div>
             </AnimatedSection>
             <AnimatedSection animation="fade-up" delay={0.1}>
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                <span className="bg-gradient-to-r from-primary to-chart-2 bg-clip-text text-transparent">
-                  Strengthen Your Local Economy
-                </span>
+                Four Ways to Help a Business Near You
               </h1>
             </AnimatedSection>
             <AnimatedSection animation="fade-up" delay={0.2}>
-              <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-                Every action you take on Pulse — every review, bookmark, and deal claimed — directly
-                supports the small businesses that make your community unique.
+              <p className="mt-4 text-lg text-muted-foreground max-w-[68ch] mx-auto">
+                A review, a bookmark, a claimed deal. Each one makes a nearby business
+                easier for the next person to find.
               </p>
             </AnimatedSection>
           </div>
@@ -73,14 +71,14 @@ export default function GetInvolvedPage() {
             {WAYS_TO_HELP.map((item, i) => (
               <AnimatedSection key={item.title} animation="fade-up" delay={0.2 + i * 0.1}>
                 <NavLink href={item.href} className="block h-full">
-                  <div className="group h-full rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-8 transition-colors duration-300 hover:border-primary/20">
-                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors duration-300 group-hover:bg-primary/15">
+                  <div className="group h-full rounded-lg border border-border/50 bg-card p-8">
+                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                       <item.icon className="h-7 w-7" />
                     </div>
-                    <h2 className="mb-3 text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+                    <h2 className="mb-3 text-xl font-bold text-foreground">
                       {item.title}
                     </h2>
-                    <p className="mb-6 text-muted-foreground leading-relaxed">
+                    <p className="mb-6 max-w-[68ch] text-muted-foreground leading-relaxed">
                       {item.description}
                     </p>
                     <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -95,17 +93,16 @@ export default function GetInvolvedPage() {
 
           {/* Volunteer CTA */}
           <AnimatedSection animation="fade-up" delay={0.6}>
-            <div className="mx-auto max-w-2xl text-center rounded-2xl border border-primary/20 bg-primary/5 p-10">
+            <div className="mx-auto max-w-2xl text-center rounded-lg border border-border bg-muted p-10">
               <div className="mb-4 flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-card text-muted-foreground">
                   <Users className="h-8 w-8" />
                 </div>
               </div>
-              <h2 className="mb-3 text-2xl font-bold">Are You a Local Business Owner?</h2>
-              <p className="mb-6 text-muted-foreground leading-relaxed">
-                List your business on Pulse to reach community members who are actively looking
-                to support local. Create deals, respond to reviews, and grow your customer base —
-                all for free.
+              <h2 className="mb-3 text-2xl font-bold">List Your Shop on Pulse</h2>
+              <p className="mb-6 mx-auto max-w-[68ch] text-muted-foreground leading-relaxed">
+                Add your hours, post deals, and reply to reviews. Listing is free and takes
+                a few minutes.
               </p>
               <NavLink
                 href="/about"

@@ -116,7 +116,7 @@ describe('AboutPage', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
     expect(
       screen.getByText(
-        /A passionate team on a mission to strengthen local communities through business\s+discovery\./
+        /The people building Pulse, and the reason we started it\./
       )
     ).toBeInTheDocument()
   })
