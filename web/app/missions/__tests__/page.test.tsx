@@ -147,7 +147,7 @@ describe('MissionsPage', () => {
     renderPage()
 
     expect(screen.getByText('Boost Missions')).toBeInTheDocument()
-    expect(screen.getByText(/Complete challenges, support local businesses/)).toBeInTheDocument()
+    expect(screen.getByText(/Check in at local businesses to complete challenges/)).toBeInTheDocument()
   })
 
   it('shows skeleton loading states while loading', () => {

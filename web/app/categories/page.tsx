@@ -176,14 +176,14 @@ export default async function CategoriesPage() {
                   <NavLink
                     href={`/discover?category=${category.slug}`}
                     aria-label={`Explore ${category.name}`}
-                    className="group relative flex h-full flex-col rounded-lg border border-border bg-card p-6 transition-colors duration-300 hover:border-primary/40"
+                    className="group relative flex h-full flex-col rounded-lg border border-border bg-card p-6 transition-colors duration-300"
                   >
                     <div className="flex items-start gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors duration-300 group-hover:animate-heart-beat group-hover:bg-primary group-hover:text-primary-foreground">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors duration-300 group-hover:animate-heart-beat group-hover:bg-primary group-hover:text-primary-foreground">
                         <Icon className="h-5 w-5" aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-lg font-semibold tracking-tight transition-colors group-hover:text-primary">
+                        <h2 className="text-lg font-semibold tracking-tight">
                           {category.name}
                         </h2>
                         <p className="mt-1 text-sm leading-5 text-muted-foreground">
@@ -193,7 +193,7 @@ export default async function CategoriesPage() {
                     </div>
 
                     <div className="flex-1">
-                      <p className="mt-4 font-mono text-sm text-primary">
+                      <p className="mt-4 font-mono text-sm text-foreground">
                         {pluralizeBusinesses(category.businessCount)}
                       </p>
 
@@ -224,7 +224,7 @@ export default async function CategoriesPage() {
                         viewBox="0 0 300 24"
                         fill="none"
                         preserveAspectRatio="none"
-                        className="pointer-events-none absolute -top-3 left-0 h-6 w-full text-primary opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                        className="pointer-events-none absolute -top-3 left-0 h-6 w-full text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                       >
                         <path
                           d="M0 12 H112 L120 12 L126 3 L134 21 L140 12 H300"
@@ -240,7 +240,7 @@ export default async function CategoriesPage() {
                         Explore {category.name}
                       </span>
                       <ArrowRight
-                        className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary"
+                        className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground"
                         aria-hidden="true"
                       />
                     </div>

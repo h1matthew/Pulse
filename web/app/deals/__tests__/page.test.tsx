@@ -267,12 +267,12 @@ describe("DealsPage", () => {
       expect(eyebrow.tagName).not.toBe("H1");
     });
 
-    it("renders the discount value in mono primary text", () => {
+    it("renders the discount value in mono", () => {
       render(<DealsPage />);
 
       const discount = screen.getByText("50% OFF");
       expect(discount).toHaveClass("font-mono");
-      expect(discount).toHaveClass("text-primary");
+      expect(discount).toHaveClass("text-foreground");
     });
 
     it("renders stat numbers in mono", () => {

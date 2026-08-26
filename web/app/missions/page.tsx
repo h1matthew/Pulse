@@ -161,7 +161,7 @@ function ActiveMissionCard({ mission, progressDetail, index, isLoggedIn }: Activ
                   {formatDeadline(mission.end_date, daysRemaining)}
                 </span>
                 {mission.reward_description && (
-                  <span className="text-chart-3">Reward: {mission.reward_description}</span>
+                  <span className="text-foreground">Reward: {mission.reward_description}</span>
                 )}
               </div>
             </div>
@@ -273,17 +273,17 @@ const HOTSPOT_BUSINESSES = [
 
 // ── Group Check-in Tiers ─────────────────────────────────────────────
 const GROUP_TIERS = [
-  { friends: 1, label: "Duo", bonus: "+25%", color: "text-chart-3" },
-  { friends: 2, label: "Trio", bonus: "+50%", color: "text-chart-5" },
-  { friends: 3, label: "Squad (4+)", bonus: "+100%", color: "text-primary" },
+  { friends: 1, label: "Duo", bonus: "+25%" },
+  { friends: 2, label: "Trio", bonus: "+50%" },
+  { friends: 3, label: "Squad (4+)", bonus: "+100%" },
 ];
 
 function HotspotSection() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
-          <Flame className="h-4 w-4 text-orange-500" />
+        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+          <Flame className="h-4 w-4 text-muted-foreground" />
         </div>
         <div>
           <h2 className="text-lg font-semibold">Hotspots</h2>
@@ -294,10 +294,10 @@ function HotspotSection() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {HOTSPOT_BUSINESSES.map((biz) => (
           <Link key={biz.id} href={`/business/${biz.id}`}>
-            <Card className="hover:border-orange-500/30 transition-colors cursor-pointer group">
+            <Card className="hover:border-border transition-colors cursor-pointer group">
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-3">
-                  <Badge className="bg-orange-500 text-white border-0 text-[10px] px-1.5">
+                  <Badge variant="secondary" className="text-[10px] px-1.5">
                     {biz.multiplier}× POINTS
                   </Badge>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -305,9 +305,7 @@ function HotspotSection() {
                     {biz.rating}
                   </div>
                 </div>
-                <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
-                  {biz.name}
-                </h3>
+                <h3 className="font-semibold text-sm">{biz.name}</h3>
                 <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
                   <span>{biz.category}</span>
                   <span>·</span>
@@ -316,7 +314,7 @@ function HotspotSection() {
                     {biz.distance}
                   </span>
                 </div>
-                <p className="text-[10px] text-orange-500/80 mt-2 font-medium uppercase tracking-wide">
+                <p className="text-[10px] text-muted-foreground mt-2 font-medium uppercase tracking-wide">
                   {biz.reason}
                 </p>
               </CardContent>
@@ -332,8 +330,8 @@ function GroupCheckInSection() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Users className="h-4 w-4 text-primary" />
+        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+          <Users className="h-4 w-4 text-muted-foreground" />
         </div>
         <div>
           <h2 className="text-lg font-semibold">Group Check-ins</h2>
@@ -363,7 +361,7 @@ function GroupCheckInSection() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{tier.label}</p>
-                  <p className={cn("text-lg font-bold tabular-nums", tier.color)}>
+                  <p className="text-lg font-bold tabular-nums text-foreground">
                     {tier.bonus}
                   </p>
                 </div>
@@ -421,7 +419,7 @@ export default function MissionsPage() {
                 Boost Missions
               </h1>
               <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-                Complete challenges, support local businesses, and unlock exclusive rewards
+                Check in at local businesses to complete challenges and earn rewards
               </p>
             </div>
           </AnimatedSection>
@@ -435,10 +433,10 @@ export default function MissionsPage() {
                 <Card>
                   <CardContent className="p-6 flex items-center gap-4">
                     <div
-                      className="h-12 w-12 rounded-xl bg-chart-3/10 flex items-center justify-center"
+                      className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center"
                       aria-hidden="true"
                     >
-                      <Zap className="h-6 w-6 text-chart-3" />
+                      <Zap className="h-6 w-6 text-muted-foreground" />
                     </div>
                     {/* Label first in DOM so screen readers announce
                         "Active Missions, 4"; reversed visually. */}
@@ -451,10 +449,10 @@ export default function MissionsPage() {
                 <Card>
                   <CardContent className="p-6 flex items-center gap-4">
                     <div
-                      className="h-12 w-12 rounded-xl bg-chart-5/10 flex items-center justify-center"
+                      className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center"
                       aria-hidden="true"
                     >
-                      <Trophy className="h-6 w-6 text-chart-5" />
+                      <Trophy className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div className="flex flex-col-reverse">
                       <div className="text-xs text-muted-foreground">Completed</div>
@@ -465,10 +463,10 @@ export default function MissionsPage() {
                 <Card>
                   <CardContent className="p-6 flex items-center gap-4">
                     <div
-                      className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center"
+                      className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center"
                       aria-hidden="true"
                     >
-                      <Clock className="h-6 w-6 text-primary" />
+                      <Clock className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div className="flex flex-col-reverse">
                       <div className="text-xs text-muted-foreground">In Progress</div>
@@ -543,7 +541,7 @@ export default function MissionsPage() {
                         <Zap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                         <h2 className="text-lg font-semibold mb-2">No Active Missions</h2>
                         <p className="text-muted-foreground text-sm">
-                          New missions are added regularly. Check back soon for new challenges!
+                          New missions are added regularly. Check back soon.
                         </p>
                       </CardContent>
                     </Card>
@@ -591,13 +589,13 @@ export default function MissionsPage() {
                                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                   <span>Completed {formatCompletedAt(detail.progress.completed_at)}</span>
                                   {detail.progress.mission.reward_description && (
-                                    <span className="text-chart-3">
+                                    <span className="text-foreground">
                                       Earned: {detail.progress.mission.reward_description}
                                     </span>
                                   )}
                                 </div>
                               </div>
-                              <Trophy className="h-8 w-8 text-chart-5" aria-hidden="true" />
+                              <Trophy className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
                             </div>
                           </CardContent>
                         </Card>

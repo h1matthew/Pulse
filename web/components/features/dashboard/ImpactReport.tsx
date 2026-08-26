@@ -89,27 +89,17 @@ import {
 } from "recharts"
 
 // ============================================================================
-// Chart Colors (match theme.css --chart-1 through --chart-5)
+// Chart Colors (theme.css --chart-1 through --chart-5)
 // ============================================================================
 
-/** Fallback hex colors for SSR / environments without CSS variable access */
-const FALLBACK_CHART_COLORS = [
-  "#0d9488", // teal
-  "#e07a5f", // coral
-  "#4ade80", // green
-  "#a78bfa", // purple
-  "#facc15", // yellow
+/** Series colors reference the theme tokens so charts follow light/dark and print */
+const CHART_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ]
-
-/** Reads resolved chart colors from the current theme's CSS variables */
-function getResolvedChartColors(): string[] {
-  if (typeof window === "undefined") return FALLBACK_CHART_COLORS
-  const style = getComputedStyle(document.documentElement)
-  return FALLBACK_CHART_COLORS.map((fallback, i) => {
-    const value = style.getPropertyValue(`--chart-${i + 1}`).trim()
-    return value || fallback
-  })
-}
 
 // ============================================================================
 // Main Dialog
@@ -200,23 +190,24 @@ export function ImpactReportDialog({
   <meta charset="utf-8" />
   ${styles}
   <style>
-    /* Force light mode — override any dark theme */
+    /* Force light mode — the light-mode tokens from theme.css, verbatim */
     :root {
-      --background: oklch(0.98 0.005 250);
-      --foreground: oklch(0.2 0.02 250);
+      --background: oklch(0.99 0 0);
+      --foreground: oklch(0.1 0.01 260);
       --card: oklch(1 0 0);
-      --card-foreground: oklch(0.2 0.02 250);
-      --muted: oklch(0.95 0.01 250);
-      --muted-foreground: oklch(0.55 0.02 250);
-      --border: oklch(0.9 0.01 250);
-      --primary: oklch(0.6 0.18 175);
-      --secondary: oklch(0.92 0.05 45);
-      --secondary-foreground: oklch(0.3 0.08 45);
-      --chart-1: oklch(0.6 0.18 175);
-      --chart-2: oklch(0.7 0.16 45);
-      --chart-3: oklch(0.65 0.14 145);
-      --chart-4: oklch(0.6 0.15 280);
-      --chart-5: oklch(0.75 0.18 85);
+      --card-foreground: oklch(0.1 0.01 260);
+      --muted: oklch(0.96 0.005 260);
+      --muted-foreground: oklch(0.45 0.01 260);
+      --border: oklch(0.92 0.005 260);
+      --primary: oklch(0.55 0.2 260);
+      --primary-foreground: oklch(0.99 0 0);
+      --secondary: oklch(0.96 0.005 260);
+      --secondary-foreground: oklch(0.25 0.01 260);
+      --chart-1: oklch(0.55 0.2 260);
+      --chart-2: oklch(0.65 0.15 260);
+      --chart-3: oklch(0.48 0.16 260);
+      --chart-4: oklch(0.72 0.1 260);
+      --chart-5: oklch(0.4 0.12 260);
       color-scheme: light;
     }
     html, body {
@@ -357,7 +348,7 @@ export function ImpactReportDialog({
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" />
+                <FileText className="h-5 w-5 text-muted-foreground" />
                 Your Impact Report
               </DialogTitle>
               <DialogDescription>
@@ -598,13 +589,11 @@ function ReportCategoryChart({
 }: {
   data: ImpactReportData["categoryBreakdown"]
 }) {
-  const colors = useMemo(() => getResolvedChartColors(), [])
-
   const chartData = data.map((item, i) => ({
     name: item.category,
     value: item.checkIns,
     dollars: item.dollarsSpent,
-    fill: colors[i % colors.length],
+    fill: CHART_COLORS[i % CHART_COLORS.length],
   }))
 
   return (
@@ -1020,7 +1009,7 @@ function EmptyState({ dateRange }: { dateRange: DateRangeOption }) {
       <h4 className="font-medium mb-1">No activity yet</h4>
       <p className="text-sm text-muted-foreground max-w-sm">
         {dateRange === "all_time"
-          ? "Start discovering local businesses to build your impact report!"
+          ? "Check in at a local business to start building your impact report."
           : `No activity found for ${getDateRangeLabel(dateRange).toLowerCase()}. Try selecting a wider date range.`}
       </p>
     </div>

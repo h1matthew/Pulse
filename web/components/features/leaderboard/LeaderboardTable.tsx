@@ -42,7 +42,7 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
                 <span className="font-medium text-foreground">{entry.display_name}</span>
               </td>
               <td className="px-4 py-3 text-right">
-                <span className="font-semibold text-primary">{entry.total_score.toLocaleString()}</span>
+                <span className="font-semibold text-foreground">{entry.total_score.toLocaleString()}</span>
               </td>
               <td className="px-4 py-3 text-right hidden sm:table-cell text-muted-foreground">
                 {entry.lessons_completed}

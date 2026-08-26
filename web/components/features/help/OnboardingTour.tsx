@@ -822,7 +822,7 @@ export function OnboardingTour() {
 
         {isCentered && step.icon && (
           <div className="mt-4 flex justify-center" aria-hidden="true">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
               <step.icon className="h-6 w-6" />
             </div>
           </div>

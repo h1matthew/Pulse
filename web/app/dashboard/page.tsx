@@ -281,8 +281,8 @@ export default function DashboardPage() {
           <AnimatedSection animation="fade-up">
             <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 mb-3">
-                  <Activity className="h-4 w-4 text-primary" />
+                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 mb-3">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Your Impact Dashboard</span>
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight">
@@ -291,10 +291,10 @@ export default function DashboardPage() {
                 <p className="text-muted-foreground mt-1 max-w-xl">
                   {impact && Number(impact.estimated_dollars_kept_local) > 0 ? (
                     <>
-                      You&apos;ve kept <span className="font-semibold text-primary">${Math.round(Number(impact.estimated_dollars_kept_local)).toLocaleString()}</span> in your community.
+                      You&apos;ve kept <span className="font-semibold text-foreground">${Math.round(Number(impact.estimated_dollars_kept_local)).toLocaleString()}</span> in your community.
                     </>
                   ) : (
-                    "Start your journey to support local businesses."
+                    "Check in at a local business to start tracking your impact."
                   )}
                 </p>
               </div>
@@ -315,7 +315,7 @@ export default function DashboardPage() {
                     {impactLoading ? (
                       <Skeleton className="h-12 w-32" />
                     ) : (
-                      <CardTitle className="text-5xl font-bold tabular-nums gradient-text">
+                      <CardTitle className="text-5xl font-bold tabular-nums">
                         {impactScore.toLocaleString()}
                       </CardTitle>
                     )}
@@ -331,7 +331,7 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <DollarSign className="h-3.5 w-3.5 text-chart-1" />
+                        <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
                         Dollars Local
                       </p>
                       {impactLoading ? (
@@ -344,7 +344,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Store className="h-3.5 w-3.5 text-chart-2" />
+                        <Store className="h-3.5 w-3.5 text-muted-foreground" />
                         Businesses
                       </p>
                       {impactLoading ? (
@@ -357,7 +357,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Users className="h-3.5 w-3.5 text-chart-3" />
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
                         Jobs Impacted
                       </p>
                       {impactLoading ? (
@@ -370,7 +370,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 text-chart-4" />
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                         Check-ins
                       </p>
                       {impactLoading ? (
@@ -420,7 +420,7 @@ export default function DashboardPage() {
                   {impactDisplay?.nextTier ? (
                     <p className="w-full">Next: {impactDisplay.nextTier.name}</p>
                   ) : (
-                    <p className="w-full">Top tier reached!</p>
+                    <p className="w-full">Top tier reached</p>
                   )}
                 </CardFooter>
               </Card>
@@ -434,7 +434,7 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
                     Engagement Breakdown
                   </CardTitle>
                   <CardDescription>Your activity across all categories</CardDescription>
@@ -460,7 +460,7 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Target className="h-4 w-4 text-primary" />
+                    <Target className="h-4 w-4 text-muted-foreground" />
                     Impact Profile
                   </CardTitle>
                   <CardDescription>Relative strength across impact areas</CardDescription>
@@ -492,7 +492,7 @@ export default function DashboardPage() {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle className="text-base flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-chart-3" />
+                        <Zap className="h-4 w-4 text-muted-foreground" />
                         Active Missions
                       </CardTitle>
                       <CardDescription>Complete missions to earn rewards</CardDescription>
@@ -549,7 +549,7 @@ export default function DashboardPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Activity className="h-4 w-4 text-primary" />
+                      <Activity className="h-4 w-4 text-muted-foreground" />
                       Recent Activity
                     </CardTitle>
                   </CardHeader>
@@ -568,15 +568,11 @@ export default function DashboardPage() {
                             className="flex items-center justify-between py-3 border-b last:border-0"
                           >
                             <div className="flex items-center gap-3">
-                              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                                activity.type === "check_in" ? "bg-chart-1/10" :
-                                activity.type === "review" ? "bg-chart-4/10" :
-                                activity.type === "bookmark" ? "bg-chart-5/10" : "bg-chart-2/10"
-                              }`}>
-                                {activity.type === "check_in" && <TrendingUp className="h-4 w-4 text-chart-1" />}
-                                {activity.type === "review" && <Star className="h-4 w-4 text-chart-4" />}
-                                {activity.type === "bookmark" && <Store className="h-4 w-4 text-chart-5" />}
-                                {activity.type === "deal_claimed" && <DollarSign className="h-4 w-4 text-chart-2" />}
+                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                {activity.type === "check_in" && <TrendingUp className="h-4 w-4 text-muted-foreground" />}
+                                {activity.type === "review" && <Star className="h-4 w-4 text-muted-foreground" />}
+                                {activity.type === "bookmark" && <Store className="h-4 w-4 text-muted-foreground" />}
+                                {activity.type === "deal_claimed" && <DollarSign className="h-4 w-4 text-muted-foreground" />}
                               </div>
                               <div>
                                 <p className="text-sm font-medium">
@@ -584,7 +580,7 @@ export default function DashboardPage() {
                                   {activity.type === "review" && "Reviewed "}
                                   {activity.type === "bookmark" && "Bookmarked "}
                                   {activity.type === "deal_claimed" && "Claimed deal at "}
-                                  <span className="text-primary">{activity.business}</span>
+                                  <span className="text-foreground">{activity.business}</span>
                                 </p>
                                 <p className="text-xs text-muted-foreground">{activity.time}</p>
                               </div>
@@ -598,7 +594,7 @@ export default function DashboardPage() {
                     ) : (
                       <div className="text-center py-6 text-muted-foreground">
                         <p className="text-sm">No recent activity</p>
-                        <p className="text-xs mt-1">Start exploring local businesses!</p>
+                        <p className="text-xs mt-1">Check in somewhere to see it here.</p>
                       </div>
                     )}
                   </CardContent>
@@ -644,7 +640,7 @@ export default function DashboardPage() {
                       {pulseLoading ? (
                         <Skeleton className="h-10 w-24 mx-auto mb-1" />
                       ) : (
-                        <div className="text-3xl font-bold gradient-text mb-1">
+                        <div className="text-3xl font-bold mb-1">
                           {(communityImpact?.pulseScore || 0).toLocaleString()}
                         </div>
                       )}
@@ -677,7 +673,7 @@ export default function DashboardPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Star className="h-4 w-4 text-chart-5" />
+                      <Star className="h-4 w-4 text-muted-foreground" />
                       Spotlight
                     </CardTitle>
                   </CardHeader>
@@ -692,7 +688,7 @@ export default function DashboardPage() {
                               <img src={photoUrl} alt={featuredBusiness.name} className="w-full h-full object-cover" />
                             </div>
                           ) : (
-                            <div className="h-20 bg-gradient-to-br from-primary/10 to-chart-2/10 rounded-lg flex items-center justify-center text-3xl mb-3">
+                            <div className="h-20 bg-muted rounded-lg flex items-center justify-center text-3xl mb-3">
                               {featuredBusiness.category?.icon || "🏪"}
                             </div>
                           )
@@ -714,7 +710,7 @@ export default function DashboardPage() {
                       </>
                     ) : (
                       <p className="text-center py-4 text-muted-foreground text-sm">
-                        Discover amazing local businesses!
+                        No spotlight business available right now.
                       </p>
                     )}
                   </CardContent>

@@ -60,8 +60,8 @@ export default function LeaderboardPage() {
           {/* Header */}
           <AnimatedSection animation="fade-up">
             <div className="mb-8 text-center" data-tour="leaderboard">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm mb-4">
-                <Trophy className="h-4 w-4 text-primary" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm mb-4">
+                <Trophy className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Community Leaders</span>
               </div>
               <h1 className="text-3xl font-bold tracking-tight mb-2">
@@ -76,12 +76,12 @@ export default function LeaderboardPage() {
           {/* User's Rank Card (if logged in and has rank) */}
           {user && (userRank || currentUserEntry) && (
             <AnimatedSection animation="fade-up" delay={0.1}>
-              <Card className="mb-8 bg-gradient-to-br from-primary/5 via-background to-chart-2/5 border-primary/20">
+              <Card className="mb-8">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <TrendingUp className="h-6 w-6 text-primary" />
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                        <TrendingUp className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Your Rank</p>
@@ -93,7 +93,7 @@ export default function LeaderboardPage() {
                     {currentUserEntry && (
                       <div className="text-right">
                         <p className="text-sm text-muted-foreground">Your Score</p>
-                        <p className="text-2xl font-bold gradient-text">
+                        <p className="text-2xl font-bold">
                           {currentUserEntry.impact_score.toLocaleString()}
                         </p>
                       </div>
@@ -109,7 +109,7 @@ export default function LeaderboardPage() {
             <div className="grid grid-cols-3 gap-4 mb-8">
               <Card>
                 <CardContent className="p-4 text-center" suppressHydrationWarning>
-                  <DollarSign className="h-5 w-5 text-primary mx-auto mb-1" />
+                  <DollarSign className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
                   <div className="text-2xl font-bold">
                     {isLoading ? (
                       <Skeleton className="h-8 w-16 mx-auto" />
@@ -122,7 +122,7 @@ export default function LeaderboardPage() {
               </Card>
               <Card>
                 <CardContent className="p-4 text-center" suppressHydrationWarning>
-                  <Users className="h-5 w-5 text-chart-2 mx-auto mb-1" />
+                  <Users className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
                   <div className="text-2xl font-bold">
                     {isLoading ? (
                       <Skeleton className="h-8 w-16 mx-auto" />
@@ -135,7 +135,7 @@ export default function LeaderboardPage() {
               </Card>
               <Card>
                 <CardContent className="p-4 text-center" suppressHydrationWarning>
-                  <Trophy className="h-5 w-5 text-chart-3 mx-auto mb-1" />
+                  <Trophy className="h-5 w-5 text-muted-foreground mx-auto mb-1" />
                   <div className="text-2xl font-bold">
                     {isLoading ? (
                       <Skeleton className="h-8 w-16 mx-auto" />
@@ -156,7 +156,7 @@ export default function LeaderboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-primary" />
+                  <Trophy className="h-5 w-5 text-muted-foreground" />
                   Top Supporters
                 </CardTitle>
               </CardHeader>

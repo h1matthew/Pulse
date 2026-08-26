@@ -73,8 +73,8 @@ function BookmarkCard({
         <CardContent className="p-0">
           {/* Image Placeholder */}
           <div className="h-40 bg-secondary flex items-center justify-center relative">
-            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10">
-              <Store className="h-7 w-7 text-primary" aria-hidden="true" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted">
+              <Store className="h-7 w-7 text-muted-foreground" aria-hidden="true" />
             </div>
             <Button
               variant="ghost"
@@ -91,9 +91,7 @@ function BookmarkCard({
           <div className="p-5">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
-                  {business.name}
-                </h3>
+                <h3 className="font-semibold text-lg">{business.name}</h3>
                 <p className="text-sm text-muted-foreground">
                   {business.category?.name}
                 </p>
@@ -291,8 +289,8 @@ export default function BookmarksPage() {
         <Header />
         <div className="pt-28 pb-12">
           <div className="mx-auto max-w-6xl px-6 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-              <Lock className="h-6 w-6 text-primary" aria-hidden="true" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+              <Lock className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
             </div>
             <h1 className="text-2xl font-bold mb-2">Sign in required</h1>
             <p className="text-muted-foreground mb-2">
@@ -340,7 +338,7 @@ export default function BookmarksPage() {
               >
                 <div className="flex flex-1 items-start gap-3">
                   <Info
-                    className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                    className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
                     aria-hidden="true"
                   />
                   <div>
@@ -382,8 +380,8 @@ export default function BookmarksPage() {
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                    <Bookmark className="h-6 w-6 text-primary" aria-hidden="true" />
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                    <Bookmark className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">
                     No bookmarks yet
@@ -413,7 +411,7 @@ export default function BookmarksPage() {
           <AnimatedSection animation="fade-up">
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-2">
-                <Heart className="h-6 w-6 text-chart-5" />
+                <Heart className="h-6 w-6 text-muted-foreground" />
                 <h1 className="text-3xl font-bold tracking-tight">
                   Your Bookmarks
                 </h1>
@@ -429,8 +427,8 @@ export default function BookmarksPage() {
             <div className="grid sm:grid-cols-3 gap-4 mb-8">
               <Card>
                 <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-chart-5/10 flex items-center justify-center">
-                    <Heart className="h-6 w-6 text-chart-5" />
+                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+                    <Heart className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div suppressHydrationWarning>
                     {isLoading ? (
@@ -446,8 +444,8 @@ export default function BookmarksPage() {
               </Card>
               <Card>
                 <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Star className="h-6 w-6 text-primary" />
+                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+                    <Star className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div suppressHydrationWarning>
                     {isLoading ? (
@@ -463,8 +461,8 @@ export default function BookmarksPage() {
               </Card>
               <Card>
                 <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-chart-2/10 flex items-center justify-center">
-                    <MapPin className="h-6 w-6 text-chart-2" />
+                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+                    <MapPin className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div suppressHydrationWarning>
                     {isLoading ? (
@@ -507,8 +505,8 @@ export default function BookmarksPage() {
             ) : (
               <AnimatedSection animation="fade-up" delay={0.2}>
                 <div className="text-center py-16">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                    <Bookmark className="h-6 w-6 text-primary" aria-hidden="true" />
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                    <Bookmark className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">
                     No bookmarks yet

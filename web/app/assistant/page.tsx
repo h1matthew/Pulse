@@ -131,7 +131,7 @@ export default function AssistantPage() {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content:
-          "I'm sorry, I'm having trouble connecting right now. Please try again in a moment!",
+          "I can't reach the assistant right now. Please try again in a moment.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -169,8 +169,8 @@ export default function AssistantPage() {
                     animate={{ scale: 1, opacity: 1 }}
                     className="mb-6"
                   >
-                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center shadow-lg shadow-primary/25">
-                      <Sparkles className="h-10 w-10 text-white" />
+                    <div className="h-20 w-20 rounded-2xl bg-muted flex items-center justify-center">
+                      <Sparkles className="h-10 w-10 text-muted-foreground" />
                     </div>
                   </motion.div>
 
@@ -189,9 +189,8 @@ export default function AssistantPage() {
                     transition={{ delay: 0.2 }}
                     className="text-muted-foreground max-w-md mb-8"
                   >
-                    Your AI-powered guide to discovering amazing local
-                    businesses and understanding your community impact. Ask me
-                    anything!
+                    Ask about local businesses near you, how Boost Missions and
+                    deals work, or what your check-ins add up to.
                   </motion.p>
 
                   {/* Quick Start Buttons */}
@@ -257,7 +256,7 @@ export default function AssistantPage() {
                                   <button
                                     key={i}
                                     onClick={() => handleSend(suggestion)}
-                                    className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-primary/10 hover:text-primary transition-colors text-muted-foreground"
+                                    className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-accent hover:text-foreground transition-colors text-muted-foreground"
                                   >
                                     {suggestion}
                                   </button>
@@ -327,14 +326,14 @@ export default function AssistantPage() {
               {/* Suggested Questions Card */}
               <Card className="p-5">
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
+                  <Sparkles className="h-4 w-4 text-muted-foreground" />
                   Suggested Questions
                 </h3>
 
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-chart-2" />
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                       Discover
                     </h4>
                     <div className="space-y-1.5">
@@ -352,7 +351,7 @@ export default function AssistantPage() {
 
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <TrendingUp className="h-3.5 w-3.5 text-chart-3" />
+                      <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
                       Impact
                     </h4>
                     <div className="space-y-1.5">
@@ -370,7 +369,7 @@ export default function AssistantPage() {
 
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <Zap className="h-3.5 w-3.5 text-chart-4" />
+                      <Zap className="h-3.5 w-3.5 text-muted-foreground" />
                       Features
                     </h4>
                     <div className="space-y-1.5">
@@ -389,9 +388,9 @@ export default function AssistantPage() {
               </Card>
 
               {/* Mission Card */}
-              <Card className="p-5 bg-gradient-to-br from-primary/5 to-chart-2/5">
+              <Card className="p-5">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-primary" />
+                  <Heart className="h-4 w-4 text-muted-foreground" />
                   Our Mission
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -405,31 +404,6 @@ export default function AssistantPage() {
                     <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
                   </Button>
                 </Link>
-              </Card>
-
-              {/* Stats Card */}
-              <Card className="p-5">
-                <h3 className="font-semibold mb-3">Why Local Matters</h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Money kept local
-                    </span>
-                    <span className="font-medium text-chart-3">~68%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Economic multiplier
-                    </span>
-                    <span className="font-medium text-chart-2">2-4x</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      US jobs from small biz
-                    </span>
-                    <span className="font-medium text-chart-4">47.1%</span>
-                  </div>
-                </div>
               </Card>
             </div>
           </div>
