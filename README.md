@@ -1,6 +1,6 @@
 # Pulse - Local Business Discovery Platform
 
-Pulse is a local business discovery platform that shows users exactly how their spending and engagement strengthens their local economy. Every interaction feeds into a live economic impact dashboard, creating a powerful narrative around community empowerment.
+Pulse is a local business discovery platform that reports how a user's spending and engagement affect their local economy. Reviews, bookmarks, and claimed deals feed a live impact dashboard that totals dollars kept local and businesses supported.
 
 **Built for FBLA Coding & Programming 2025-2026** — Topic: "Byte-Sized Business Boost"
 
