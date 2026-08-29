@@ -4,6 +4,8 @@ Pulse is a local business discovery platform that reports how a user's spending 
 
 **Built for FBLA Coding & Programming 2025-2026** — Topic: "Byte-Sized Business Boost"
 
+![Pulse homepage](web/public/readme-home.png)
+
 ## Features
 
 ### Core Features (FBLA Required)
