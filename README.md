@@ -239,24 +239,10 @@ All dependencies are listed in `web/package.json`. Key open-source licenses:
 - **Google Places content**: Business names, addresses, ratings, reviews, and photos come from Google Places or related data providers and remain subject to their original owners and Google Maps Platform Terms.
 - **Gemini output**: AI responses are generated from user prompts plus retrieved Pulse business context. Gemini is credited as the AI provider.
 
-## Demo & Presentation Assets
-
-| Item | Location |
-|---|---|
-| Demo judge account seeder | `web/scripts/seed-demo-user.mjs` (creates `judge@pulse.demo` with bookmarks, reviews, check-ins, deal claims) |
-| Screenshot capture script | `web/scripts/capture.js` (Playwright, 1920×1080, walks every required feature) |
-| User guide | `USER_GUIDE.md` (feature walkthrough, advanced tools, and demo path) |
-| Presentation screenshots | `assets/` (10 code images via charmbracelet freeze + 11 app captures) |
-| Speaker script (7 min, 3 presenters) | `SPEAKER_SCRIPT.md` |
-| Live demo path + offline fallback | `DEMO_SCRIPT.md` |
-| Judge Q&A preparation | `QA_PREP.md` |
-| Canva animation guide | `CANVA_ANIMATION_GUIDE.md` |
-| Rubric gap audit | `GAPS.md` |
-
 ## License
 
 This project was created for the FBLA Coding & Programming 2025-2026 competition.
 
 ---
 
-**Pulse** - Strengthening local economies, one discovery at a time.
+**Pulse** - Local business discovery with a measured impact record.
