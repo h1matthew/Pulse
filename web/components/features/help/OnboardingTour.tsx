@@ -1,15 +1,13 @@
 /**
  * OnboardingTour — guided product walkthrough
  *
- * A coach-mark tour over the REAL app: it dims the page, spotlights actual
- * UI elements (search, category filters, the sort menu, a business card, then
- * the reviews/deals tabs and the check-in and bookmark buttons on a business
- * page), and walks the user through the full discover → review → deal → visit
- * loop before pointing out the AI assistant, the community leaderboard, and
- * the personal impact dashboard. Centered cards also explain the
- * bot-verification step that keeps reviews authentic and the exportable impact
- * report. Steps can navigate between routes, and the "open a business" step
- * advances when the user actually clicks the spotlighted card.
+ * A coach-mark tour over the REAL app: it dims the page and spotlights actual
+ * UI elements. Five steps, covering only what a first-time visitor cannot work
+ * out unaided — what Pulse measures, what a listing carries, how a deal code
+ * works, that a check-in needs a receipt, and where the impact ledger lives.
+ * Searching, filtering and sorting are self-evident and are not taught.
+ * Steps can navigate between routes, and the "open a business" step advances
+ * when the user actually clicks the spotlighted row.
  *
  * Mechanics:
  * - Targets are located by [data-tour="…"] anchors rendered by the pages.
@@ -23,12 +21,11 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, BarChart3, Check, PartyPopper, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { ArrowRight, BarChart3, Check, Sparkles, X } from 'lucide-react'
 import { TOUR_DEMO_BUSINESS_PATH } from '@/lib/demo/demo-business'
 import { Button } from '@/components/ui/button'
 import { PulseLogo } from '@/components/ui/PulseLogo'
 import { useAccessibility } from '@/components/providers/AccessibilityProvider'
-import { cn } from '@/lib/utils'
 
 /** LocalStorage key for tracking onboarding completion */
 const ONBOARDING_KEY = 'pulse_onboarding_completed'
@@ -88,63 +85,22 @@ const TOUR_STEPS: GuidedStep[] = [
     id: 'welcome',
     icon: Sparkles,
     title: 'Welcome to Pulse',
-    body: "Let's take a quick walk through the real thing — find a local spot, leave a review, grab a deal, and watch your visits strengthen the local economy. Takes about a minute.",
-    nextLabel: 'Start the tour',
-  },
-  {
-    id: 'search',
-    title: 'Search what you crave',
-    body: 'Type a dish, a shop name, or a service — go ahead, try it right now.',
-    target: '[data-tour="discover-search"]',
-    route: '/discover',
-    interactEvent: 'input',
-    interactedBody:
-      'See that? Results filter live as you type. Keep going, or press Next when you’re ready.',
-    focusTarget: true,
-  },
-  {
-    id: 'categories',
-    title: 'Sort by category',
-    body: 'One tap filters the whole feed by what you’re after — Food & Drink, Retail, Services, and more. Try tapping one.',
-    target: '[data-tour="discover-categories"]',
-    route: '/discover',
-    interactEvent: 'click',
-    interactedBody: 'Filtered! Tap around as much as you like, then press Next.',
-  },
-  {
-    id: 'sort',
-    title: 'Sort by rating or reviews',
-    body: 'The Sort menu reorders the whole feed in a tap — Top rated surfaces the best-loved spots, Most reviewed shows the proven favorites, or keep it Nearest.',
-    target: '[data-tour="discover-sort"]',
-    route: '/discover',
+    body: 'Find local businesses, save places, claim offers, and keep a simple record of your visits.',
+    nextLabel: 'Start',
   },
   {
     id: 'open-business',
     title: 'Meet a local business',
-    body: 'Ratings, distance, and whether it’s open right now — all on the card. Click it to take a closer look.',
+    body: 'Every row shows the rating, the distance, and whether it is open right now. Open one for hours, deals, and reviews.',
     target: '[data-tour="business-card"]',
     route: '/discover',
     advanceOnTargetClick: true,
     nextLabel: 'Open it for me',
   },
   {
-    id: 'reviews',
-    title: 'Share your experience',
-    body: 'Once you sign in you can leave a star rating and written review right here. Your honest take helps neighbors find the best local spots.',
-    target: '[data-tour="review-form"], [data-tour="review-empty"]',
-    businessPage: true,
-    activateTabTarget: '[data-tour="business-reviews"]',
-  },
-  {
-    id: 'verify',
-    icon: ShieldCheck,
-    title: 'Real people, real reviews',
-    body: 'Before any review posts, a quick “are you human?” puzzle plus rate limits block bots — so the ratings you see come from real visitors you can trust.',
-  },
-  {
     id: 'deals',
     title: 'Grab deals & coupons',
-    body: 'The Deals tab gathers special offers — discounts, BOGOs, and mission rewards. Claim one and you get a unique code to show in-store.',
+    body: 'The Deals tab gathers offers from this business. Claim one and you get a unique code to show in-store.',
     target: '[data-tour="business-deals"]',
     businessPage: true,
     activateTab: true,
@@ -152,42 +108,15 @@ const TOUR_STEPS: GuidedStep[] = [
   {
     id: 'check-in',
     title: 'Make your visit count',
-    body: 'After you buy something, hit Check In and snap your receipt. Verified visits advance missions and grow your local impact.',
+    body: 'After you buy something, hit Check In and snap your receipt. Verified visits are what advance missions and count toward your impact.',
     target: '[data-tour="business-checkin"]',
     businessPage: true,
-  },
-  {
-    id: 'bookmark',
-    title: 'Save your favorites',
-    body: 'Bookmark spots you love to build your go-to list and hear about their new deals first.',
-    target: '[data-tour="business-bookmark"]',
-    businessPage: true,
-  },
-  {
-    id: 'assistant',
-    title: 'Ask the AI assistant',
-    body: "This is the Pulse Assistant — tap a suggested question or type your own to see it in action. It's one tap away on every page.",
-    target: '[data-tour="chat-panel"]',
-    opensChat: true,
-  },
-  {
-    id: 'leaderboard',
-    title: 'Climb the leaderboard',
-    body: 'Your reviews, check-ins, and dollars kept local earn you a rank among the top local supporters — a little friendly competition for a good cause.',
-    target: '[data-tour="leaderboard"]',
-    route: '/leaderboard',
   },
   {
     id: 'impact',
     icon: BarChart3,
     title: 'Track your local impact',
-    body: 'Your dashboard turns every visit into real numbers — dollars kept local, businesses supported, jobs impacted — and exports the full report as a CSV.',
-  },
-  {
-    id: 'done',
-    icon: PartyPopper,
-    title: "That's the loop",
-    body: "That's the whole loop — discover, support, and watch your local impact add up. Enjoy exploring and keeping it local!",
+    body: 'Your dashboard turns every verified visit into real numbers — dollars kept local, businesses supported, jobs impacted — and exports the full report as a CSV.',
     nextLabel: 'Get started',
   },
 ]
@@ -405,11 +334,29 @@ export function OnboardingTour() {
       return
     }
 
-    const timer = setTimeout(() => {
-      setActive(true)
-      announce('Welcome to Pulse! A guided tour is available.', 'polite')
-    }, 1500)
-    return () => clearTimeout(timer)
+    // Never compete with the first paint: wait until the page has finished
+    // loading and the main thread is idle before offering the tour.
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const offer = () => {
+      timer = setTimeout(() => {
+        setActive(true)
+        announce('Welcome to Pulse! A guided tour is available.', 'polite')
+      }, 1500)
+    }
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
+    }
+    const schedule = () => {
+      if (win.requestIdleCallback) win.requestIdleCallback(offer, { timeout: 2000 })
+      else offer()
+    }
+    if (document.readyState === 'complete') schedule()
+    else window.addEventListener('load', schedule, { once: true })
+
+    return () => {
+      window.removeEventListener('load', schedule)
+      if (timer) clearTimeout(timer)
+    }
   }, [announce])
 
   // Restart hook for the help menu
@@ -781,7 +728,7 @@ export function OnboardingTour() {
           <div className="pointer-events-auto absolute bg-black/55" style={{ top: 'calc(var(--tour-ht, 0px) + var(--tour-hh, 0px))', left: 0, right: 0, bottom: 0 }} />
           {/* Spotlight ring */}
           <div
-            className="pointer-events-none absolute animate-fade-in rounded-xl border-2 border-primary shadow-[0_0_0_4px] shadow-primary/25"
+            className="pointer-events-none absolute animate-fade-in rounded-md border border-primary"
             style={{ top: 'var(--tour-ht, 0px)', left: 'var(--tour-hl, 0px)', width: 'var(--tour-hw, 0px)', height: 'var(--tour-hh, 0px)' }}
             aria-hidden="true"
           />
@@ -800,12 +747,12 @@ export function OnboardingTour() {
           aria-modal="false"
           aria-label={`Tour step ${stepIndex + 1} of ${TOUR_STEPS.length}: ${step.title}`}
           tabIndex={-1}
-          className="pointer-events-auto w-[min(360px,calc(100vw-28px))] rounded-2xl border border-border bg-background p-5 shadow-2xl outline-none animate-scale-in"
+          className="pointer-events-auto w-[min(360px,calc(100vw-28px))] animate-scale-in rounded-lg border border-border-strong bg-surface-2 p-5 outline-none"
         >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <PulseLogo className="h-6 w-6" />
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <PulseLogo className="h-6 w-6 text-primary" />
+            <p className="font-mono text-meta tracking-[0.02em] text-text-tertiary">
               Step {stepIndex + 1} of {TOUR_STEPS.length}
             </p>
           </div>
@@ -822,37 +769,20 @@ export function OnboardingTour() {
 
         {isCentered && step.icon && (
           <div className="mt-4 flex justify-center" aria-hidden="true">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-              <step.icon className="h-6 w-6" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-3 text-text-tertiary">
+              <step.icon className="h-5 w-5" />
             </div>
           </div>
         )}
 
-        <h2 className="mt-3 text-lg font-semibold tracking-tight">{step.title}</h2>
-        <p className="mt-1.5 text-sm leading-6 text-muted-foreground" aria-live="polite">
+        <h2 className="mt-3 text-h3 font-medium">{step.title}</h2>
+        <p className="mt-1.5 text-small text-muted-foreground" aria-live="polite">
           {waitingForTarget
             ? 'Taking you there…'
             : interacted && step.interactedBody
               ? step.interactedBody
               : step.body}
         </p>
-
-        {/* Progress dots */}
-        <div className="mt-4 flex items-center gap-1.5" aria-hidden="true">
-          {TOUR_STEPS.map((s, index) => (
-            <span
-              key={s.id}
-              className={cn(
-                'h-1.5 rounded-full transition-all',
-                index === stepIndex
-                  ? 'w-5 bg-primary'
-                  : index < stepIndex
-                    ? 'w-1.5 bg-primary/50'
-                    : 'w-1.5 bg-muted'
-              )}
-            />
-          ))}
-        </div>
 
         <div className="mt-4 flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={handleSkip}>

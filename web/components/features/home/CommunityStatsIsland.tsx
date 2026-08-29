@@ -7,7 +7,6 @@ import { useNearbyBusinesses } from '@/hooks/useBusinesses'
 import { isChainBusiness } from '@/lib/business/classify'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
 import type { BusinessWithCategory, LatLng } from '@/types/business'
 
 // San Antonio, TX — default location when the visitor hasn't shared theirs.
@@ -45,6 +44,10 @@ function formatCompact(n: number): string {
   return n.toString()
 }
 
+// Compact mono readout — an instrument line, not a marketing counter.
+const STAT_READOUT =
+  'flex flex-wrap items-baseline gap-x-8 gap-y-2 font-mono text-meta uppercase tracking-wide text-text-tertiary'
+
 // Bar width scale maximums
 const MAX_DOLLARS = 3_200_000
 const MAX_BUSINESSES = 1_000
@@ -57,23 +60,6 @@ function barPct(value: number, max: number): number {
 // ============================================================================
 // Sub-components
 // ============================================================================
-
-interface StatCardProps {
-  value: string
-  label: string
-  colorClass: string
-}
-
-function StatCard({ value, label, colorClass }: StatCardProps) {
-  return (
-    <Card className="bg-card">
-      <CardContent className="p-4 text-center">
-        <div className={cn('text-2xl font-mono font-semibold', colorClass)}>{value}</div>
-        <div className="text-xs text-muted-foreground">{label}</div>
-      </CardContent>
-    </Card>
-  )
-}
 
 interface MetricRowProps {
   label: string
@@ -106,9 +92,9 @@ function HeroStatsSkeleton() {
   return (
     <>
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="text-center space-y-1.5">
-          <Skeleton className="h-9 w-24 mx-auto" />
-          <Skeleton className="h-3.5 w-20 mx-auto" />
+        <div key={i} className="flex items-center gap-1.5">
+          <Skeleton className="h-3 w-8" />
+          <Skeleton className="h-3 w-20" />
         </div>
       ))}
     </>
@@ -178,7 +164,7 @@ export function HeroStats() {
 
   if (!mounted || pulseLoading || nearbyLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto">
+      <div className={STAT_READOUT}>
         <HeroStatsSkeleton />
       </div>
     )
@@ -192,24 +178,21 @@ export function HeroStats() {
   // Nothing measured yet (empty install): show nothing rather than stand-in numbers.
   if (!businesses && !reviews && !supported && !activeUsers) return null
 
+  const readout = [
+    { label: 'Businesses', value: businesses.toLocaleString() },
+    { label: 'Reviews', value: formatCompact(reviews) },
+    { label: 'Places Supported', value: supported.toLocaleString() },
+    { label: 'Community Members', value: formatCompact(activeUsers) },
+  ]
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 max-w-4xl mx-auto">
-      <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{businesses.toLocaleString()}</div>
-        <div className="text-sm text-muted-foreground mt-1">Businesses</div>
-      </div>
-      <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatCompact(reviews)}</div>
-        <div className="text-sm text-muted-foreground mt-1">Reviews</div>
-      </div>
-      <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{supported.toLocaleString()}</div>
-        <div className="text-sm text-muted-foreground mt-1">Places Supported</div>
-      </div>
-      <div className="text-center">
-        <div className="text-3xl sm:text-4xl font-mono font-semibold tracking-tight text-foreground">{formatCompact(activeUsers)}</div>
-        <div className="text-sm text-muted-foreground mt-1">Community Members</div>
-      </div>
+    <div className={STAT_READOUT}>
+      {readout.map((stat) => (
+        <div key={stat.label} className="flex items-baseline gap-1.5">
+          <span className="tabular-nums text-foreground">{stat.value}</span>
+          <span>{stat.label}</span>
+        </div>
+      ))}
     </div>
   )
 }

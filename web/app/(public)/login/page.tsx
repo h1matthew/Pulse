@@ -180,15 +180,15 @@ export default function LoginPage() {
     <>
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-6">
         <div className="w-full max-w-sm animate-scale-in">
-          <Card className="border-border/50">
+          <Card className="border-border/70">
             <CardHeader className="text-center pb-2">
-              <CardTitle className="text-2xl font-bold">
-                {showForgotPassword ? "Reset Password" : "Welcome"}
+              <CardTitle className="text-h3 font-medium">
+                {showForgotPassword ? "Reset password" : "Sign in"}
               </CardTitle>
               <CardDescription>
                 {showForgotPassword
                   ? "Enter your email to receive a reset link"
-                  : "Sign in to discover local deals and track community impact"}
+                  : "Use your account to save places, claim deals, and keep a verified ledger."}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2">
@@ -237,8 +237,8 @@ export default function LoginPage() {
               ) : (
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="login" className="transition-all duration-200 data-[state=active]:shadow-sm">Log in</TabsTrigger>
-                    <TabsTrigger value="signup" className="transition-all duration-200 data-[state=active]:shadow-sm">Sign up</TabsTrigger>
+                    <TabsTrigger value="login" className="transition-colors duration-200">Log in</TabsTrigger>
+                    <TabsTrigger value="signup" className="transition-colors duration-200">Sign up</TabsTrigger>
                   </TabsList>
 
                   <div className="min-h-[296px] relative">
@@ -383,15 +383,15 @@ export default function LoginPage() {
           </Card>
 
           <p className="mt-6 text-center text-xs text-muted-foreground transition-colors duration-200 hover:text-foreground/70">
-            Discover local businesses &middot; Sign in to track your community impact
+            Local directory &middot; Saved places &middot; Verified spend
           </p>
         </div>
       </main>
 
       {showLoginCaptchaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-lg border border-border bg-background p-4 shadow-xl space-y-3">
-            <h3 className="text-base font-semibold">Security Check</h3>
+          <div className="w-full max-w-sm space-y-3 rounded-lg border border-border bg-background p-4">
+            <h3 className="text-base font-semibold">Security check</h3>
             <p className="text-sm text-muted-foreground">
               Complete this CAPTCHA to continue signing in.
             </p>

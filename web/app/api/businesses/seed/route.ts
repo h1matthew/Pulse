@@ -244,7 +244,7 @@ export async function POST(request: Request) {
 
   // Step 3: Resolve photos and insert into DB
   let synced = 0
-  let photosFailed = 0
+  const photosFailed = 0
 
   for (const [placeId, { place, categorySlug }] of allPlaces) {
     try {
@@ -268,8 +268,8 @@ export async function POST(request: Request) {
       const types = (place.types || []).filter(t => t !== 'establishment' && t !== 'point_of_interest')
       const primaryType = place.primaryType?.replace(/_/g, ' ') || types[0]?.replace(/_/g, ' ') || ''
       const desc = primaryType
-        ? `${name} is a local ${primaryType} proudly serving the community`
-        : `${name} is a local business proudly serving the community`
+        ? `${name} is listed as a local ${primaryType}`
+        : `${name} is listed as a local business`
 
       const businessData = {
         name,

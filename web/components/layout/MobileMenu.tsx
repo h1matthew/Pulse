@@ -17,7 +17,7 @@ import { SignOutButton } from './SignOutButton'
 
 const NAV_ITEMS_PUBLIC = [
   { href: '/about', label: 'About', icon: Users },
-  { href: '/mission', label: 'Our Mission', icon: Heart },
+  { href: '/mission', label: 'How we pick', icon: Heart },
   { href: '/get-involved', label: 'Get Involved', icon: Handshake },
 ]
 
@@ -25,7 +25,7 @@ const NAV_ITEMS_LOGGED_IN = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/missions', label: 'Missions', icon: Zap },
   { href: '/about', label: 'About', icon: Users },
-  { href: '/mission', label: 'Our Mission', icon: Heart },
+  { href: '/mission', label: 'How we pick', icon: Heart },
   { href: '/get-involved', label: 'Get Involved', icon: Handshake },
 ]
 
@@ -62,8 +62,8 @@ export function MobileMenu() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PulseLogo className="h-10 w-10 text-foreground" />
-              <span className="font-semibold">Pulse</span>
+              <PulseLogo className="h-7 w-7 text-primary" />
+              <span className="text-body font-medium">Pulse</span>
             </div>
             <div className="flex items-center gap-1">
               <ThemeToggle />
@@ -79,14 +79,14 @@ export function MobileMenu() {
           </div>
 
           <div className="mt-6 flow-root">
-            <div className="-my-6 divide-y divide-border/50">
+            <div className="-my-6 divide-y divide-border">
               <div className="space-y-2 py-6">
                 {navItems.map((item) => (
                   <NavLink
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className="-mx-3 flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-foreground hover:bg-muted"
+                    className="-mx-3 flex items-center gap-3 rounded-md px-3 py-2.5 text-body text-foreground hover:bg-surface-2"
                   >
                     <item.icon className="h-5 w-5 text-muted-foreground" />
                     {item.label}
@@ -99,7 +99,7 @@ export function MobileMenu() {
                     <SignOutButton>
                       <button
                         type="button"
-                        className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium text-foreground hover:bg-muted"
+                        className="w-full flex items-center gap-3 rounded-md px-3 py-2.5 text-body text-foreground hover:bg-surface-2"
                       >
                         Sign out
                       </button>
@@ -109,7 +109,7 @@ export function MobileMenu() {
                   <NavLink
                     href="/login"
                     onClick={() => setOpen(false)}
-                    className="-mx-3 block rounded-lg px-3 py-2.5 text-base font-medium text-foreground hover:bg-muted"
+                    className="-mx-3 block rounded-md px-3 py-2.5 text-body text-foreground hover:bg-surface-2"
                   >
                     Sign in
                   </NavLink>

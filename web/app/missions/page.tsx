@@ -1,10 +1,9 @@
 "use client";
 
-import { Zap, Trophy, Clock, ChevronRight, LogIn, Loader2, Flame, Users, MapPin, Star } from "lucide-react";
+import { Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +24,7 @@ import {
   useStartMission,
 } from "@/hooks/useMissions";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { MISSION_CONFIGS } from "@/types/mission";
-import type { MissionType, BoostMissionWithCategory, MissionProgressDetails } from "@/types/mission";
-
-function getMissionIcon(missionType: MissionType): string {
-  return MISSION_CONFIGS[missionType]?.icon ?? "🎯";
-}
+import type { BoostMissionWithCategory, MissionProgressDetails } from "@/types/mission";
 
 function getDifficultyLabel(targetCount: number): string {
   if (targetCount <= 3) return "Easy";
@@ -59,42 +53,25 @@ function formatCompletedAt(completedAt: string | null): string {
   return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? "s" : ""} ago`;
 }
 
-function MissionCardSkeleton() {
+function MissionRowSkeleton() {
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col md:flex-row md:items-center gap-6">
-          <Skeleton className="h-12 w-12 rounded-xl" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-5 w-48" />
-            <Skeleton className="h-4 w-full max-w-md" />
-            <Skeleton className="h-3 w-36" />
-          </div>
-          <div className="w-full md:w-48 space-y-2">
-            <Skeleton className="h-2 w-full" />
-            <Skeleton className="h-8 w-full" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex gap-4 py-4">
+      <Skeleton className="h-6 w-14 shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-3 w-full max-w-md" />
+        <Skeleton className="h-3 w-36" />
+      </div>
+      <Skeleton className="h-7 w-24 shrink-0" />
+    </div>
   );
 }
 
 function StatsSkeleton() {
   return (
-    <div className="grid sm:grid-cols-3 gap-4 mb-8" role="status" aria-busy="true">
+    <div className="mt-3" role="status" aria-busy="true">
       <span className="sr-only">Loading mission stats…</span>
-      {[1, 2, 3].map((i) => (
-        <Card key={i}>
-          <CardContent className="p-6 flex items-center gap-4">
-            <Skeleton className="h-12 w-12 rounded-xl" />
-            <div className="space-y-1">
-              <Skeleton className="h-7 w-8" />
-              <Skeleton className="h-3 w-20" />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      <Skeleton className="h-3 w-64" />
     </div>
   );
 }
@@ -117,7 +94,6 @@ function ActiveMissionCard({ mission, progressDetail, index, isLoggedIn }: Activ
   const currentCount = progressDetail?.progress.current_count ?? 0;
   const targetCount = mission.target_count;
   const percentComplete = targetCount > 0 ? (currentCount / targetCount) * 100 : 0;
-  const icon = getMissionIcon(mission.mission_type as MissionType);
   const categoryName = mission.category?.name ?? mission.mission_type.replace("_", " ");
   const difficulty = getDifficultyLabel(targetCount);
 
@@ -143,238 +119,65 @@ function ActiveMissionCard({ mission, progressDetail, index, isLoggedIn }: Activ
 
   return (
     <AnimatedSection animation="fade-up" delay={0.1 * (index + 2)}>
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center gap-6">
-            <div className="text-5xl" aria-hidden="true">{icon}</div>
+      <div className="card-lift flex flex-col gap-4 px-2 py-4 md:flex-row">
+        {/* Progress numeral, largest and leftmost */}
+        <div className="w-14 shrink-0 pt-0.5">
+          <p className="font-mono text-h3 leading-none tabular-nums">
+            {currentCount}/{targetCount}
+          </p>
+          <p className="mt-1.5 font-mono text-meta text-text-tertiary">{difficulty}</p>
+        </div>
 
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h2 className="text-lg font-semibold">{mission.title}</h2>
-                <Badge variant="secondary">{categoryName}</Badge>
-                <Badge variant="outline">{difficulty}</Badge>
-              </div>
-              <p className="text-muted-foreground mb-2">{mission.description}</p>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" aria-hidden="true" />
-                  {formatDeadline(mission.end_date, daysRemaining)}
-                </span>
-                {mission.reward_description && (
-                  <span className="text-foreground">Reward: {mission.reward_description}</span>
-                )}
-              </div>
-            </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-body font-medium">{mission.title}</h2>
+          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-meta uppercase tracking-[0.02em] text-text-tertiary">
+            <span>{categoryName}</span>
+            <span aria-hidden="true">&middot;</span>
+            <span className="inline-flex items-center gap-1">
+              <Clock className="h-3 w-3" aria-hidden="true" />
+              {formatDeadline(mission.end_date, daysRemaining)}
+            </span>
+          </p>
+          <p className="mt-1.5 text-small text-muted-foreground">{mission.description}</p>
+          {mission.reward_description && (
+            <p className="mt-1 text-small">Reward: {mission.reward_description}</p>
+          )}
+          <Progress
+            value={percentComplete}
+            className="mt-2.5 h-1"
+            aria-label={`${mission.title} progress: ${currentCount} of ${targetCount}`}
+          />
+        </div>
 
-            <div className="w-full md:w-48">
-              <div className="flex justify-between text-sm mb-1">
-                <span id={`mission-progress-label-${mission.id}`}>Progress</span>
-                <span className="font-medium tabular-nums">
-                  {currentCount}/{targetCount}
-                </span>
-              </div>
-              <Progress
-                value={percentComplete}
-                className="h-2 mb-3"
-                aria-label={`${mission.title} progress: ${currentCount} of ${targetCount}`}
-              />
-              {hasStarted ? (
-                <Button
-                  asChild
-                  className="w-full group"
-                  size="sm"
-                  aria-label={`Continue mission: ${mission.title}`}
-                >
-                  <Link href={continueHref}>
-                    Continue
-                    <ChevronRight
-                      className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
-                      aria-hidden="true"
-                    />
-                  </Link>
-                </Button>
-              ) : isLoggedIn ? (
-                <Button
-                  className="w-full group"
-                  size="sm"
-                  onClick={handleStart}
-                  disabled={startMission.isPending}
-                  aria-label={`Start mission: ${mission.title}`}
-                >
-                  {startMission.isPending ? (
-                    <>
-                      <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden="true" />
-                      Starting…
-                    </>
-                  ) : (
-                    <>
-                      Start
-                      <ChevronRight
-                        className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
-                        aria-hidden="true"
-                      />
-                    </>
-                  )}
-                </Button>
+        <div className="shrink-0 self-start md:self-center">
+          {hasStarted ? (
+            <Button asChild size="xs" aria-label={`Continue mission: ${mission.title}`}>
+              <Link href={continueHref}>Continue</Link>
+            </Button>
+          ) : isLoggedIn ? (
+            <Button
+              size="xs"
+              onClick={handleStart}
+              disabled={startMission.isPending}
+              aria-label={`Start mission: ${mission.title}`}
+            >
+              {startMission.isPending ? (
+                <>
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden="true" />
+                  Starting…
+                </>
               ) : (
-                <Button
-                  asChild
-                  className="w-full group"
-                  size="sm"
-                  aria-label={`Sign in to start mission: ${mission.title}`}
-                >
-                  <Link href="/login">
-                    Sign in to start
-                    <ChevronRight
-                      className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
-                      aria-hidden="true"
-                    />
-                  </Link>
-                </Button>
+                "Start"
               )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </Button>
+          ) : (
+            <Button asChild size="xs" aria-label={`Sign in to start mission: ${mission.title}`}>
+              <Link href="/login">Sign in to start</Link>
+            </Button>
+          )}
+        </div>
+      </div>
     </AnimatedSection>
-  );
-}
-
-// ── Hotspot Businesses (2× points this week) ────────────────────────
-const HOTSPOT_BUSINESSES = [
-  {
-    id: "demo-la-villita-cafe",
-    name: "La Villita Cafe LLC",
-    category: "Food & Drink",
-    multiplier: 2,
-    reason: "Featured this week",
-    rating: 4.6,
-    distance: "0.3 mi",
-  },
-  {
-    id: "demo-hotspot-2",
-    name: "Bakery Lorraine",
-    category: "Food & Drink",
-    multiplier: 2,
-    reason: "New on Pulse",
-    rating: 4.8,
-    distance: "1.2 mi",
-  },
-  {
-    id: "demo-hotspot-3",
-    name: "The Twig Book Shop",
-    category: "Retail",
-    multiplier: 2,
-    reason: "Community pick",
-    rating: 4.7,
-    distance: "0.8 mi",
-  },
-];
-
-// ── Group Check-in Tiers ─────────────────────────────────────────────
-const GROUP_TIERS = [
-  { friends: 1, label: "Duo", bonus: "+25%" },
-  { friends: 2, label: "Trio", bonus: "+50%" },
-  { friends: 3, label: "Squad (4+)", bonus: "+100%" },
-];
-
-function HotspotSection() {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-          <Flame className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold">Hotspots</h2>
-          <p className="text-xs text-muted-foreground">Earn 2× points at featured spots this week</p>
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {HOTSPOT_BUSINESSES.map((biz) => (
-          <Link key={biz.id} href={`/business/${biz.id}`}>
-            <Card className="hover:border-border transition-colors cursor-pointer group">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <Badge variant="secondary" className="text-[10px] px-1.5">
-                    {biz.multiplier}× POINTS
-                  </Badge>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Star className="h-3 w-3 fill-chart-5 text-chart-5" />
-                    {biz.rating}
-                  </div>
-                </div>
-                <h3 className="font-semibold text-sm">{biz.name}</h3>
-                <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-                  <span>{biz.category}</span>
-                  <span>·</span>
-                  <span className="flex items-center gap-0.5">
-                    <MapPin className="h-3 w-3" />
-                    {biz.distance}
-                  </span>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-2 font-medium uppercase tracking-wide">
-                  {biz.reason}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function GroupCheckInSection() {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold">Group Check-ins</h2>
-          <p className="text-xs text-muted-foreground">
-            Check in with friends at the same spot for bonus points
-          </p>
-        </div>
-      </div>
-
-      <Card>
-        <CardContent className="p-5">
-          <div className="grid sm:grid-cols-3 gap-4">
-            {GROUP_TIERS.map((tier) => (
-              <div
-                key={tier.friends}
-                className="flex items-center gap-3 rounded-lg border border-border p-3"
-              >
-                <div className="flex -space-x-2">
-                  {Array.from({ length: tier.friends + 1 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-8 w-8 rounded-full bg-muted border-2 border-background flex items-center justify-center"
-                    >
-                      <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                  ))}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{tier.label}</p>
-                  <p className="text-lg font-bold tabular-nums text-foreground">
-                    {tier.bonus}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            When you and your friends check in at the same business within 30 minutes,
-            everyone earns bonus points. The more friends, the bigger the bonus.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
   );
 }
 
@@ -408,99 +211,35 @@ export default function MissionsPage() {
       <Header />
 
       <div className="pt-28 pb-12">
-        <div className="mx-auto max-w-6xl px-6">
+        <div className="mx-auto max-w-5xl px-6">
           {/* Header */}
           <AnimatedSection animation="fade-up">
-            <div className="mb-8 border-b border-border pb-6">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Challenges &amp; rewards
+            <div className="mb-5 border-b border-border pb-5">
+              <h1 className="text-h2 font-medium">Missions</h1>
+              <p className="mt-1.5 text-small text-muted-foreground">
+                Receipt-verified visits grouped into short challenges.
               </p>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                Boost Missions
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-                Check in at local businesses to complete challenges and earn rewards
-              </p>
-            </div>
-          </AnimatedSection>
-
-          {/* Stats */}
-          <AnimatedSection animation="fade-up" delay={0.1}>
-            {isLoading ? (
-              <StatsSkeleton />
-            ) : (
-              <div className="grid sm:grid-cols-3 gap-4 mb-8">
-                <Card>
-                  <CardContent className="p-6 flex items-center gap-4">
-                    <div
-                      className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center"
-                      aria-hidden="true"
-                    >
-                      <Zap className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    {/* Label first in DOM so screen readers announce
-                        "Active Missions, 4"; reversed visually. */}
-                    <div className="flex flex-col-reverse">
-                      <div className="text-xs text-muted-foreground">Active Missions</div>
-                      <div className="text-2xl font-bold tabular-nums">{activeCount}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-6 flex items-center gap-4">
-                    <div
-                      className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center"
-                      aria-hidden="true"
-                    >
-                      <Trophy className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <div className="flex flex-col-reverse">
-                      <div className="text-xs text-muted-foreground">Completed</div>
-                      <div className="text-2xl font-bold tabular-nums">{completedCount}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-6 flex items-center gap-4">
-                    <div
-                      className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center"
-                      aria-hidden="true"
-                    >
-                      <Clock className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <div className="flex flex-col-reverse">
-                      <div className="text-xs text-muted-foreground">In Progress</div>
-                      <div className="text-2xl font-bold tabular-nums">{inProgressCount}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </AnimatedSection>
-
-          {/* Hotspots — 2× point businesses */}
-          <AnimatedSection animation="fade-up" delay={0.12}>
-            <div className="mb-8">
-              <HotspotSection />
-            </div>
-          </AnimatedSection>
-
-          {/* Group Check-ins */}
-          <AnimatedSection animation="fade-up" delay={0.14}>
-            <div className="mb-8">
-              <GroupCheckInSection />
+              {isLoading ? (
+                <StatsSkeleton />
+              ) : (
+                <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5 font-mono text-meta tabular-nums text-text-tertiary">
+                  <span data-testid="stat-active">{activeCount} active</span>
+                  <span aria-hidden="true">&middot;</span>
+                  <span data-testid="stat-completed">{completedCount} completed</span>
+                  <span aria-hidden="true">&middot;</span>
+                  <span data-testid="stat-in-progress">{inProgressCount} in progress</span>
+                </p>
+              )}
             </div>
           </AnimatedSection>
 
           {/* Error State */}
           {missionsError && (
             <AnimatedSection animation="fade-up" delay={0.15}>
-              <Card className="border-destructive/50">
-                <CardContent className="p-6 text-center">
-                  <p className="text-destructive mb-2">Failed to load missions</p>
-                  <p className="text-sm text-muted-foreground">Please try refreshing the page.</p>
-                </CardContent>
-              </Card>
+              <div className="mb-5 border-y border-border py-6">
+                <p className="text-body font-medium text-destructive">Failed to load missions</p>
+                <p className="mt-1 text-small text-muted-foreground">Please try refreshing the page.</p>
+              </div>
             </AnimatedSection>
           )}
 
@@ -510,20 +249,20 @@ export default function MissionsPage() {
               <Tabs defaultValue="active" className="w-full">
                 <TabsList className={cn(underlineTabsListClass, "mb-6")}>
                   <TabsTrigger value="active" className={underlineTabsTriggerClass}>
-                    Active Missions
+                    Active
                   </TabsTrigger>
                   <TabsTrigger value="completed" className={underlineTabsTriggerClass}>
                     Completed
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="active" className="space-y-4">
+                <TabsContent value="active" className="divide-y divide-border border-t border-border">
                   {isLoading ? (
-                    <div className="space-y-4" role="status" aria-busy="true">
+                    <div role="status" aria-busy="true" className="divide-y divide-border">
                       <span className="sr-only">Loading missions…</span>
-                      <MissionCardSkeleton />
-                      <MissionCardSkeleton />
-                      <MissionCardSkeleton />
+                      <MissionRowSkeleton />
+                      <MissionRowSkeleton />
+                      <MissionRowSkeleton />
                     </div>
                   ) : activeMissions && activeMissions.length > 0 ? (
                     activeMissions.map((mission, index) => (
@@ -536,81 +275,71 @@ export default function MissionsPage() {
                       />
                     ))
                   ) : (
-                    <Card>
-                      <CardContent className="p-12 text-center">
-                        <Zap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <h2 className="text-lg font-semibold mb-2">No Active Missions</h2>
-                        <p className="text-muted-foreground text-sm">
-                          New missions are added regularly. Check back soon.
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <div className="py-10">
+                      <h2 className="text-body font-medium">No active missions</h2>
+                      <p className="mt-1 text-small text-muted-foreground">
+                        New missions are added regularly. Check back soon.
+                      </p>
+                    </div>
                   )}
                 </TabsContent>
 
-                <TabsContent value="completed" className="space-y-4">
+                <TabsContent value="completed" className="divide-y divide-border border-t border-border">
                   {!isLoggedIn ? (
-                    <Card>
-                      <CardContent className="p-12 text-center">
-                        <LogIn className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <h2 className="text-lg font-semibold mb-2">Sign In to Track Progress</h2>
-                        <p className="text-muted-foreground text-sm mb-4">
-                          Sign in to start completing missions and earning rewards.
-                        </p>
-                        <Button asChild>
-                          <Link href="/login">Sign In</Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
+                    <div className="py-10">
+                      <h2 className="text-body font-medium">Sign in to track progress</h2>
+                      <p className="mt-1 text-small text-muted-foreground">
+                        Sign in to start missions and keep progress across devices.
+                      </p>
+                      <Button asChild size="sm" className="mt-4">
+                        <Link href="/login">Sign in</Link>
+                      </Button>
+                    </div>
                   ) : progressLoading ? (
-                    <div className="space-y-4" role="status" aria-busy="true">
+                    <div role="status" aria-busy="true" className="divide-y divide-border">
                       <span className="sr-only">Loading completed missions…</span>
-                      <MissionCardSkeleton />
-                      <MissionCardSkeleton />
+                      <MissionRowSkeleton />
+                      <MissionRowSkeleton />
                     </div>
                   ) : allCompleted.length > 0 ? (
                     allCompleted.map((detail, index) => (
                       <AnimatedSection key={detail.progress.id} animation="fade-up" delay={0.1 * (index + 2)}>
-                        <Card className="bg-muted/30">
-                          <CardContent className="p-6">
-                            <div className="flex items-center gap-6">
-                              <div className="text-5xl opacity-50" aria-hidden="true">
-                                {getMissionIcon(detail.progress.mission.mission_type as MissionType)}
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <h2 className="text-lg font-semibold">{detail.progress.mission.title}</h2>
-                                  <Badge className="bg-chart-5 text-white">Completed</Badge>
-                                  {detail.progress.reward_claimed && (
-                                    <Badge variant="outline">Claimed</Badge>
-                                  )}
-                                </div>
-                                <p className="text-muted-foreground text-sm">{detail.progress.mission.description}</p>
-                                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                                  <span>Completed {formatCompletedAt(detail.progress.completed_at)}</span>
-                                  {detail.progress.mission.reward_description && (
-                                    <span className="text-foreground">
-                                      Earned: {detail.progress.mission.reward_description}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <Trophy className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+                        <div className="card-lift flex gap-4 px-2 py-4">
+                          <div className="w-14 shrink-0 pt-0.5">
+                            <p className="font-mono text-h3 leading-none tabular-nums">
+                              {detail.progress.mission.target_count}/{detail.progress.mission.target_count}
+                            </p>
+                            <p className="mt-1.5 font-mono text-meta text-ok">Completed</p>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                              <h2 className="text-body font-medium">{detail.progress.mission.title}</h2>
+                              {detail.progress.reward_claimed && (
+                                <Badge variant="outline">Claimed</Badge>
+                              )}
                             </div>
-                          </CardContent>
-                        </Card>
+                            <p className="mt-1 font-mono text-meta uppercase tracking-[0.02em] text-text-tertiary">
+                              Completed {formatCompletedAt(detail.progress.completed_at)}
+                            </p>
+                            <p className="mt-1.5 text-small text-muted-foreground">
+                              {detail.progress.mission.description}
+                            </p>
+                            {detail.progress.mission.reward_description && (
+                              <p className="mt-1 text-small">
+                                Earned: {detail.progress.mission.reward_description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </AnimatedSection>
                     ))
                   ) : (
-                    <Card>
-                      <CardContent className="p-12 text-center">
-                        <Trophy className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                        <h2 className="text-lg font-semibold mb-2">No Completed Missions Yet</h2>
-                        <p className="text-muted-foreground text-sm">
-                          Start an active mission above and complete it to see your achievements here.
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <div className="py-10">
+                      <h2 className="text-body font-medium">No completed missions yet</h2>
+                      <p className="mt-1 text-small text-muted-foreground">
+                        Start an active mission above and complete it to see your achievements here.
+                      </p>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>

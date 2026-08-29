@@ -11,12 +11,12 @@ interface SidebarProps {
 
 export function Sidebar({ email, fullName, isAdmin }: SidebarProps) {
   return (
-    <aside className="hidden md:flex w-64 h-screen flex-col border-r border-border/30 bg-background">
+    <aside className="hidden md:flex w-64 h-screen flex-col border-r border-border bg-background">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2 border-b border-border/30 px-6">
+      <div className="flex h-16 items-center gap-2 border-b border-border px-6">
         <NavLink href="/" className="flex items-center gap-2">
-          <PulseLogo className="h-10 w-10 text-foreground" />
-          <span className="text-lg font-semibold tracking-tight text-foreground">
+          <PulseLogo className="h-7 w-7 text-primary" />
+          <span className="text-body font-medium text-foreground">
             Pulse
           </span>
         </NavLink>

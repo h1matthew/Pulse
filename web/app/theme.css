@@ -1,18 +1,15 @@
 /*
  * Theme Configuration - Pulse
  * =============================
- * Minimalist dark-first palette with a single blue accent
- * Inspired by Linear, Vercel, and GitHub dark modes
- * Single source of truth for all design tokens
+ * Dark-first. Graphite ground, muted sage accent, hairline borders,
+ * no shadows. Surfaces step up; elevation is never a drop shadow.
  *
- * Color format: oklch(lightness chroma hue)
- *   - Hue 260 = blue (primary accent, all chart colors)
- *   - Near-zero chroma for neutrals
+ * Accent is permitted on: primary button fill, link hover, focus ring,
+ * active filter chip. Nowhere else, and never as a gradient.
  */
 
 /* ─── Tailwind Token Registration ─── */
 @theme inline {
-  /* Colors (mapped to CSS variables for light/dark switching) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -45,277 +42,223 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Fonts */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Surface steps — elevation without shadows */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border-strong: var(--border-strong);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-ok: var(--ok);
 
-  /* Radii — two steps only: controls 4px, cards/surfaces 12px */
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
+
+  /* Radii — a tool, not a card. Caps at 10px. */
   --radius-xs: 4px;
   --radius-sm: 4px;
-  --radius-md: 4px;
-  --radius-lg: var(--radius);
-  --radius-xl: var(--radius);
-  --radius-2xl: var(--radius);
-  --radius-3xl: var(--radius);
-  --radius-4xl: var(--radius);
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+  --radius-3xl: 10px;
+  --radius-4xl: 10px;
 
-  /* Animations */
-  --animate-fade-in: fade-in 0.6s ease-out both;
-  --animate-fade-in-up: fade-in-up 0.6s ease-out both;
-  --animate-scale-in: scale-in 0.4s ease-out both;
-  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+  /* Type scale. Letter spacing stays neutral; headings never exceed weight 500. */
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1.4;
+  --text-meta--letter-spacing: 0;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.5;
+  --text-small--letter-spacing: 0;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.6;
+  --text-body--letter-spacing: 0;
+  --text-lead: 1.0625rem;
+  --text-lead--line-height: 1.55;
+  --text-lead--letter-spacing: 0;
+  --text-h3: 1.125rem;
+  --text-h3--line-height: 1.35;
+  --text-h3--letter-spacing: 0;
+  --text-h2: 1.75rem;
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: 0;
+  --text-h1: 2.25rem;
+  --text-h1--line-height: 1.12;
+  --text-h1--letter-spacing: 0;
+  --text-display: 3.5rem;
+  --text-display--line-height: 1;
+  --text-display--letter-spacing: 0;
 
-  /* Apple-like premium animations */
-  --animate-grid-item: grid-item 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  --animate-drift: drift 30s ease-in-out infinite;
-  /* Page startup: content rises softly into place on load/navigation */
-  /* Watercolor background: a drop of ink landing and diffusing in water */
-  --animate-ink-drop: ink-drop 3.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-  --animate-ink-sway: ink-sway 44s ease-in-out infinite;
+  --spacing-section: 80px;
+  --spacing-section-sm: 56px;
 
-  /* Pulse-specific animations */
-  --animate-heart-beat: heart-beat 1s ease-in-out;
+  --container-prose: 680px;
+  --container-content: 1200px;
+  --container-grid: 1440px;
 
-  /* Exit animations */
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-fade-in-up: fade-in-up 0.4s ease-out both;
+  --animate-scale-in: scale-in 0.3s ease-out both;
 }
 
-/* ─── Light Mode (Default) ─── */
+/* ─── Light (warm paper) ─── */
 :root {
-  --radius: 0.75rem;
+  --radius: 8px;
 
-  /* Core */
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.1 0.01 260);
+  --background: #faf9f7;
+  --foreground: #1a1815;
 
-  /* Surfaces */
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.1 0.01 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.1 0.01 260);
+  --surface-1: #ffffff;
+  --surface-2: #f2f0ec;
+  --surface-3: #e9e6e0;
 
-  /* Brand — single blue accent */
-  --primary: oklch(0.55 0.2 260);
-  --primary-foreground: oklch(0.99 0 0);
+  --card: #ffffff;
+  --card-foreground: #1a1815;
+  --popover: #ffffff;
+  --popover-foreground: #1a1815;
 
-  /* Secondary */
-  --secondary: oklch(0.96 0.005 260);
-  --secondary-foreground: oklch(0.25 0.01 260);
+  --primary: #66724d;
+  --primary-foreground: #ffffff;
 
-  /* Muted */
-  --muted: oklch(0.96 0.005 260);
-  --muted-foreground: oklch(0.45 0.01 260);
+  --secondary: #f2f0ec;
+  --secondary-foreground: #2e2b26;
+  --muted: #f2f0ec;
+  --muted-foreground: #5a554d;
+  --accent: #f2f0ec;
+  --accent-foreground: #2e2b26;
 
-  /* Accent */
-  --accent: oklch(0.96 0.01 260);
-  --accent-foreground: oklch(0.2 0.01 260);
+  --text-tertiary: #6f6a61;
 
-  /* Semantic */
-  --destructive: oklch(0.53 0.245 27.325);
+  --destructive: #b3261e;
+  --ok: #1f7a4d;
 
-  /* Borders & inputs */
-  --border: oklch(0.92 0.005 260);
-  --input: oklch(0.92 0.005 260);
-  --ring: oklch(0.55 0.2 260);
+  --border: rgba(26, 24, 21, 0.1);
+  --border-strong: rgba(26, 24, 21, 0.18);
+  --input: rgba(26, 24, 21, 0.42);
+  --ring: #66724d;
 
-  /* Charts — blue variations */
-  --chart-1: oklch(0.55 0.2 260);
-  --chart-2: oklch(0.65 0.15 260);
-  --chart-3: oklch(0.48 0.16 260);
-  --chart-4: oklch(0.72 0.1 260);
-  --chart-5: oklch(0.4 0.12 260);
+  --chart-1: #66724d;
+  --chart-2: #8a7f5a;
+  --chart-3: #4f6a5b;
+  --chart-4: #6c6572;
+  --chart-5: #516575;
 
-  /* Sidebar */
-  --sidebar: oklch(0.99 0 0);
-  --sidebar-foreground: oklch(0.1 0.01 260);
-  --sidebar-primary: oklch(0.55 0.2 260);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.96 0.005 260);
-  --sidebar-accent-foreground: oklch(0.1 0.01 260);
-  --sidebar-border: oklch(0.92 0.005 260);
-  --sidebar-ring: oklch(0.55 0.2 260);
+  --sidebar: #faf9f7;
+  --sidebar-foreground: #1a1815;
+  --sidebar-primary: #66724d;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f2f0ec;
+  --sidebar-accent-foreground: #2e2b26;
+  --sidebar-border: rgba(26, 24, 21, 0.1);
+  --sidebar-ring: #66724d;
+
+  color-scheme: light;
 }
 
-/* ─── Dark Mode ─── */
+/* ─── Dark (default) ─── */
 .dark {
-  /* Core — near-black, neutral */
-  --background: oklch(0.065 0.005 260);
-  --foreground: oklch(0.98 0 0);
+  --background: #090a09;
+  --foreground: #eceee8;
 
-  /* Surfaces */
-  --card: oklch(0.1 0.005 260);
-  --card-foreground: oklch(0.98 0 0);
-  --popover: oklch(0.1 0.005 260);
-  --popover-foreground: oklch(0.98 0 0);
+  --surface-1: #111310;
+  --surface-2: #181b16;
+  --surface-3: #22261e;
 
-  /* Brand — blue accent */
-  --primary: oklch(0.62 0.18 260);
-  --destructive: oklch(0.62 0.22 27);
-  --primary-foreground: oklch(0.2 0.01 260);
+  --card: #111310;
+  --card-foreground: #eceee8;
+  --popover: #181b16;
+  --popover-foreground: #eceee8;
 
-  /* Secondary */
-  --secondary: oklch(0.14 0.005 260);
-  --secondary-foreground: oklch(0.85 0 0);
+  --primary: #b3bf7a;
+  --primary-foreground: #090a09;
 
-  /* Muted */
-  --muted: oklch(0.14 0.005 260);
-  --muted-foreground: oklch(0.62 0.01 260);
+  --secondary: #181b16;
+  --secondary-foreground: #d7dbc9;
+  --muted: #181b16;
+  --muted-foreground: #a5aa9a;
+  --accent: #181b16;
+  --accent-foreground: #d7dbc9;
 
-  /* Accent */
-  --accent: oklch(0.14 0.01 260);
-  --accent-foreground: oklch(0.85 0.01 260);
+  --text-tertiary: #858b7b;
 
-  /* Borders & inputs */
-  --border: oklch(1 0 0 / 8%);
-  --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.62 0.18 260);
+  --destructive: #f0655c;
+  --ok: #7fb58c;
 
-  /* Charts — blue variations */
-  --chart-1: oklch(0.62 0.18 260);
-  --chart-2: oklch(0.72 0.13 260);
-  --chart-3: oklch(0.52 0.15 260);
-  --chart-4: oklch(0.78 0.08 260);
-  --chart-5: oklch(0.45 0.12 260);
+  --border: rgba(236, 238, 232, 0.09);
+  --border-strong: rgba(236, 238, 232, 0.16);
+  --input: rgba(236, 238, 232, 0.4);
+  --ring: #b3bf7a;
 
-  /* Sidebar */
-  --sidebar: oklch(0.08 0.005 260);
-  --sidebar-foreground: oklch(0.98 0 0);
-  --sidebar-primary: oklch(0.62 0.18 260);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.14 0.005 260);
-  --sidebar-accent-foreground: oklch(0.98 0 0);
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.62 0.18 260);
+  --chart-1: #b3bf7a;
+  --chart-2: #9b8f68;
+  --chart-3: #7fb58c;
+  --chart-4: #928aa0;
+  --chart-5: #7793a3;
+
+  --sidebar: #090a09;
+  --sidebar-foreground: #eceee8;
+  --sidebar-primary: #b3bf7a;
+  --sidebar-primary-foreground: #090a09;
+  --sidebar-accent: #181b16;
+  --sidebar-accent-foreground: #d7dbc9;
+  --sidebar-border: rgba(236, 238, 232, 0.09);
+  --sidebar-ring: #b3bf7a;
+
+  color-scheme: dark;
 }
 
-/* ─── Animation Keyframes ─── */
+/* ─── Keyframes ─── */
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes scale-in {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
 
-@keyframes pulse-soft {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(0.98); }
-}
+/* ─── Utilities ─── */
 
-@keyframes grid-item {
-  from {
-    opacity: 0;
-    transform: translateY(40px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes drift {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(30px, -20px); }
-  50% { transform: translate(-20px, 30px); }
-  75% { transform: translate(20px, 20px); }
-}
-
-/* A pigment drop hitting water: lands small and dense, then blooms outward
-   and settles into a soft diffuse cloud. */
-@keyframes ink-drop {
-  0% {
-    opacity: 0;
-    transform: scale(0.1);
-  }
-  16% {
-    opacity: 0.9;
-    transform: scale(0.4);
-  }
-  62% {
-    opacity: 0.8;
-    transform: scale(1.06);
-  }
-  100% {
-    opacity: 0.7;
-    transform: scale(1);
-  }
-}
-
-/* Settled pigment slowly swirling — irregular edges morph while the cloud
-   drifts, like color suspended in still water. */
-@keyframes ink-sway {
-  0%, 100% {
-    transform: translate(0, 0) scale(1) rotate(0deg);
-    border-radius: 46% 54% 61% 39% / 51% 44% 56% 49%;
-  }
-  33% {
-    transform: translate(36px, -28px) scale(1.07) rotate(7deg);
-    border-radius: 57% 43% 42% 58% / 44% 57% 43% 56%;
-  }
-  66% {
-    transform: translate(-30px, 24px) scale(0.95) rotate(-6deg);
-    border-radius: 39% 61% 56% 44% / 58% 41% 52% 48%;
-  }
-}
-
-@keyframes heart-beat {
-  0%, 100% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.2);
-  }
-  50% {
-    transform: scale(1);
-  }
-  75% {
-    transform: scale(1.15);
-  }
-}
-
-/* ─── GPU Compositor Hints ─── */
-.animate-drift,
-.animate-pulse-soft,
-.animate-ink-drop,
-.animate-ink-sway {
-  will-change: transform, opacity;
-}
-
-/* Card hover lift effect */
-.card-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.card-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px oklch(0 0 0 / 0.15);
-}
-
-/* Primary action button — flat accent fill; brightness is the only
-   hover/press feedback. */
+/* Primary action. Flat accent fill; brightness is the only feedback. */
 .btn-primary {
   background-color: var(--primary);
   color: var(--primary-foreground);
 }
 
 .btn-primary:hover {
-  filter: brightness(1.07);
+  filter: brightness(1.08);
 }
 
 .btn-primary:active {
-  filter: brightness(0.97);
+  filter: brightness(0.95);
+}
+
+/* Row hover for listing feeds — a surface step, never a lift. */
+.card-lift {
+  transition: background-color 0.15s ease;
+}
+
+.card-lift:hover {
+  background-color: var(--surface-2);
+}
+
+/* Metadata: distances, hours, ratings, price bands. Set in mono so a
+   listing reads as an instrument rather than a brochure. */
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  letter-spacing: 0.01em;
+  color: var(--text-tertiary);
 }
 
 /* ─── Reduced Motion ─── */
-/* Respect the user's OS-level preference for reduced motion (WCAG 2.3.3).
-   Instantly complete entrance animations so content still appears, but
-   remove continuous/looping motion entirely. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -325,16 +268,5 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     transition-delay: 0s !important;
-  }
-
-  .animate-drift,
-  .animate-pulse-soft,
-  .animate-ink-drop,
-  .animate-ink-sway {
-    animation: none !important;
-  }
-
-  .card-lift:hover {
-    transform: none;
   }
 }

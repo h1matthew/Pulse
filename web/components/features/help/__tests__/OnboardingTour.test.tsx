@@ -6,9 +6,37 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import React from 'react'
 import { OnboardingTour, ONBOARDING_KEY, TOUR_STEPS } from '../OnboardingTour'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { TOUR_DEMO_BUSINESS_PATH } from '@/lib/demo/demo-business'
+
+// Node 22 exposes an experimental `localStorage` global that shadows jsdom's,
+// leaving window.localStorage undefined under vitest. Restore a working one.
+if (!window.localStorage) {
+  const store = new Map<string, string>()
+  const shim: Storage = {
+    getItem: (k) => (store.has(k) ? store.get(k)! : null),
+    setItem: (k, v) => void store.set(k, String(v)),
+    removeItem: (k) => void store.delete(k),
+    clear: () => store.clear(),
+    key: (i) => Array.from(store.keys())[i] ?? null,
+    get length() {
+      return store.size
+    },
+  }
+  Object.defineProperty(window, 'localStorage', { configurable: true, value: shim })
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: shim })
+}
 
 const TOUR_STEP_KEY = 'pulse_tour_step'
 const TOUR_BUSINESS_KEY = 'pulse_tour_business'
+
+/** Step indexes of the trimmed five-step tour. */
+const STEP = {
+  welcome: 0,
+  openBusiness: 1,
+  deals: 2,
+  checkIn: 3,
+  impact: 4,
+}
 
 const mockAnnounce = vi.fn()
 vi.mock('@/components/providers/AccessibilityProvider', () => ({
@@ -32,26 +60,11 @@ vi.mock('next/navigation', () => ({
 
 /** Render all anchor elements the tour spotlights, as the real pages would. */
 function mountAnchors() {
-  const anchors = [
-    'discover-search',
-    'discover-categories',
-    'discover-sort',
-    'business-card',
-    'business-reviews',
-    'business-deals',
-    'business-checkin',
-    'business-bookmark',
-    'chat-launcher',
-    'leaderboard',
-  ]
+  const anchors = ['business-card', 'business-reviews', 'business-deals', 'business-checkin']
   for (const id of anchors) {
     const el = document.createElement('div')
     el.setAttribute('data-tour', id)
     el.textContent = id
-    if (id === 'discover-search') {
-      // The real anchor wraps the search <input>
-      el.appendChild(document.createElement('input'))
-    }
     document.body.appendChild(el)
   }
 }
@@ -85,6 +98,22 @@ describe('OnboardingTour (guided walkthrough)', () => {
     vi.useRealTimers()
   })
 
+  it('runs at most five steps', () => {
+    expect(TOUR_STEPS.length).toBeLessThanOrEqual(5)
+  })
+
+  it('teaches only what a first-time visitor cannot infer', () => {
+    const ids = TOUR_STEPS.map((s) => s.id)
+    // Searching, filtering and sorting are self-evident; they are not taught.
+    expect(ids).not.toContain('search')
+    expect(ids).not.toContain('categories')
+    expect(ids).not.toContain('sort')
+    // The non-obvious mechanics stay.
+    expect(ids).toContain('deals')
+    expect(ids).toContain('check-in')
+    expect(ids).toContain('impact')
+  })
+
   it('offers the tour to first-time users after a short delay', async () => {
     render(<OnboardingTour />)
     expect(screen.queryByText('Welcome to Pulse')).not.toBeInTheDocument()
@@ -95,6 +124,27 @@ describe('OnboardingTour (guided walkthrough)', () => {
 
     expect(screen.getByText('Welcome to Pulse')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /start the tour/i })).toBeInTheDocument()
+  })
+
+  it('waits for the page to finish loading before it paints anything', async () => {
+    // A tour that mounts mid-load would cover the first paint. While the
+    // document is still loading nothing is offered, however long we wait.
+    const readyState = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading')
+
+    render(<OnboardingTour />)
+    await act(async () => {
+      vi.advanceTimersByTime(5000)
+    })
+    expect(screen.queryByText('Welcome to Pulse')).not.toBeInTheDocument()
+
+    readyState.mockReturnValue('complete')
+    await act(async () => {
+      window.dispatchEvent(new Event('load'))
+      vi.advanceTimersByTime(1600)
+    })
+    expect(screen.getByText('Welcome to Pulse')).toBeInTheDocument()
+
+    readyState.mockRestore()
   })
 
   it('stays hidden for users who completed it', async () => {
@@ -135,21 +185,16 @@ describe('OnboardingTour (guided walkthrough)', () => {
     expect(mockPush).toHaveBeenCalledWith('/discover')
   })
 
-  it('spotlights anchors and walks forward through steps', async () => {
+  it('spotlights the business row after the welcome card', async () => {
     mountAnchors()
     await openWelcome()
 
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
     await settleStep()
 
-    expect(screen.getByText('Search what you crave')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await settleStep()
-
-    expect(screen.getByText('Sort by category')).toBeInTheDocument()
+    expect(screen.getByText('Meet a local business')).toBeInTheDocument()
     // Mid-tour position survives reloads
-    expect(sessionStorage.getItem(TOUR_STEP_KEY)).toBe('2')
+    expect(sessionStorage.getItem(TOUR_STEP_KEY)).toBe(String(STEP.openBusiness))
   })
 
   it('shows loading copy only while the target is genuinely absent', async () => {
@@ -159,23 +204,22 @@ describe('OnboardingTour (guided walkthrough)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
 
-    // Target not on the page yet: full dim, Next disabled, loading copy shown.
+    // Target not on the page yet: full dim, the action disabled, loading copy.
     await act(async () => {
       vi.advanceTimersByTime(300)
     })
     expect(screen.getByText('Taking you there…')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /open it for me/i })).toBeDisabled()
 
-    // Once the anchor mounts, the next poll opens the spotlight and unlocks Next.
+    // Once the anchor mounts, the next poll opens the spotlight and unlocks it.
     const el = document.createElement('div')
-    el.setAttribute('data-tour', 'discover-search')
-    el.appendChild(document.createElement('input'))
+    el.setAttribute('data-tour', 'business-card')
     document.body.appendChild(el)
     await act(async () => {
       vi.advanceTimersByTime(200) // one poll interval
     })
     expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /open it for me/i })).toBeEnabled()
   })
 
   it('reveals an already-rendered target instantly, with no loading gap', async () => {
@@ -183,128 +227,83 @@ describe('OnboardingTour (guided walkthrough)', () => {
     await openWelcome()
 
     // The anchor is already in the DOM, so the leading poll tick reveals it in
-    // the same commit — no 150ms "Taking you there…" stall, no disabled Next,
+    // the same commit — no 150ms "Taking you there…" stall, no disabled action,
     // without advancing any timers.
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
 
     expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
-    expect(screen.getByText(/go ahead, try it right now/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
-  })
-
-  it('focuses the real search input and reacts when the user types', async () => {
-    mountAnchors()
-    await openWelcome()
-
-    fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
-    await settleStep()
-
-    expect(screen.getByText(/go ahead, try it right now/i)).toBeInTheDocument()
-    const input = document.querySelector<HTMLInputElement>(
-      '[data-tour="discover-search"] input'
-    )!
-    expect(document.activeElement).toBe(input)
-
-    fireEvent.input(input, { target: { value: 'tacos' } })
-
-    expect(screen.getByText(/results filter live as you type/i)).toBeInTheDocument()
+    expect(screen.getByText(/whether it is open right now/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open it for me/i })).toBeEnabled()
   })
 
   it('does not hijack arrow keys or Escape while the user is typing', async () => {
     mountAnchors()
+    const input = document.createElement('input')
+    document.body.appendChild(input)
     await openWelcome()
 
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
     await settleStep()
-
-    const input = document.querySelector<HTMLInputElement>(
-      '[data-tour="discover-search"] input'
-    )!
 
     // Caret movement must not navigate the tour
     fireEvent.keyDown(input, { key: 'ArrowLeft' })
     fireEvent.keyDown(input, { key: 'ArrowRight' })
-    expect(screen.getByText('Search what you crave')).toBeInTheDocument()
+    expect(screen.getByText('Meet a local business')).toBeInTheDocument()
 
     // Esc in a field must not kill the tour
     fireEvent.keyDown(input, { key: 'Escape' })
     expect(localStorage.getItem(ONBOARDING_KEY)).toBeNull()
-    expect(screen.getByText('Search what you crave')).toBeInTheDocument()
+    expect(screen.getByText('Meet a local business')).toBeInTheDocument()
   })
 
-  it('acknowledges a category tap on the categories step', async () => {
+  it('advances when the user clicks the spotlighted business row', async () => {
     mountAnchors()
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, TOUR_DEMO_BUSINESS_PATH)
     await openWelcome()
 
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
-    await settleStep()
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await settleStep()
-
-    expect(screen.getByText(/try tapping one/i)).toBeInTheDocument()
-
-    fireEvent.click(document.querySelector('[data-tour="discover-categories"]')!)
-
-    expect(screen.getByText(/Filtered! Tap around as much as you like/i)).toBeInTheDocument()
-  })
-
-  it('advances when the user clicks the spotlighted business card', async () => {
-    mountAnchors()
-    await openWelcome()
-
-    fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
-    await settleStep()
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await settleStep()
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await settleStep()
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     await settleStep()
 
     expect(screen.getByText('Meet a local business')).toBeInTheDocument()
 
-    // The user clicks the actual card through the spotlight hole
+    // The user clicks the actual row through the spotlight hole
     fireEvent.click(document.querySelector('[data-tour="business-card"]')!)
     await settleStep()
 
-    expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
+    expect(screen.getByText('Grab deals & coupons')).toBeInTheDocument()
   })
 
   it('auto-skips a step whose anchor never appears', async () => {
-    // Only the search anchor exists; the categories step should time out
-    const el = document.createElement('div')
-    el.setAttribute('data-tour', 'discover-search')
-    document.body.appendChild(el)
-
+    // No anchors at all: the business-row step times out and the tour keeps
+    // moving instead of trapping the user on a disabled card.
     await openWelcome()
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
     await settleStep()
-    expect(screen.getByText('Search what you crave')).toBeInTheDocument()
+    expect(screen.getByText('Meet a local business')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     await act(async () => {
       vi.advanceTimersByTime(8500) // past the target timeout
     })
 
-    // Skipped "categories" (anchor never mounted) and landed on the sort step
-    expect(screen.getByText('Sort by rating or reviews')).toBeInTheDocument()
+    expect(screen.queryByText('Meet a local business')).not.toBeInTheDocument()
   })
 
   it('resumes mid-tour after a reload', async () => {
     mountAnchors()
-    sessionStorage.setItem(TOUR_STEP_KEY, '5')
+    sessionStorage.setItem(TOUR_STEP_KEY, String(STEP.deals))
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, TOUR_DEMO_BUSINESS_PATH)
 
     render(<OnboardingTour />)
     await settleStep()
 
-    expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
+    expect(screen.getByText('Grab deals & coupons')).toBeInTheDocument()
   })
 
-  it('opens the dedicated demo business when the card is clicked', async () => {
+  it('opens the dedicated demo business when the row is clicked', async () => {
     mountAnchors()
-    // The real card wraps a link to a real business, but the tour always opens
+    // The real row wraps a link to a real business, but the tour always opens
     // its dedicated demo business (guaranteed deals + reviews) instead, so the
-    // card's own navigation is suppressed.
+    // row's own navigation is suppressed.
     const card = document.querySelector('[data-tour="business-card"]')!
     const link = document.createElement('a')
     link.setAttribute('href', '/business/xyz-789')
@@ -312,51 +311,45 @@ describe('OnboardingTour (guided walkthrough)', () => {
 
     await openWelcome()
     fireEvent.click(screen.getByRole('button', { name: /start the tour/i }))
-    await settleStep() // search
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await settleStep() // categories
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await settleStep() // sort
-    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
-    await settleStep() // open-business
+    await settleStep()
 
     expect(screen.getByText('Meet a local business')).toBeInTheDocument()
 
     fireEvent.click(card)
     await settleStep()
 
-    expect(sessionStorage.getItem(TOUR_BUSINESS_KEY)).toBe('/business/onboarding-demo')
-    expect(mockPush).toHaveBeenCalledWith('/business/onboarding-demo')
-    expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
+    expect(sessionStorage.getItem(TOUR_BUSINESS_KEY)).toBe(TOUR_DEMO_BUSINESS_PATH)
+    expect(mockPush).toHaveBeenCalledWith(TOUR_DEMO_BUSINESS_PATH)
+    expect(screen.getByText('Grab deals & coupons')).toBeInTheDocument()
   })
 
   it('resumes a business-page step by navigating back to the remembered business', async () => {
-    // The reviews step was reached, then the page reloaded while NOT on a
+    // The deals step was reached, then the page reloaded while NOT on a
     // business page (e.g. on /discover). The remembered business lets the step
     // navigate back instead of stalling on a disabled "Taking you there…" card.
-    sessionStorage.setItem(TOUR_STEP_KEY, '5') // reviews
+    sessionStorage.setItem(TOUR_STEP_KEY, String(STEP.deals))
     sessionStorage.setItem(TOUR_BUSINESS_KEY, '/business/abc-123')
 
     render(<OnboardingTour />)
     await settleStep()
 
-    expect(screen.getByText('Leave a review or rating')).toBeInTheDocument()
+    expect(screen.getByText('Grab deals & coupons')).toBeInTheDocument()
     expect(mockPush).toHaveBeenCalledWith('/business/abc-123')
   })
 
   it('skips a business-page step promptly when the business is unknown and off-page', async () => {
-    // Resumed on reviews with no remembered business and not on a business
+    // Resumed on check-in with no remembered business and not on a business
     // page: unreachable, so it should auto-skip well before the 8s timeout
     // rather than holding a disabled card.
-    sessionStorage.setItem(TOUR_STEP_KEY, '5') // reviews, no business remembered
+    sessionStorage.setItem(TOUR_STEP_KEY, String(STEP.checkIn))
 
     render(<OnboardingTour />)
     await act(async () => {
       vi.advanceTimersByTime(1400) // past the short route-less timeout, far under 8s
     })
 
-    // reviews auto-skipped to the next step (the centered verification explainer)
-    expect(screen.getByText('Real people, real reviews')).toBeInTheDocument()
+    // check-in auto-skipped to the centered impact explainer
+    expect(screen.getByText('Track your local impact')).toBeInTheDocument()
     expect(mockPush).not.toHaveBeenCalled()
   })
 
@@ -374,31 +367,10 @@ describe('OnboardingTour (guided walkthrough)', () => {
     expect(document.querySelector('[data-tour-overlay]')).toBeNull()
   })
 
-  it('adds a sort step explaining ordering by rating and reviews', async () => {
+  it('keeps a deals step pointing at the deals tab', async () => {
     mountAnchors()
-    sessionStorage.setItem(TOUR_STEP_KEY, '3') // sort
-    render(<OnboardingTour />)
-    await settleStep()
-
-    expect(screen.getByText('Sort by rating or reviews')).toBeInTheDocument()
-    expect(screen.getByText(/Most reviewed/i)).toBeInTheDocument()
-  })
-
-  it('includes a centered bot-verification explainer step', async () => {
-    // No anchors needed — it's a centered card with no spotlight target, so it
-    // shows on any page and never falls into the "Taking you there…" wait.
-    sessionStorage.setItem(TOUR_STEP_KEY, '6') // verify
-    render(<OnboardingTour />)
-    await settleStep()
-
-    expect(screen.getByText('Real people, real reviews')).toBeInTheDocument()
-    expect(screen.getByText(/block bots/i)).toBeInTheDocument()
-    expect(screen.queryByText('Taking you there…')).not.toBeInTheDocument()
-  })
-
-  it('adds a deals step pointing at the deals tab', async () => {
-    mountAnchors()
-    sessionStorage.setItem(TOUR_STEP_KEY, '7') // deals
+    sessionStorage.setItem(TOUR_STEP_KEY, String(STEP.deals))
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, TOUR_DEMO_BUSINESS_PATH)
     render(<OnboardingTour />)
     await settleStep()
 
@@ -411,8 +383,8 @@ describe('OnboardingTour (guided walkthrough)', () => {
     // deals step must actually switch it to the Deals panel — not merely fire
     // an event — so this guards the real activation contract (Radix needs
     // mousedown with button 0, which a bare .click() never delivered).
-    sessionStorage.setItem(TOUR_STEP_KEY, '7') // deals
-    sessionStorage.setItem(TOUR_BUSINESS_KEY, '/business/onboarding-demo')
+    sessionStorage.setItem(TOUR_STEP_KEY, String(STEP.deals))
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, TOUR_DEMO_BUSINESS_PATH)
     render(
       <>
         <Tabs defaultValue="reviews">
@@ -441,50 +413,9 @@ describe('OnboardingTour (guided walkthrough)', () => {
     ).toBe('active')
   })
 
-  it('opens the assistant and spotlights its live panel on the chatbot step', async () => {
-    // The step opens the chat via window.openPulseAssistant (exposed by the
-    // ChatWidget); mock it to mount the panel the step spotlights.
-    const w = window as Window & {
-      openPulseAssistant?: () => void
-      closePulseAssistant?: () => void
-    }
-    const openSpy = vi.fn(() => {
-      const panel = document.createElement('div')
-      panel.setAttribute('data-tour', 'chat-panel')
-      panel.id = 'mock-chat-panel'
-      document.body.appendChild(panel)
-    })
-    const closeSpy = vi.fn(() => {
-      document.getElementById('mock-chat-panel')?.remove()
-    })
-    w.openPulseAssistant = openSpy
-    w.closePulseAssistant = closeSpy
-
-    sessionStorage.setItem(TOUR_STEP_KEY, '10') // assistant / chatbot
-    render(<OnboardingTour />)
-    await settleStep()
-
-    expect(openSpy).toHaveBeenCalled()
-    expect(screen.getByText('Ask the AI assistant')).toBeInTheDocument()
-    expect(screen.getByText(/Pulse Assistant/i)).toBeInTheDocument()
-
-    delete w.openPulseAssistant
-    delete w.closePulseAssistant
-  })
-
-  it('adds a leaderboard step that routes to the leaderboard page', async () => {
-    // Anchor isn't mounted here, so the step should navigate to where it lives.
-    sessionStorage.setItem(TOUR_STEP_KEY, '11') // leaderboard
-    render(<OnboardingTour />)
-    await settleStep()
-
-    expect(screen.getByText('Climb the leaderboard')).toBeInTheDocument()
-    expect(mockPush).toHaveBeenCalledWith('/leaderboard')
-  })
-
-  it('adds a centered impact-report step describing the data report', async () => {
+  it('ends on a centered impact step describing the data report', async () => {
     // Centered explainer (no target) — shows on any page, no loading wait.
-    sessionStorage.setItem(TOUR_STEP_KEY, '12') // impact
+    sessionStorage.setItem(TOUR_STEP_KEY, String(STEP.impact))
     render(<OnboardingTour />)
     await settleStep()
 
@@ -507,8 +438,8 @@ describe('OnboardingTour (guided walkthrough)', () => {
 
   it('hides the tour overlay while a Radix Dialog is open so it never overlaps', async () => {
     mountAnchors()
-    sessionStorage.setItem(TOUR_STEP_KEY, '8') // check-in step
-    sessionStorage.setItem(TOUR_BUSINESS_KEY, '/business/onboarding-demo')
+    sessionStorage.setItem(TOUR_STEP_KEY, String(STEP.checkIn))
+    sessionStorage.setItem(TOUR_BUSINESS_KEY, TOUR_DEMO_BUSINESS_PATH)
     render(<OnboardingTour />)
     await settleStep()
 

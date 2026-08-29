@@ -36,13 +36,13 @@ export function StreakBadge({ className }: StreakBadgeProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-sm font-medium',
+        'flex items-center gap-1.5 rounded-sm border border-border px-2 py-0.5 font-mono text-meta tabular-nums',
         isActiveToday ? 'text-foreground' : 'text-muted-foreground',
         className
       )}
       title={`${streak} day streak${isActiveToday ? ' - Active today!' : ' - Complete a lesson to keep it going!'}`}
     >
-      <Flame className={cn('h-4 w-4', isActiveToday && 'animate-pulse')} />
+      <Flame className="h-3.5 w-3.5" aria-hidden="true" />
       <span>{streak}</span>
     </div>
   )

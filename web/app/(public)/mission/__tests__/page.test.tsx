@@ -38,4 +38,20 @@ describe('Mission Page', () => {
 
     expect(container).toBeInTheDocument()
   })
+
+  it('leads with the method rather than a mission statement', async () => {
+    const MissionPage = (await import('../page')).default
+    render(<MissionPage />)
+
+    expect(screen.getByRole('heading', { level: 1, name: 'How we pick' })).toBeInTheDocument()
+    expect(screen.getByText('Listings are not for sale.')).toBeInTheDocument()
+  })
+
+  it('discloses that the local-spend multiplier has no source', async () => {
+    const MissionPage = (await import('../page')).default
+    render(<MissionPage />)
+
+    expect(screen.getByText(/dollars kept local = total spend/)).toBeInTheDocument()
+    expect(screen.getByText(/It sits in our code with no source attached/)).toBeInTheDocument()
+  })
 })

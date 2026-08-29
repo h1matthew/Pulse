@@ -2,7 +2,7 @@
  * Pulse Assistant - RAG (Retrieval Augmented Generation)
  *
  * Retrieves relevant business data from Supabase to provide context
- * for the AI assistant's responses.
+ * for assistant responses.
  */
 
 import { createClient } from '@/lib/supabase/server'

@@ -27,32 +27,32 @@ function getGenAI(): GoogleGenerativeAI {
   return new GoogleGenerativeAI(resolveApiKey())
 }
 
-const PULSE_SYSTEM_PROMPT = `You are the Pulse AI Assistant — a friendly, knowledgeable guide for a local business discovery platform called Pulse.
+const PULSE_SYSTEM_PROMPT = `You are Pulse Assistant, a concise directory assistant for Pulse.
 
 ## What Pulse Does
-Pulse helps users discover and support small, local businesses. Users can:
+Pulse helps users find and compare small, local businesses. Users can:
 - Browse and search for local businesses by category, rating, or distance
 - Leave reviews and ratings for businesses they visit
 - Bookmark favorite businesses
 - Claim special deals and coupons from local businesses
-- Complete "Boost Missions" (challenges like "Try 3 new coffee shops this month")
-- Track their economic impact on the local community through a personal dashboard
+- Complete missions such as "Try 3 new coffee shops this month"
+- Track verified check-ins and estimated local spend in a personal dashboard
 
 ## Product Knowledge (answer feature questions from this, with the page links)
 - **Discover** ([/discover](/discover)): real nearby businesses from Google Places with photos and ratings; filters for category, Independent-only, Open now, price ($–$$$$), and 4.0+ rating.
 - **Bookmarks** ([/bookmarks](/bookmarks)): tap the heart/bookmark icon on any business. Signed-in users sync to their account; signed-out users save on their device until they sign in.
 - **Deals** ([/deals](/deals)): claim an offer to get a unique redemption code, then show the code at the business. Claiming is free — Pulse has no payments.
-- **Boost Missions** ([/missions](/missions)): challenges like "Try 3 new coffee shops this month"; progress fills as you check in, and finishing unlocks perks.
+- **Missions** ([/missions](/missions)): short challenges like "Try 3 new coffee shops this month"; progress fills as you check in, and finishing can earn perks.
 - **Impact Dashboard** ([/dashboard](/dashboard)): estimates dollars kept local, businesses supported, and jobs touched from check-ins, reviews, and claimed deals. Key fact: roughly $68 of every $100 spent locally stays in the community, versus about $43 at a chain.
 - **Categories** ([/categories](/categories)): the directory organized by what each place does, with live counts.
 - Questions like "what is Pulse?", "how do missions work?", or "why shop local?" should be answered from this knowledge — short and concrete, never with a list of unrelated businesses.
 
 ## Your Role
 You help users with:
-1. **Business Recommendations** — Recommend specific local businesses from the Local Business Directory section below when one is provided
-2. **Feature Explanations** — Explain how Pulse features work (bookmarks, deals, missions, impact tracking)
-3. **Impact Education** — Explain why supporting local businesses matters (local multiplier effect, job creation, community investment)
-4. **General Guidance** — Help users navigate the platform and get the most out of Pulse
+1. **Business recommendations** — Recommend specific local businesses from the Local Business Directory section below when one is provided
+2. **Feature explanations** — Explain bookmarks, deals, missions, check-ins, and the dashboard
+3. **Impact math** — Explain local-spend estimates and their assumptions
+4. **Navigation** — Point users to the right page
 
 ## Response Format (strict)
 - Keep replies SHORT: at most ~60 words. One brief lead-in sentence, then the content. No filler, no restating the question.
@@ -62,9 +62,9 @@ You help users with:
 - For impact/economics questions you may include one short LaTeX formula delimited by $$ on both sides, e.g. $$\\$100 \\times 0.68 = \\$68 \\text{ stays local}$$ — never use single-$ math delimiters (plain money amounts like $100 must stay plain text).
 
 ## Guidelines
-- Focus on local business discovery — redirect off-topic questions politely
+- Focus on local business discovery and Pulse features. Redirect off-topic questions briefly.
 - When recommending businesses, use ONLY businesses listed in the Local Business Directory section — cite their real ratings, review counts, and distances exactly as listed
-- Prefer highlighting independent local businesses over chains when both fit the request (that's Pulse's mission)
+- Prefer independent local businesses over chains when both fit the request
 - If the directory has no good match for the request, say so honestly and point the user to the Discover page (/discover)
 - End with one short actionable pointer (e.g., "More on the Discover page.")
 - Never make up business names, addresses, phone numbers, ratings, or any details not present in the directory`
@@ -273,27 +273,27 @@ export function getQuickResponse(message: string): string | null {
 
   // Greetings
   if (/^(hi|hello|hey|howdy|yo|sup|what'?s up|hiya)\b/.test(lower)) {
-    return "Hey there! Welcome to Pulse — your guide to discovering amazing local businesses. I can help you find great spots nearby, explain how your support impacts the local economy, or walk you through any of Pulse's features. What would you like to explore?"
+    return "Hi. I can find places nearby, explain deals and missions, or read back how your check-ins affect your ledger. What are you looking for?"
   }
 
   // Thanks
   if (/^(thanks|thank you|thx|ty|cheers|appreciated)\b/.test(lower)) {
-    return "You're welcome! Happy to help. If you have more questions about local businesses or Pulse features, just ask. Keep supporting local — every visit makes a difference!"
+    return "You're welcome. Ask me for a place, a category, a deal, or how a Pulse feature works."
   }
 
   // Goodbye
   if (/^(bye|goodbye|see ya|later|cya|peace)\b/.test(lower)) {
-    return "See you later! Remember, every time you visit a local business, you're making a real impact on your community. Happy exploring!"
+    return "See you later."
   }
 
   // Help
   if (lower === 'help' || lower === '?' || lower === 'what can you do') {
-    return "I'm the Pulse AI Assistant! Here's what I can help with:\n\n- **Find businesses** — Tell me what you're looking for (coffee, restaurants, shops, etc.)\n- **Explain features** — Ask about bookmarks, deals, missions, or impact tracking\n- **Impact info** — Learn how supporting local businesses helps your community\n- **Get started** — I'll walk you through how to use Pulse\n\nWhat sounds interesting?"
+    return "I can help with:\n\n- **Find businesses** — coffee, restaurants, shops, services\n- **Explain features** — bookmarks, deals, missions, check-ins\n- **Read the ledger** — dollars kept local, visits, rewards\n\nAsk for a place or a feature."
   }
 
   // About Pulse — answer product questions directly (and instantly)
   if (/\b(about pulse|what(?:'s| is) pulse|what does pulse do|how does pulse work|tell me about (?:pulse|this app|this site))\b/.test(lower)) {
-    return "**Pulse** helps you discover and support local businesses — and see the impact of doing it.\n\n- **Discover** real nearby businesses with photos, ratings, and filters\n- **Save** bookmarks, claim **deals**, and take on **Boost Missions**\n- **Track your impact** — how much of your spending stays in the community\n\nStart on the [Discover page](/discover)."
+    return "**Pulse** is a local business directory with a personal ledger.\n\n- Browse nearby places with ratings, hours, and filters\n- Save businesses and claim deals\n- Use receipt check-ins to estimate dollars kept local\n\nStart on the [Discover page](/discover)."
   }
 
   return null
@@ -331,7 +331,7 @@ export async function generateAssistantResponse(
         },
         {
           role: 'model',
-          parts: [{ text: "Of course! I'd love to help you discover great local businesses. What are you looking for?" }],
+          parts: [{ text: "What are you looking for?" }],
         },
         ...sanitizedHistory,
       ],
@@ -404,7 +404,7 @@ export async function* generateAssistantResponseStream(
         },
         {
           role: 'model',
-          parts: [{ text: "Of course! I'd love to help you discover great local businesses. What are you looking for?" }],
+          parts: [{ text: "What are you looking for?" }],
         },
         ...sanitizedHistory,
       ],
@@ -487,13 +487,13 @@ export function detectCategorySlug(message: string): string | null {
 }
 
 const FALLBACK_SUGGESTIONS = [
-  'What are Boost Missions?',
-  'How does supporting local help my community?',
+  'How do missions work?',
+  'How does local spending get counted?',
   'Find me a top-rated coffee shop',
 ]
 
 const GENERIC_FALLBACK_TEXT =
-  "I couldn't pull up specific recommendations right now, but the [Discover page](/discover) lets you browse top-rated local businesses by category, rating, and distance. Give it a look!"
+  "I couldn't pull up specific recommendations right now. The [Discover page](/discover) still lets you browse by category, rating, distance, and open hours."
 
 /**
  * Curated answers for product/impact questions. Without these, the fallback
@@ -509,26 +509,26 @@ const TOPIC_ANSWERS: Array<{
   {
     pattern: /\b(boost mission|missions?)\b/i,
     text:
-      '**Boost Missions** are local challenges — like *"Try 3 new coffee shops this month."*\n\n- Track progress as you check in at businesses\n- Finish missions to unlock perks\n\nSee what\'s active on the [Missions page](/missions).',
-    suggestions: ['Find me a top-rated coffee shop', 'How do deals work?', 'How does my impact get tracked?'],
+      '**Missions** are short local challenges, such as *"Try 3 new coffee shops this month."*\n\n- Check in at eligible businesses\n- Progress updates from verified visits\n- Finished missions can earn perks\n\nSee active missions on the [Missions page](/missions).',
+    suggestions: ['Find me a top-rated coffee shop', 'How do deals work?', 'How is my ledger calculated?'],
   },
   {
     pattern: /\b(bookmarks?|sav(e|ing) (a |my )?(business|place|spot))\b/i,
     text:
       '**Bookmarks** save businesses you want to remember.\n\n- Tap the heart or bookmark icon on any business\n- Signed in: synced to your account\n- Signed out: kept on this device until you sign in\n\nFind them on your [Bookmarks page](/bookmarks).',
-    suggestions: ['Find me a top-rated coffee shop', 'What are Boost Missions?', 'Tell me about Pulse'],
+    suggestions: ['Find me a top-rated coffee shop', 'How do missions work?', 'Tell me about Pulse'],
   },
   {
     pattern: /\b(deals?|coupons?|discounts?|claim(ing)?)\b/i,
     text:
       '**Deals** are offers from local businesses.\n\n- Browse current offers on the [Deals page](/deals)\n- Claim one to get a unique redemption code\n- Show the code at the business to redeem\n\nNo payments in the app — claiming is free.',
-    suggestions: ['What are Boost Missions?', 'Find me dinner nearby', 'How does supporting local help?'],
+    suggestions: ['How do missions work?', 'Find me dinner nearby', 'How is local spend counted?'],
   },
   {
     pattern: /\b(impact|local economy|multiplier|support(ing)? local|shop(ping)? local|buy(ing)? local|dollars? kept)\b/i,
     text:
       'Spending locally keeps money in your community — roughly **$68 of every $100** stays local versus about **$43** at a chain.\n\nPulse estimates your personal impact (dollars kept local, businesses supported, jobs touched) from your check-ins, reviews, and claimed deals — see your [Dashboard](/dashboard).',
-    suggestions: ['Find me a top-rated independent spot', 'What are Boost Missions?', 'Tell me about Pulse'],
+    suggestions: ['Find me a top-rated independent spot', 'How do missions work?', 'Tell me about Pulse'],
   },
 ]
 

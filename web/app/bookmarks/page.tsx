@@ -1,23 +1,10 @@
 "use client";
 
-import {
-  Heart,
-  MapPin,
-  Star,
-  Trash2,
-  ExternalLink,
-  Loader2,
-  Info,
-  Lock,
-  Store,
-  Bookmark,
-} from "lucide-react";
+import { Trash2, Loader2, Info, Lock } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHydrationSafeQuery } from "@/hooks/useHydrationSafeQuery";
 import { Header } from "@/components/layout/Header";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { NavLink } from "@/components/ui/nav-link";
@@ -31,9 +18,8 @@ import {
 import { toast } from "sonner";
 import type { BusinessWithCategory } from "@/types/business";
 
-interface BookmarkCardProps {
+interface BookmarkRowProps {
   business: BusinessWithCategory;
-  index: number;
   /** Owner's note — server bookmarks only; local bookmarks have none */
   note?: string | null;
   /** ISO date the bookmark was created — server bookmarks only */
@@ -41,157 +27,119 @@ interface BookmarkCardProps {
   onRemove: () => void;
 }
 
-function BookmarkCard({
-  business,
-  index,
-  note,
-  savedAt,
-  onRemove,
-}: BookmarkCardProps) {
-  const getPriceRange = (level: number | null) => {
-    if (!level) return "";
-    return "$".repeat(level);
-  };
+function formatSavedDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffDays = Math.floor(
+    (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-    );
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  return `${Math.floor(diffDays / 30)} months ago`;
+}
 
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
-  };
+function BookmarkRow({ business, note, savedAt, onRemove }: BookmarkRowProps) {
+  const priceLabel = business.price_range ? "$".repeat(business.price_range) : "";
+  const locationLine = [business.city, business.state].filter(Boolean).join(", ");
 
   return (
-    <AnimatedSection animation="fade-up" delay={0.1 * (index + 2)}>
-      <Card className="h-full group">
-        <CardContent className="p-0">
-          {/* Image Placeholder */}
-          <div className="h-40 bg-secondary flex items-center justify-center relative">
-            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted">
-              <Store className="h-7 w-7 text-muted-foreground" aria-hidden="true" />
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={`Remove ${business.name} from bookmarks`}
-              className="absolute top-3 right-3 bg-background/80 hover:bg-destructive hover:text-destructive-foreground"
-              onClick={onRemove}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+    <article className="card-lift flex gap-4 px-2 py-4">
+      {/* Rating column — largest numeral, leftmost */}
+      <div className="w-11 shrink-0 pt-0.5">
+        <p className="font-mono text-h3 leading-none tabular-nums">
+          {business.average_rating ? business.average_rating.toFixed(1) : "—"}
+        </p>
+        <p className="mt-1.5 font-mono text-meta tabular-nums text-text-tertiary">
+          {business.review_count ?? 0}
+        </p>
+      </div>
 
-          {/* Content */}
-          <div className="p-5">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h3 className="font-semibold text-lg">{business.name}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {business.category?.name}
-                </p>
-              </div>
-              {business.is_verified && (
-                <Badge variant="secondary" className="text-xs">
-                  ✓ Verified
-                </Badge>
-              )}
-            </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-3">
+          <h3 className="min-w-0 flex-1 truncate text-body font-medium">
+            <NavLink href={`/business/${business.id}`} className="hover:text-primary">
+              {business.name}
+            </NavLink>
+          </h3>
+          {savedAt && (
+            <span className="shrink-0 font-mono text-meta text-text-tertiary">
+              Saved {formatSavedDate(savedAt)}
+            </span>
+          )}
+        </div>
 
-            <p className="text-sm text-muted-foreground mb-3">
-              {business.short_description || business.description}
-            </p>
+        {/* Fixed slot order: category · neighborhood · price · address */}
+        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-meta uppercase tracking-[0.02em] text-text-tertiary">
+          <span>{business.category?.name ?? "Local business"}</span>
+          {locationLine && (
+            <>
+              <span aria-hidden="true">&middot;</span>
+              <span>{locationLine}</span>
+            </>
+          )}
+          {priceLabel && (
+            <>
+              <span aria-hidden="true">&middot;</span>
+              <span>{priceLabel}</span>
+            </>
+          )}
+          {business.address && (
+            <>
+              <span aria-hidden="true">&middot;</span>
+              <span>{business.address}</span>
+            </>
+          )}
+          {business.is_verified && (
+            <>
+              <span aria-hidden="true">&middot;</span>
+              <span>Verified</span>
+            </>
+          )}
+        </p>
 
-            <div className="flex items-center gap-1 mb-3">
-              <Star className="h-4 w-4 fill-chart-5 text-chart-5" />
-              <span className="font-medium">{business.average_rating}</span>
-              <span className="text-muted-foreground">
-                ({business.review_count} reviews)
-              </span>
-              {business.price_range && (
-                <>
-                  <span className="text-muted-foreground mx-1">•</span>
-                  <span className="text-muted-foreground">
-                    {getPriceRange(business.price_range)}
-                  </span>
-                </>
-              )}
-            </div>
+        <p className="mt-1.5 line-clamp-2 text-small text-muted-foreground">
+          {business.short_description || business.description}
+        </p>
 
-            <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
-              <MapPin className="h-3 w-3" />
-              {business.address}
-            </div>
+        {note && (
+          <p className="mt-1.5 border-l border-border pl-3 text-small text-muted-foreground">
+            &ldquo;{note}&rdquo;
+          </p>
+        )}
 
-            {note && (
-              <div className="p-3 bg-muted rounded-lg mb-3">
-                <p className="text-sm text-muted-foreground italic">
-                  &ldquo;{note}&rdquo;
-                </p>
-              </div>
-            )}
-
-            {business.tags && business.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-4">
-                {business.tags.slice(0, 3).map((tag: string) => (
-                  <Badge key={tag} variant="outline" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between">
-              {savedAt ? (
-                <span className="text-xs text-muted-foreground">
-                  Saved {formatDate(savedAt)}
-                </span>
-              ) : (
-                <span />
-              )}
-              <NavLink href={`/business/${business.id}`}>
-                <Button size="sm" variant="outline" className="gap-1">
-                  View
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-              </NavLink>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </AnimatedSection>
+        <div className="mt-2.5 flex items-center gap-4 text-meta">
+          <NavLink href={`/business/${business.id}`} className="text-text-tertiary hover:text-primary">
+            View
+          </NavLink>
+          <button
+            type="button"
+            aria-label={`Remove ${business.name} from bookmarks`}
+            className="inline-flex items-center gap-1 text-text-tertiary hover:text-destructive"
+            onClick={onRemove}
+          >
+            <Trash2 className="h-3 w-3" aria-hidden="true" />
+            Remove
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
-function BookmarkCardSkeleton() {
+function BookmarkRowSkeleton() {
   return (
-    <Card className="h-full">
-      <CardContent className="p-0">
-        <Skeleton className="h-40 w-full" />
-        <div className="p-5 space-y-3">
-          <div className="flex justify-between">
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-          <div className="flex gap-1">
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-          <div className="flex justify-between pt-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-20" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex gap-4 px-2 py-4">
+      <Skeleton className="h-6 w-11 shrink-0" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+    </div>
   );
 }
 
@@ -257,7 +205,7 @@ export default function BookmarksPage() {
     });
   };
 
-  // Calculate stats
+  // Summary figures, shown as one mono line under the heading
   const averageRating =
     bookmarks.length > 0
       ? (
@@ -288,19 +236,17 @@ export default function BookmarksPage() {
       <div className="relative min-h-screen">
         <Header />
         <div className="pt-28 pb-12">
-          <div className="mx-auto max-w-6xl px-6 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-              <Lock className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
-            </div>
-            <h1 className="text-2xl font-bold mb-2">Sign in required</h1>
-            <p className="text-muted-foreground mb-2">
+          <div className="mx-auto max-w-5xl px-6">
+            <Lock className="mb-4 h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <h1 className="text-h2 font-medium">Sign in required</h1>
+            <p className="mt-1.5 text-small text-muted-foreground">
               Please sign in to view your bookmarks
             </p>
-            <p className="text-sm text-muted-foreground mb-6">
+            <p className="mt-1 text-small text-muted-foreground">
               Bookmarks you save while signed out are kept on this device.
             </p>
-            <NavLink href="/login">
-              <Button>Sign In</Button>
+            <NavLink href="/login" className="mt-5 inline-block">
+              <Button size="sm">Sign in</Button>
             </NavLink>
           </div>
         </div>
@@ -314,18 +260,12 @@ export default function BookmarksPage() {
         <Header />
 
         <div className="pt-28 pb-12">
-          <div className="mx-auto max-w-6xl px-6">
-            {/* Header */}
+          <div className="mx-auto max-w-5xl px-6">
             <AnimatedSection animation="fade-up">
-              <div className="mb-8 border-b border-border pb-6">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Saved places
-                </p>
-                <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                  Your Bookmarks
-                </h1>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-                  Businesses you&apos;ve saved to support later
+              <div className="mb-5 border-b border-border pb-5">
+                <h1 className="text-h2 font-medium">Your Bookmarks</h1>
+                <p className="mt-1.5 text-small text-muted-foreground">
+                  Businesses you&apos;ve saved to support later.
                 </p>
               </div>
             </AnimatedSection>
@@ -334,18 +274,18 @@ export default function BookmarksPage() {
             <AnimatedSection animation="fade-up" delay={0.1}>
               <div
                 role="status"
-                className="mb-8 flex flex-col gap-3 rounded-lg border border-border bg-secondary p-4 sm:flex-row sm:items-center"
+                className="mb-5 flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center"
               >
                 <div className="flex flex-1 items-start gap-3">
                   <Info
-                    className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
+                    className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
                     aria-hidden="true"
                   />
                   <div>
-                    <p className="font-medium text-foreground">
+                    <p className="text-small font-medium text-foreground">
                       Saved on this device
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-small text-muted-foreground">
                       These bookmarks live only in this browser. Sign in to
                       keep them on your account and across devices.
                     </p>
@@ -359,38 +299,32 @@ export default function BookmarksPage() {
               </div>
             </AnimatedSection>
 
-            {/* Local bookmarks grid */}
+            {/* Local bookmarks feed */}
             <AnimatedSection animation="fade-up" delay={0.15}>
               {guestBusinessesQuery.isLoading ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <BookmarkCardSkeleton key={i} />
+                <div className="divide-y divide-border border-t border-border">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <BookmarkRowSkeleton key={i} />
                   ))}
                 </div>
               ) : guestBusinesses.length > 0 ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {guestBusinesses.map((business, index) => (
-                    <BookmarkCard
+                <div className="divide-y divide-border border-t border-border">
+                  {guestBusinesses.map((business) => (
+                    <BookmarkRow
                       key={business.id}
                       business={business}
-                      index={index}
                       onRemove={() => handleRemoveLocal(business.id)}
                     />
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-                    <Bookmark className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    No bookmarks yet
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Start exploring and save businesses you want to support
+                <div className="border-t border-border py-10">
+                  <h3 className="text-body font-medium">No bookmarks yet</h3>
+                  <p className="mt-1 text-small text-muted-foreground">
+                    Save a business from Discover and it lands here.
                   </p>
-                  <NavLink href="/discover">
-                    <Button>Discover Businesses</Button>
+                  <NavLink href="/discover" className="mt-4 inline-block">
+                    <Button size="sm">Browse businesses</Button>
                   </NavLink>
                 </div>
               )}
@@ -406,96 +340,45 @@ export default function BookmarksPage() {
       <Header />
 
       <div className="pt-28 pb-12">
-        <div className="mx-auto max-w-6xl px-6">
-          {/* Header */}
+        <div className="mx-auto max-w-5xl px-6">
           <AnimatedSection animation="fade-up">
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-2">
-                <Heart className="h-6 w-6 text-muted-foreground" />
-                <h1 className="text-3xl font-bold tracking-tight">
-                  Your Bookmarks
-                </h1>
-              </div>
-              <p className="text-muted-foreground">
-                Businesses you&apos;ve saved to support later
+            <div className="mb-5 border-b border-border pb-5">
+              <h1 className="text-h2 font-medium">Your Bookmarks</h1>
+              <p className="mt-1.5 text-small text-muted-foreground">
+                Businesses you&apos;ve saved to support later.
               </p>
+              {!isLoading && (
+                <p
+                  className="mt-3 flex flex-wrap items-baseline gap-x-1.5 font-mono text-meta tabular-nums text-text-tertiary"
+                  suppressHydrationWarning
+                >
+                  <span>{bookmarks.length} saved</span>
+                  <span aria-hidden="true">&middot;</span>
+                  <span>{averageRating} avg</span>
+                  <span aria-hidden="true">&middot;</span>
+                  <span>
+                    {uniqueNeighborhoods}{" "}
+                    {uniqueNeighborhoods === 1 ? "neighborhood" : "neighborhoods"}
+                  </span>
+                </p>
+              )}
             </div>
           </AnimatedSection>
 
-          {/* Stats */}
-          <AnimatedSection animation="fade-up" delay={0.1}>
-            <div className="grid sm:grid-cols-3 gap-4 mb-8">
-              <Card>
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                    <Heart className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div suppressHydrationWarning>
-                    {isLoading ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      <div className="text-2xl font-bold">{bookmarks.length}</div>
-                    )}
-                    <div className="text-xs text-muted-foreground">
-                      Saved Businesses
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                    <Star className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div suppressHydrationWarning>
-                    {isLoading ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      <div className="text-2xl font-bold">{averageRating}</div>
-                    )}
-                    <div className="text-xs text-muted-foreground">
-                      Avg. Rating
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                    <MapPin className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div suppressHydrationWarning>
-                    {isLoading ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      <div className="text-2xl font-bold">
-                        {uniqueNeighborhoods}
-                      </div>
-                    )}
-                    <div className="text-xs text-muted-foreground">
-                      Neighborhoods
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </AnimatedSection>
-
-          {/* Bookmarks Grid */}
+          {/* Bookmarks feed */}
           <AnimatedSection animation="fade-up" delay={0.15}>
             {isLoading ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <BookmarkCardSkeleton key={i} />
+              <div className="divide-y divide-border border-t border-border">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <BookmarkRowSkeleton key={i} />
                 ))}
               </div>
             ) : bookmarks.length > 0 ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {bookmarks.map((bookmark, index) => (
-                  <BookmarkCard
+              <div className="divide-y divide-border border-t border-border">
+                {bookmarks.map((bookmark) => (
+                  <BookmarkRow
                     key={bookmark.id}
                     business={bookmark.business}
-                    index={index}
                     note={bookmark.note}
                     savedAt={bookmark.created_at}
                     onRemove={() => handleDelete(bookmark.id)}
@@ -503,22 +386,15 @@ export default function BookmarksPage() {
                 ))}
               </div>
             ) : (
-              <AnimatedSection animation="fade-up" delay={0.2}>
-                <div className="text-center py-16">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
-                    <Bookmark className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    No bookmarks yet
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    Start exploring and save businesses you want to support
-                  </p>
-                  <NavLink href="/discover">
-                    <Button>Discover Businesses</Button>
-                  </NavLink>
-                </div>
-              </AnimatedSection>
+              <div className="border-t border-border py-10">
+                <h3 className="text-body font-medium">No bookmarks yet</h3>
+                <p className="mt-1 text-small text-muted-foreground">
+                  Save a business from Discover and it lands here.
+                </p>
+                <NavLink href="/discover" className="mt-4 inline-block">
+                  <Button size="sm">Browse businesses</Button>
+                </NavLink>
+              </div>
             )}
           </AnimatedSection>
         </div>

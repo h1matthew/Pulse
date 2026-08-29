@@ -18,14 +18,11 @@ interface FounderCardProps {
 export function FounderCard({ founder, index }: FounderCardProps) {
   return (
     <div className="rounded-lg border border-border bg-card p-6 transition-colors hover:border-primary/30">
-      <p
-        className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-        aria-hidden="true"
-      >
+      <p className="meta" aria-hidden="true">
         {String(index + 1).padStart(2, '0')}
       </p>
-      <h2 className="mt-4 text-xl font-semibold tracking-tight text-foreground">{founder.name}</h2>
-      <p className="mt-1 text-sm font-medium text-primary">{founder.role}</p>
+      <h2 className="mt-4 text-h3 font-medium text-foreground">{founder.name}</h2>
+      <p className="mt-1 text-small text-muted-foreground">{founder.role}</p>
     </div>
   )
 }

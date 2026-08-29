@@ -19,18 +19,19 @@ export function AnimatedStatCard({
 }: AnimatedStatCardProps) {
   return (
     <div
-      // Entrance is pure CSS: the card and its value render without JS.
-      className="animate-fade-in rounded-xl border border-border/50 bg-card p-5 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+      // Entrance is pure CSS: the card and its value render without JS, and the
+      // figure is printed at its final value — never counted up.
+      className="animate-fade-in rounded-lg border border-border bg-surface-1 p-5"
       style={{ animationDelay: `${delay}s` }}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground mb-3 transition-transform duration-300 hover:scale-110">
+      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-md bg-surface-2 text-text-tertiary">
         {icon}
       </div>
-      <p className="text-2xl font-bold text-foreground">
+      <p className="font-mono text-h2 font-normal tabular-nums text-foreground">
         {value}{suffix}
       </p>
-      <p className="text-sm font-medium text-foreground mt-1">{label}</p>
-      <p className="text-xs text-muted-foreground">{description}</p>
+      <p className="mt-1 text-small font-medium text-foreground">{label}</p>
+      <p className="text-small text-muted-foreground">{description}</p>
     </div>
   )
 }

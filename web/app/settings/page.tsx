@@ -3,15 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useHydrationSafeQuery } from "@/hooks/useHydrationSafeQuery";
-import {
-  User,
-  Bell,
-  MapPin,
-  Heart,
-  Save,
-  Loader2,
-  Check,
-} from "lucide-react";
+import { User, Bell, Heart, Save, Loader2, Check, Lock } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +20,6 @@ import {
   underlineTabsTriggerClass,
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -194,10 +185,9 @@ function PreferencesSettings() {
                 onClick={() => toggleCategory(category.id)}
                 disabled={mutation.isPending}
               >
-                <span className="mr-1">{category.icon}</span>
                 {category.name}
                 {prefs.preferred_categories.includes(category.id) && (
-                  <Check className="ml-1 h-3 w-3" />
+                  <Check className="ml-1 h-3 w-3" aria-hidden="true" />
                 )}
               </Button>
             ))}
@@ -220,15 +210,15 @@ function PreferencesSettings() {
             onValueChange={updatePriceRange}
             disabled={mutation.isPending}
           />
-          <div className="flex justify-between text-sm text-muted-foreground">
+          <div className="flex justify-between font-mono text-meta text-text-tertiary">
             <span>$</span>
             <span>$$</span>
             <span>$$$</span>
             <span>$$$$</span>
           </div>
-          <div className="text-sm">
-            Selected: <Badge variant="secondary">{"$".repeat(prefs.price_range[0])} - {"$".repeat(prefs.price_range[prefs.price_range.length - 1])}</Badge>
-          </div>
+          <p className="font-mono text-meta text-muted-foreground">
+            Selected: {"$".repeat(prefs.price_range[0])}–{"$".repeat(prefs.price_range[prefs.price_range.length - 1])}
+          </p>
         </CardContent>
       </Card>
 
@@ -246,14 +236,14 @@ function PreferencesSettings() {
             onValueChange={updateDistance}
             disabled={mutation.isPending}
           />
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>1 mile</span>
-            <span>25 miles</span>
-            <span>50 miles</span>
+          <div className="flex justify-between font-mono text-meta tabular-nums text-text-tertiary">
+            <span>1 mi</span>
+            <span>25 mi</span>
+            <span>50 mi</span>
           </div>
-          <div className="text-sm">
-            Selected: <Badge variant="secondary">{prefs.max_distance_miles} miles</Badge>
-          </div>
+          <p className="font-mono text-meta tabular-nums text-muted-foreground">
+            Selected: {prefs.max_distance_miles} mi
+          </p>
         </CardContent>
       </Card>
     </div>
@@ -349,11 +339,11 @@ export default function SettingsPage() {
       <div className="relative min-h-screen">
         <Header />
         <div className="pt-28 pb-12">
-          <div className="mx-auto max-w-4xl px-6 text-center">
-            <div className="text-6xl mb-4">🔒</div>
-            <h1 className="text-2xl font-bold mb-2">Sign in required</h1>
-            <p className="text-muted-foreground mb-6">Please sign in to access settings.</p>
-            <Button onClick={() => window.location.href = "/login"}>Sign In</Button>
+          <div className="mx-auto max-w-4xl px-6">
+            <Lock className="mb-4 h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <h1 className="text-h2 font-medium">Sign in required</h1>
+            <p className="mt-1.5 text-small text-muted-foreground">Please sign in to access settings.</p>
+            <Button size="sm" className="mt-5" onClick={() => window.location.href = "/login"}>Sign in</Button>
           </div>
         </div>
       </div>
@@ -366,12 +356,9 @@ export default function SettingsPage() {
       <div className="pt-28 pb-12">
         <div className="mx-auto max-w-4xl px-6">
           <AnimatedSection animation="fade-up">
-            <div className="mb-8">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Your account
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Settings</h1>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+            <div className="mb-5 border-b border-border pb-5">
+              <h1 className="text-h2 font-medium">Settings</h1>
+              <p className="mt-1.5 text-small text-muted-foreground">
                 Manage your account preferences.
               </p>
             </div>

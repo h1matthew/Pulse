@@ -28,10 +28,10 @@ describe('FounderCard', () => {
 
   it('renders a zero-padded index from the index prop', () => {
     const { rerender } = render(<FounderCard founder={FOUNDER} index={0} />)
-    expect(screen.getByText('01')).toHaveClass('font-semibold')
+    expect(screen.getByText('01')).toHaveClass('meta')
 
     rerender(<FounderCard founder={FOUNDER} index={2} />)
-    expect(screen.getByText('03')).toHaveClass('font-semibold')
+    expect(screen.getByText('03')).toHaveClass('meta')
   })
 
   it('uses card surface tokens with a hairline border', () => {

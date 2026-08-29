@@ -49,7 +49,7 @@ export const DEMO_DEAL_TEMPLATES = [
   {
     businessName: 'Chubby Cattle BBQ | Rowland Heights',
     title: 'Boost Mission: Bring a Friend',
-    description: 'Complete a mission visit with a friend and unlock a reward discount.',
+    description: 'Complete a mission visit with a friend for a reward discount.',
     deal_type: 'boost_mission',
     discount_type: 'percentage',
     discount_value: 12,

@@ -2,14 +2,14 @@
 -- Add AI description fields and enhance review content
 -- ============================================================================
 
--- Add AI-generated description fields to businesses table
+-- Add assisted description fields to businesses table
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS ai_description TEXT;
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS ai_description_generated_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS ai_description_source TEXT; -- website URL, review summary, etc.
 ALTER TABLE businesses ADD COLUMN IF NOT EXISTS editorial_summary TEXT; -- Google's editorial summary
-ALTER TABLE businesses ADD COLUMN IF NOT EXISTS ai_business_summary TEXT; -- AI summary based on reviews + website
+ALTER TABLE businesses ADD COLUMN IF NOT EXISTS ai_business_summary TEXT; -- Summary based on reviews + website
 
--- Add index for AI description freshness queries
+-- Add index for description freshness queries
 CREATE INDEX IF NOT EXISTS idx_businesses_ai_description_generated
   ON businesses(ai_description_generated_at)
   WHERE ai_description IS NOT NULL;

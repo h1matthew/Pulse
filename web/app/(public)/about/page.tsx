@@ -60,6 +60,20 @@ export default async function AboutPage() {
     .select('*')
     .order('display_order')
 
+  // Live counters. Null when the query fails; the page then shows none.
+  let businessCount: number | null = null
+  let reviewCount: number | null = null
+  try {
+    const [businesses, reviews] = await Promise.all([
+      supabase.from('businesses').select('*', { count: 'exact', head: true }),
+      supabase.from('reviews').select('*', { count: 'exact', head: true }),
+    ])
+    businessCount = businesses.count ?? null
+    reviewCount = reviews.count ?? null
+  } catch {
+    // Counters are optional; the page renders without them.
+  }
+
   // Check if current user is admin (no redirect, just detect)
   let isAdmin = false
   try {
@@ -84,6 +98,8 @@ export default async function AboutPage() {
     <AboutContent
       founders={(founders as Founder[]) || FALLBACK_FOUNDERS}
       isAdmin={isAdmin}
+      businessCount={businessCount}
+      reviewCount={reviewCount}
     />
   )
 }

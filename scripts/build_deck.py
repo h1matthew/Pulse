@@ -182,7 +182,7 @@ text(s, Inches(0.45), Inches(6.0), Inches(5.6), Inches(0.4),
 fit_pic(s, f"{A}/app-home.png", Inches(6.45), Inches(1.75), Inches(6.4), Inches(4.4))
 caption(s, Inches(6.45), Inches(6.2), Inches(6.4), "Pulse home — live local guide for Diamond Bar")
 footer(s, 2)
-notes(s, "OSCAR (0:30-1:10)\n\nResearch shows 68 cents of every dollar spent locally recirculates in the community — versus just 43 cents at a national chain. Yet small businesses keep losing customers to chains, because they have no shared platform for discovery. Pulse answers every requirement of the prompt: users browse businesses sorted by category, leave reviews and ratings, sort by those ratings, bookmark favorites, claim deals and coupons, and every submission passes bot verification. On top of that foundation we added an AI assistant and a live economic-impact dashboard — you'll see all of it today.\n\nHandoff: \"Felix will explain the technology choices behind it.\"\n\n[Assets: app screenshot (original); business data via Google Places, attributed]")
+notes(s, "OSCAR (0:30-1:10)\n\nResearch shows 68 cents of every dollar spent locally recirculates in the community — versus just 43 cents at a national chain. Yet small businesses keep losing customers to chains, because they have no shared platform for discovery. Pulse answers every requirement of the prompt: users browse businesses sorted by category, leave reviews and ratings, sort by those ratings, bookmark favorites, claim deals and coupons, and every submission passes bot verification. On top of that foundation we added assistant search and a live economic-impact dashboard — you'll see all of it today.\n\nHandoff: \"Felix will explain the technology choices behind it.\"\n\n[Assets: app screenshot (original); business data via Google Places, attributed]")
 
 # ---------------------------------------------------------------- Slide 3
 s = add_slide()
@@ -280,7 +280,7 @@ notes(s, "MATTHEW (3:25-5:25) — THIS SLIDE STAYS UP DURING THE LIVE DEMO\n\nFo
 # ---------------------------------------------------------------- Slide 8
 s = add_slide()
 kicker(s, "Intelligent Feature")
-heading(s, "AI assistant with retrieval-augmented generation")
+heading(s, "Assistant search with retrieval")
 flow = ["User query", "Extract keywords", "Detect category\n+ amenities", "Retrieve real\nbusinesses", "Gemini answers"]
 fx = 0.45
 for i, f in enumerate(flow):

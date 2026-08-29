@@ -30,7 +30,7 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
   {
     title: 'Overview',
     items: [
-      { href: '/dashboard', label: 'Impact Dashboard', icon: LayoutDashboard },
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
@@ -38,15 +38,15 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
     items: [
       { href: '/discover', label: 'Explore', icon: Store },
       { href: '/categories', label: 'Categories', icon: MapPin },
-      { href: '/deals', label: 'Deals & Offers', icon: Tag },
+      { href: '/deals', label: 'Deals', icon: Tag },
     ],
   },
   {
     title: 'Engage',
     items: [
-      { href: '/missions', label: 'Boost Missions', icon: Zap },
+      { href: '/missions', label: 'Missions', icon: Zap },
       { href: '/bookmarks', label: 'Bookmarks', icon: Heart },
-      { href: '/reviews', label: 'Your Reviews', icon: Star },
+      { href: '/reviews', label: 'Reviews', icon: Star },
     ],
   },
   {
@@ -60,7 +60,7 @@ export const SIDEBAR_NAVIGATION: NavSection[] = [
   {
     title: 'Admin',
     items: [
-      { href: '/admin', label: 'Admin Panel', icon: Shield },
+      { href: '/admin', label: 'Admin', icon: Shield },
     ],
     adminOnly: true,
   },
@@ -88,8 +88,8 @@ export const CATEGORY_FILTERS = [
 // Sort options for business listings
 export const SORT_OPTIONS = [
   { value: 'recommended', label: 'Recommended' },
-  { value: 'rating', label: 'Highest Rated' },
-  { value: 'reviews', label: 'Most Reviewed' },
+  { value: 'rating', label: 'Highest rated' },
+  { value: 'reviews', label: 'Most reviewed' },
   { value: 'newest', label: 'Newest' },
   { value: 'distance', label: 'Closest' },
 ]
@@ -99,5 +99,5 @@ export const PRICE_RANGES = [
   { value: '1', label: '$', description: 'Inexpensive' },
   { value: '2', label: '$$', description: 'Moderate' },
   { value: '3', label: '$$$', description: 'Expensive' },
-  { value: '4', label: '$$$$', description: 'Very Expensive' },
+  { value: '4', label: '$$$$', description: 'Very expensive' },
 ]

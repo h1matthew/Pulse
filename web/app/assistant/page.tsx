@@ -2,24 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import {
-  Send,
-  Sparkles,
-  Loader2,
-  MapPin,
-  TrendingUp,
-  Zap,
-  Heart,
-  ArrowRight,
-} from "lucide-react";
+import { Send, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
 import { Header } from "@/components/layout/Header";
 import { ChatMessage } from "@/components/features/assistant/ChatMessage";
 import { useLocation } from "@/hooks/useLocation";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 interface Message {
@@ -33,24 +22,24 @@ interface Message {
 const SUGGESTED_QUESTIONS = {
   discovery: [
     "Find me a quiet coffee shop with WiFi",
-    "What are the best family-friendly restaurants?",
+    "Show family-friendly restaurants nearby",
     "Show me unique local gift shops",
-    "Where can I find a good brunch spot?",
-    "Recommend me a local bookstore",
+    "Find a brunch spot",
+    "Find a local bookstore",
   ],
   impact: [
-    "How does supporting local businesses help?",
+    "How does local spending get counted?",
     "What is the local multiplier effect?",
-    "How much impact have I made?",
+    "How much have I kept local?",
     "Why should I choose local over chains?",
-    "How do my check-ins help the community?",
+    "How do check-ins affect my ledger?",
   ],
   features: [
-    "How do Boost Missions work?",
+    "How do missions work?",
     "What happens when I bookmark a business?",
     "How is my impact score calculated?",
     "How do I claim a deal?",
-    "What are the benefits of checking in?",
+    "What does a check-in record?",
   ],
 };
 
@@ -62,7 +51,13 @@ export default function AssistantPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messageIdRef = useRef(0);
   const { location } = useLocation();
+
+  const nextMessageId = (suffix: string) => {
+    messageIdRef.current += 1;
+    return `message-${messageIdRef.current}-${suffix}`;
+  };
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -85,7 +80,7 @@ export default function AssistantPage() {
     }
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: nextMessageId("user"),
       role: "user",
       content: text,
       timestamp: new Date(),
@@ -118,7 +113,7 @@ export default function AssistantPage() {
       const data = await response.json();
 
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: nextMessageId("assistant"),
         role: "assistant",
         content: data.text,
         suggestions: data.suggestions,
@@ -126,9 +121,9 @@ export default function AssistantPage() {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
+    } catch {
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: nextMessageId("error"),
         role: "assistant",
         content:
           "I can't reach the assistant right now. Please try again in a moment.",
@@ -158,77 +153,62 @@ export default function AssistantPage() {
 
       <div className="pt-16 pb-8 h-[calc(100vh-4rem)]">
         <div className="mx-auto max-w-6xl px-6 h-full">
-          <div className="grid lg:grid-cols-[1fr,350px] gap-6 h-full">
+          <div className="grid h-full gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
             {/* Main Chat Area */}
             <div className="flex flex-col h-full">
               {!hasStarted ? (
-                // Welcome Screen
-                <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="mb-6"
-                  >
-                    <div className="h-20 w-20 rounded-2xl bg-muted flex items-center justify-center">
-                      <Sparkles className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                  </motion.div>
-
+                // Welcome screen — left-aligned, no centered body copy
+                <div className="flex flex-1 flex-col justify-end pb-6">
                   <motion.h1
-                    initial={{ y: 20, opacity: 0 }}
+                    initial={{ y: 12, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-3xl font-bold mb-3"
+                    className="text-h2 font-medium"
                   >
                     Pulse Assistant
                   </motion.h1>
 
                   <motion.p
-                    initial={{ y: 20, opacity: 0 }}
+                    initial={{ y: 12, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-muted-foreground max-w-md mb-8"
+                    transition={{ delay: 0.1 }}
+                    className="mt-1.5 max-w-lg text-small text-muted-foreground"
                   >
-                    Ask about local businesses near you, how Boost Missions and
-                    deals work, or what your check-ins add up to.
+                    Ask about local businesses near you, how missions and deals
+                    work, or what your check-ins add up to.
                   </motion.p>
 
-                  {/* Quick Start Buttons */}
                   <motion.div
-                    initial={{ y: 20, opacity: 0 }}
+                    initial={{ y: 12, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="flex flex-wrap justify-center gap-3"
+                    transition={{ delay: 0.2 }}
+                    className="mt-5 flex flex-wrap gap-2"
                   >
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={() =>
                         handleSend(
                           "Find me a quiet coffee shop with WiFi for working"
                         )
                       }
-                      className="gap-2"
                     >
-                      <MapPin className="h-4 w-4" />
                       Find a coffee shop
                     </Button>
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={() =>
-                        handleSend("How does supporting local help my community?")
+                        handleSend("How does local spending get counted?")
                       }
-                      className="gap-2"
                     >
-                      <TrendingUp className="h-4 w-4" />
                       Learn about impact
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => handleSend("How do Boost Missions work?")}
-                      className="gap-2"
+                      size="sm"
+                      onClick={() => handleSend("How do missions work?")}
                     >
-                      <Zap className="h-4 w-4" />
-                      Boost Missions
+                      Missions
                     </Button>
                   </motion.div>
                 </div>
@@ -256,7 +236,7 @@ export default function AssistantPage() {
                                   <button
                                     key={i}
                                     onClick={() => handleSend(suggestion)}
-                                    className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-accent hover:text-foreground transition-colors text-muted-foreground"
+                                    className="rounded-md border border-border px-2.5 py-1 text-meta text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
                                   >
                                     {suggestion}
                                   </button>
@@ -284,8 +264,8 @@ export default function AssistantPage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask about local businesses, your impact, or how Pulse works..."
-                    aria-label="Ask the Pulse AI assistant a question"
+                    placeholder="Ask about places, deals, or your ledger..."
+                    aria-label="Ask the Pulse assistant a question"
                     className="flex-1 h-12"
                     disabled={isLoading}
                   />
@@ -306,7 +286,7 @@ export default function AssistantPage() {
                 {hasStarted && (
                   <div className="flex justify-between items-center mt-3">
                     <p className="text-xs text-muted-foreground">
-                      AI-generated responses. Verify important information.
+                      Verify important information before visiting.
                     </p>
                     <Button
                       variant="ghost"
@@ -322,90 +302,41 @@ export default function AssistantPage() {
             </div>
 
             {/* Sidebar */}
-            <div className="hidden lg:block space-y-4">
-              {/* Suggested Questions Card */}
-              <Card className="p-5">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-muted-foreground" />
-                  Suggested Questions
-                </h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                      Discover
-                    </h4>
-                    <div className="space-y-1.5">
-                      {SUGGESTED_QUESTIONS.discovery.slice(0, 3).map((q, i) => (
+            <aside className="hidden lg:block">
+              <h2 className="mb-3 text-h3 font-medium">Suggested questions</h2>
+              <div className="divide-y divide-border border-y border-border">
+                {[
+                  { label: "Discover", items: SUGGESTED_QUESTIONS.discovery.slice(0, 3) },
+                  { label: "Impact", items: SUGGESTED_QUESTIONS.impact.slice(0, 3) },
+                  { label: "Features", items: SUGGESTED_QUESTIONS.features.slice(0, 2) },
+                ].map((group) => (
+                  <div key={group.label} className="py-3">
+                    <p className="font-mono text-meta uppercase tracking-[0.02em] text-text-tertiary">
+                      {group.label}
+                    </p>
+                    <div className="mt-1.5 space-y-1">
+                      {group.items.map((q) => (
                         <button
-                          key={i}
+                          key={q}
                           onClick={() => handleSend(q)}
-                          className="w-full text-left text-sm text-muted-foreground hover:text-foreground hover:bg-muted px-2 py-1.5 rounded transition-colors"
+                          className="w-full rounded-md px-2 py-1 text-left text-small text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
                         >
                           {q}
                         </button>
                       ))}
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-                      Impact
-                    </h4>
-                    <div className="space-y-1.5">
-                      {SUGGESTED_QUESTIONS.impact.slice(0, 3).map((q, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleSend(q)}
-                          className="w-full text-left text-sm text-muted-foreground hover:text-foreground hover:bg-muted px-2 py-1.5 rounded transition-colors"
-                        >
-                          {q}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <Zap className="h-3.5 w-3.5 text-muted-foreground" />
-                      Features
-                    </h4>
-                    <div className="space-y-1.5">
-                      {SUGGESTED_QUESTIONS.features.slice(0, 2).map((q, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleSend(q)}
-                          className="w-full text-left text-sm text-muted-foreground hover:text-foreground hover:bg-muted px-2 py-1.5 rounded transition-colors"
-                        >
-                          {q}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Mission Card */}
-              <Card className="p-5">
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-muted-foreground" />
-                  Our Mission
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  &quot;Powering the Heart of Local Business&quot; — We help you
-                  discover and support local businesses while tracking your
-                  positive community impact.
-                </p>
-                <Link href="/discover">
-                  <Button variant="outline" size="sm" className="w-full group">
-                    Start Exploring
-                    <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
-                  </Button>
-                </Link>
-              </Card>
-            </div>
+              <Link
+                href="/discover"
+                className="mt-3 inline-flex items-center gap-1 font-mono text-meta text-text-tertiary hover:text-primary"
+              >
+                Browse the directory
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+              </Link>
+            </aside>
           </div>
         </div>
       </div>

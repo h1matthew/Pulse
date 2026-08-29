@@ -1,10 +1,10 @@
 /**
- * Prompt sanitization utilities for AI inputs.
+ * Prompt sanitization utilities for assistant inputs.
  * Prevents prompt injection attacks by escaping and filtering malicious patterns.
  */
 
 /**
- * Sanitize user input for safe inclusion in AI prompts.
+ * Sanitize user input for safe inclusion in assistant prompts.
  * Prevents prompt injection attacks by:
  * 1. Limiting input length
  * 2. Stripping control characters
@@ -64,10 +64,10 @@ export function sanitizeLessonContext(input: string, maxLength = 5000): string {
 }
 
 /**
- * Sanitize AI-generated content before displaying to users.
- * Removes any potentially harmful patterns from AI output.
+ * Sanitize assistant content before displaying to users.
+ * Removes potentially harmful patterns from generated output.
  *
- * @param content - The AI-generated content
+ * @param content - The content to sanitize
  * @returns Sanitized content safe for display
  */
 export function sanitizeAIOutput(content: string): string {

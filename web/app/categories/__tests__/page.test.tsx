@@ -130,9 +130,19 @@ describe('Categories Page', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the mono eyebrow label', async () => {
+  it('has no eyebrow label above the heading', async () => {
     await renderPage()
-    expect(screen.getByText('Browse the directory')).toBeInTheDocument()
+    expect(screen.queryByText('Browse the directory')).not.toBeInTheDocument()
+    const heading = screen.getByRole('heading', { level: 1, name: 'Browse by Category' })
+    expect(heading).toHaveClass('font-medium')
+    expect(heading.classList.contains('font-semibold')).toBe(false)
+  })
+
+  it('renders categories as hairline-ruled rows, not a card grid', async () => {
+    const { container } = await renderPage()
+    const feed = container.querySelector('.divide-y.divide-border')
+    expect(feed).not.toBeNull()
+    expect(container.querySelector('.lg\\:grid-cols-3')).toBeNull()
   })
 
   it('renders real business counts computed from the data', async () => {

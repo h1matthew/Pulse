@@ -28,7 +28,6 @@ interface HelpStep {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   description: string;
-  color: string;
 }
 
 const HOW_IT_WORKS_STEPS: HelpStep[] = [
@@ -36,43 +35,37 @@ const HOW_IT_WORKS_STEPS: HelpStep[] = [
     icon: Store,
     title: "Discover",
     description:
-      "Browse real local businesses near you powered by Google Places. Filter by category, sort by rating, or search by name.",
-    color: "bg-primary/10 text-primary",
+      "Browse local businesses near you. Filter by category, sort by rating, or search by name.",
   },
   {
     icon: Star,
-    title: "Review & Rate",
+    title: "Review",
     description:
-      "Leave honest reviews and ratings to help others find the best local spots. Bot prevention keeps reviews authentic.",
-    color: "bg-chart-5/10 text-chart-5",
+      "Leave reviews and ratings. Bot prevention keeps review forms gated.",
   },
   {
     icon: Heart,
-    title: "Bookmark Favorites",
+    title: "Bookmark",
     description:
-      "Save businesses you love to your personal list. Build your collection of local go-to spots.",
-    color: "bg-chart-2/10 text-chart-2",
+      "Save businesses to a personal list.",
   },
   {
     icon: Tag,
-    title: "Claim Deals",
+    title: "Claim deals",
     description:
-      "Access exclusive deals and discounts from local businesses. Get a unique redemption code for each deal.",
-    color: "bg-chart-3/10 text-chart-3",
+      "Claim current offers and get a redemption code.",
   },
   {
     icon: Zap,
-    title: "Complete Missions",
+    title: "Complete missions",
     description:
-      'Take on "Boost Missions" like "Try 3 new coffee shops this month" and earn rewards for your community engagement.',
-    color: "bg-chart-4/10 text-chart-4",
+      'Take on challenges like "Try 3 new coffee shops this month" and earn rewards.',
   },
   {
     icon: TrendingUp,
-    title: "Track Your Impact",
+    title: "Track the ledger",
     description:
-      "See exactly how your support strengthens the local economy — dollars kept local, jobs supported, and more.",
-    color: "bg-primary/10 text-primary",
+      "See receipt-based totals, estimated dollars kept local, and progress.",
   },
 ];
 
@@ -99,7 +92,7 @@ export function HelpMenu({ compact = false }: HelpMenuProps) {
           aria-label="Open help menu"
           className={cn(
             "text-muted-foreground hover:text-foreground",
-            compact && "gap-1.5 h-7 rounded-full px-2 text-xs"
+            compact && "gap-1.5 h-7 px-2 font-mono text-meta"
           )}
         >
           <HelpCircle
@@ -114,12 +107,12 @@ export function HelpMenu({ compact = false }: HelpMenuProps) {
         aria-describedby="help-menu-description"
       >
         <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-1.5 text-base">
+          <DialogTitle className="flex items-center gap-1.5">
             <HelpCircle className="h-4 w-4 text-primary" />
-            How Pulse Works
+            How Pulse works
           </DialogTitle>
-          <DialogDescription id="help-menu-description" className="text-xs">
-            Discover and support local businesses while tracking your impact.
+          <DialogDescription id="help-menu-description">
+            Browse local businesses and track verified check-ins.
           </DialogDescription>
         </DialogHeader>
 
@@ -130,24 +123,19 @@ export function HelpMenu({ compact = false }: HelpMenuProps) {
             {HOW_IT_WORKS_STEPS.map((step, index) => (
               <div
                 key={step.title}
-                className="flex items-start gap-2 p-1.5 rounded-md hover:bg-muted/50 transition-colors"
+                className="flex items-start gap-2 rounded-md p-1.5 transition-colors hover:bg-surface-3"
               >
-                <div
-                  className={cn(
-                    "h-6 w-6 rounded-md flex items-center justify-center flex-shrink-0",
-                    step.color
-                  )}
-                >
-                  <step.icon className="h-3 w-3" />
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-surface-3 text-text-tertiary">
+                  <step.icon className="h-3 w-3" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-[10px] font-medium text-muted-foreground">
+                    <span className="font-mono text-meta text-text-tertiary">
                       Step {index + 1}
                     </span>
-                    <h3 className="font-semibold text-xs">{step.title}</h3>
+                    <h3 className="text-small font-medium">{step.title}</h3>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-snug">
+                  <p className="text-small leading-snug text-muted-foreground">
                     {step.description}
                   </p>
                 </div>
@@ -156,8 +144,8 @@ export function HelpMenu({ compact = false }: HelpMenuProps) {
           </div>
 
           {/* Keyboard Shortcuts */}
-          <div className="pt-2 mt-2 border-t">
-            <h3 className="font-semibold text-xs flex items-center gap-1.5 mb-1.5">
+          <div className="mt-2 border-t border-border pt-2">
+            <h3 className="mb-1.5 flex items-center gap-1.5 text-small font-medium">
               <Keyboard className="h-3 w-3 text-muted-foreground" />
               Keyboard Shortcuts
             </h3>
@@ -165,9 +153,9 @@ export function HelpMenu({ compact = false }: HelpMenuProps) {
               {KEYBOARD_SHORTCUTS.map((shortcut) => (
                 <div
                   key={shortcut.key}
-                  className="flex items-center gap-1.5 text-xs"
+                  className="flex items-center gap-1.5 text-small"
                 >
-                  <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">
+                  <kbd className="rounded-xs border border-border px-1.5 py-0.5 font-mono text-meta">
                     {shortcut.key}
                   </kbd>
                   <span className="text-muted-foreground">
@@ -178,26 +166,25 @@ export function HelpMenu({ compact = false }: HelpMenuProps) {
             </div>
           </div>
 
-          {/* AI Assistant tip */}
-          <div className="mt-2 p-2 bg-primary/5 rounded-md border border-primary/10">
+          {/* Assistant tip */}
+          <div className="mt-2 rounded-md border border-border bg-surface-2 p-2">
             <div className="flex items-start gap-1.5">
-              <MessageCircle className="h-3 w-3 text-primary mt-0.5" />
+              <MessageCircle className="mt-0.5 h-3 w-3 text-text-tertiary" aria-hidden="true" />
               <div>
-                <p className="text-xs font-medium">Need more help?</p>
-                <p className="text-xs text-muted-foreground leading-snug">
-                  Use the AI Assistant (chat bubble in the bottom-right) to ask
-                  questions or get recommendations.
+                <p className="text-small font-medium">Need more help?</p>
+                <p className="text-small leading-snug text-muted-foreground">
+                  Use the assistant to ask questions or get recommendations.
                 </p>
               </div>
             </div>
           </div>
 
           {/* Restart Tour Button */}
-          <div className="mt-2 pt-2 border-t">
+          <div className="mt-2 border-t border-border pt-2">
             <Button
               variant="outline"
               size="sm"
-              className="w-full text-xs gap-1.5"
+              className="w-full gap-1.5"
               onClick={() => {
                 // Close help menu
                 setOpen(false);
@@ -209,7 +196,7 @@ export function HelpMenu({ compact = false }: HelpMenuProps) {
               }}
             >
               <Play className="h-3 w-3" />
-              Restart Onboarding Tour
+              Restart tour
             </Button>
           </div>
         </div>

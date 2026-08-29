@@ -1,7 +1,7 @@
 /**
  * Pulse Assistant Library
  *
- * Main exports for the AI Assistant functionality
+ * Main exports for the assistant functionality
  */
 
 export * from './prompts'
@@ -122,7 +122,7 @@ export async function generateAssistantResponse(
       },
       {
         role: 'model',
-        parts: [{ text: "Hello! I'm Pulse Assistant, here to help you discover amazing local businesses and understand your community impact. How can I assist you today?" }],
+        parts: [{ text: "Hi. Ask for a place, a category, a deal, or how Pulse records your check-ins." }],
       },
       // Add conversation history
       ...history.flatMap((msg) => [
@@ -227,7 +227,7 @@ export async function* generateAssistantResponseStream(
       },
       {
         role: 'model',
-        parts: [{ text: "Hello! I'm Pulse Assistant, here to help you discover amazing local businesses and understand your community impact. How can I assist you today?" }],
+        parts: [{ text: "Hi. Ask for a place, a category, a deal, or how Pulse records your check-ins." }],
       },
       ...history.flatMap((msg) => [
         {
@@ -281,39 +281,39 @@ export function getQuickResponse(query: string): string | null {
 
   // Greetings
   if (/^(hi|hello|hey|greetings)/.test(lowerQuery)) {
-    return "Hello! Welcome to Pulse! I'm here to help you discover amazing local businesses and understand how your support strengthens your community. What can I help you find today?"
+    return "Hi. Ask for a place, a category, a deal, or how Pulse records your check-ins."
   }
 
   // Thanks
   if (/^(thanks|thank you|thx)/.test(lowerQuery)) {
-    return "You're so welcome! I love helping people connect with local businesses. Every discovery you make helps build a stronger community. Is there anything else I can help you with?"
+    return "You're welcome. Ask me for a place, a category, a deal, or how Pulse works."
   }
 
   // Goodbye
   if (/^(bye|goodbye|see you|later)/.test(lowerQuery)) {
-    return "Goodbye! Have a wonderful day, and happy local business exploring! Remember: every dollar you spend locally is a vote for the community you want to live in."
+    return "See you later."
   }
 
   // What can you do
   if (lowerQuery.includes('what can you do') || lowerQuery.includes('help me with')) {
     return `I can help you with several things:
 
-**Business Discovery**
+**Business discovery**
 - Find local businesses by category, vibe, or feature (WiFi, family-friendly, etc.)
 - Get recommendations based on what you're looking for
 - Learn about specific businesses in our database
 
-**Community Impact**
-- Explain why supporting local businesses matters
+**Local-spend ledger**
+- Explain how local spending is estimated
 - Share facts about the local multiplier effect
 - Show you how your actions make a difference
 
 **Using Pulse**
-- Answer questions about features like bookmarks, check-ins, and Boost Missions
+- Answer questions about bookmarks, check-ins, and missions
 - Help you understand your impact dashboard
 - Guide you through claiming deals
 
-What would you like help with?`
+Ask for a place or a feature.`
   }
 
   return null

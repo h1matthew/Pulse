@@ -157,17 +157,23 @@ describe('Header', () => {
     expect(container.querySelector('a button')).toBeNull()
   })
 
-  it('renders a solid, de-frosted nav surface (no glass)', () => {
-    render(<Header />)
+  it('renders a plain full-width bar, not a floating pill', () => {
+    const { container } = render(<Header />)
+
+    const bar = container.querySelector('header')!
+    // Full-bleed bar: solid ground + a hairline bottom rule, no shadow.
+    expect(bar).toHaveClass('border-b')
+    expect(bar).toHaveClass('border-border')
+    expect(bar).toHaveClass('bg-background')
+    expect(bar.className).not.toMatch(/rounded|shadow|backdrop-blur/)
 
     const nav = screen.getByRole('navigation')
-    // Refined header: solid background + hairline border, no frosted glass.
     expect(nav).toHaveClass('bg-background')
-    expect(nav).toHaveClass('border-border')
-    expect(nav).not.toHaveClass('backdrop-blur-xl')
+    expect(nav).toHaveClass('h-14')
+    expect(nav.className).not.toMatch(/rounded|shadow|backdrop-blur/)
   })
 
-  it('marks the active nav item with a plain active style', async () => {
+  it('marks the active nav item with a plain text-weight change', async () => {
     const { usePathname } = await import('next/navigation')
     vi.mocked(usePathname).mockReturnValue('/discover')
 
@@ -175,6 +181,9 @@ describe('Header', () => {
 
     const active = screen.getByLabelText('Discover')
     expect(active).toHaveAttribute('aria-current', 'page')
-    expect(active.querySelector('span')?.className).toContain('bg-background')
+    const label = active.querySelector('span')!
+    expect(label.className).toContain('text-foreground')
+    // No filled pill behind the active item.
+    expect(label.className).not.toMatch(/bg-|shadow/)
   })
 })

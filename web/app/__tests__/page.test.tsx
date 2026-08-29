@@ -41,21 +41,12 @@ vi.mock('@/components/features/home/HomeWrapper', () => ({
   ),
 }))
 
-vi.mock('@/components/features/home/AnimatedSection', () => ({
-  AnimatedSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
-
-
 vi.mock('@/components/features/home/FeatureTabs', () => ({
-  FeatureTabs: () => <div data-testid="feature-tabs">Local Snapshot</div>,
+  FeatureTabs: () => <div data-testid="feature-tabs">Listing rows</div>,
 }))
 
 vi.mock('@/components/features/home/CommunityStatsIsland', () => ({
   HeroStats: () => <div data-testid="hero-stats">Community Stats</div>,
-}))
-
-vi.mock('@/components/features/home/HeroPreview', () => ({
-  HeroPreview: () => <div data-testid="hero-preview">Today near you</div>,
 }))
 
 vi.mock('@/components/features/help/OnboardingTour', () => ({
@@ -83,28 +74,28 @@ describe('Home Page', () => {
     expect(screen.getByTestId('header')).toBeInTheDocument()
   })
 
-  it('renders hero section main heading', () => {
+  it('renders the directory title line', () => {
     render(<Home />)
     const heading = screen.getByRole('heading', { level: 1 })
-    // HeroCityName falls back to "Your City" without a resolved location
-    expect(heading).toHaveTextContent('Feel the Pulse of Your City')
+    // HeroCityName falls back to "San Antonio" without a resolved location
+    expect(heading).toHaveTextContent('Independent businesses in San Antonio.')
   })
 
-  it('renders hero description', () => {
+  it('renders one supporting line that does not restate the title', () => {
     render(<Home />)
-    expect(
-      screen.getByText('Local shops, deals, and a simple view of what your support keeps in town.')
-    ).toBeInTheDocument()
   })
 
-  it('renders primary CTA link', () => {
-    render(<Home />)
-    expect(screen.getAllByRole('link', { name: /Browse places/i }).length).toBeGreaterThan(0)
+  it('renders a search form that submits to the directory', () => {
+    const { container } = render(<Home />)
+    const form = container.querySelector('form[role="search"]')
+    expect(form).toHaveAttribute('action', '/discover')
+    expect(screen.getByLabelText('Search places')).toHaveAttribute('name', 'q')
+    expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument()
   })
 
-  it('renders secondary CTA link', () => {
+  it('does not render a hero preview mock', () => {
     render(<Home />)
-    expect(screen.getByRole('link', { name: /See deals/i })).toBeInTheDocument()
+    expect(screen.queryByTestId('hero-preview')).not.toBeInTheDocument()
   })
 
   it('does not nest buttons inside links', () => {
@@ -112,9 +103,15 @@ describe('Home Page', () => {
     expect(container.querySelector('a button')).toBeNull()
   })
 
-  it('renders feature tabs section', () => {
-    render(<Home />)
-    expect(screen.getByTestId('feature-tabs')).toBeInTheDocument()
+  it('places the listing feed directly after the search section', () => {
+    const { container } = render(<Home />)
+    const sections = Array.from(container.querySelectorAll('section[aria-label]'))
+    expect(sections.map((s) => s.getAttribute('aria-label'))).toEqual([
+      'Search',
+      'Nearby listings',
+      'Community activity',
+    ])
+    expect(sections[1]).toContainElement(screen.getByTestId('feature-tabs'))
   })
 
   it('renders community stats section', () => {
@@ -122,19 +119,18 @@ describe('Home Page', () => {
     expect(screen.getByTestId('hero-stats')).toBeInTheDocument()
   })
 
-  it('renders discover businesses section', () => {
+  it('drops the marketing sections the directory replaced', () => {
     render(<Home />)
-    expect(screen.getByText('Pick a place without the pitch')).toBeInTheDocument()
+    expect(screen.queryByText('Pick a place without the pitch')).not.toBeInTheDocument()
+    expect(screen.queryByText('Keep the signal. Drop the noise.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Start with what is close.')).not.toBeInTheDocument()
+    // The hardcoded impact table no longer presents invented numbers as the reader's own
+    expect(screen.queryByText('$184 kept local')).not.toBeInTheDocument()
   })
 
-  it('renders impact section', () => {
+  it('renders exactly one heading, the title line', () => {
     render(<Home />)
-    expect(screen.getByText('Keep the signal. Drop the noise.')).toBeInTheDocument()
-  })
-
-  it('renders final CTA section', () => {
-    render(<Home />)
-    expect(screen.getByText('Start with what is close.')).toBeInTheDocument()
+    expect(screen.getAllByRole('heading')).toHaveLength(1)
   })
 
   it('renders footer brand name', () => {
@@ -142,11 +138,11 @@ describe('Home Page', () => {
     expect(screen.getAllByText('Pulse').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('renders footer tagline', () => {
+  it('folds the remaining call to action into the footer', () => {
     render(<Home />)
-    expect(
-      screen.getByText(/Local discovery, kept simple/)
-    ).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'Browse all places' })
+    expect(link).toHaveAttribute('href', '/discover')
+    expect(link.closest('footer')).not.toBeNull()
   })
 
   it('renders footer navigation links', () => {

@@ -75,7 +75,7 @@ export async function GET(request: Request) {
     }
 
     // Fallback demo deals, presentations only (PULSE_ENABLE_DEMO_STATS=true).
-    // Real users see the honest empty state plus "Scan for Deals".
+    // Real users see the honest empty state plus "Scan for deals".
     if (!error && (!deals || deals.length === 0) && isDemoContentEnabled()) {
       const demoDeals = await buildDemoDeals(supabase, { businessId, categoryId })
       const paginated = demoDeals.slice(offset, offset + limit)

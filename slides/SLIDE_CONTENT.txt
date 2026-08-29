@@ -88,8 +88,8 @@ VISUAL:
   - Right: The app in light mode (same page or homepage)
   - Label: "Dark Mode + Light Mode"
 - Bottom half: Two items:
-  - Left: Screenshot of the AI Assistant chat showing a question and streaming response
-    - Label: "Gemini AI Assistant (Intelligent Feature)"
+  - Left: Screenshot of the assistant chat showing a question and streaming response
+    - Label: "Assistant Search (Intelligent Feature)"
   - Right: Screenshot of web/lib/validation.ts or the Zod schema showing createReviewSchema
     - Label: "Zod Schema Validation"
 - Small bullet points visible on slide:
@@ -101,14 +101,14 @@ VISUAL:
 SCREENSHOTS NEEDED:
 5. Discover page in dark mode (showing business cards with photos)
 6. Same or similar page in light mode
-7. AI Assistant chat with a question answered
+7. Assistant chat with a question answered
 8. web/lib/validation.ts or the Zod schema code (createReviewSchema)
 
 SPEAKER NOTES (Oscar then Felix):
 
 Oscar: Pulse is mobile-first with fluid breakpoints from 375 to 1440 pixels. All elements meet WCAG contrast thresholds. We support dark and light mode. The app is fully keyboard navigable — every action reachable via Tab and Enter. Screen readers receive live announcements through aria-live regions.
 
-Felix: For the intelligent feature, we built a Gemini-powered AI assistant — watch, I type a question and it streams a real-time response using our business data. For input validation, we check on two levels: syntactical — our Zod schemas enforce that ratings are integers 1 through 5, content is 10 to 2000 characters, and IDs are valid UUIDs. Semantic — the server rejects duplicate reviews, verifies CAPTCHA tokens, and auto-computes verified purchase status. Matthew will show both in the demo.
+Felix: For the intelligent feature, we built assistant search — watch, I type a question and it streams a real-time response using our business data. For input validation, we check on two levels: syntactical — our Zod schemas enforce that ratings are integers 1 through 5, content is 10 to 2000 characters, and IDs are valid UUIDs. Semantic — the server rejects duplicate reviews, verifies CAPTCHA tokens, and auto-computes verified purchase status. Matthew will show both in the demo.
 
 
 ================================================================================
@@ -200,7 +200,7 @@ Take these screenshots and save them in the slides/ folder:
 4. providers.png — web/app/layout.tsx lines ~48-66 (provider nesting)
 5. discover-dark.png — Discover page in dark mode with business cards
 6. discover-light.png — Same page in light mode (use theme toggle)
-7. ai-assistant.png — AI Assistant chat with a question and response
+7. assistant.png — Assistant chat with a question and response
 8. validation.png — Zod schema code (createReviewSchema) from web/lib/validation.ts
 9. readme-features.png — README "Core Features (FBLA Required)" section
 10. readme-techstack.png — README Tech Stack table
@@ -219,7 +219,7 @@ Row  2 ( 5 pts) Comments/naming         → Slide 3 (route.ts screenshot + Felix
 Row  3 (10 pts) Modular program         → Slide 4 (folder structure + providers screenshot + Matthew speaks)
 Row  4 (10 pts) UX Design               → Slide 5 (dark/light screenshots + Oscar speaks)
 Row  5 ( 5 pts) Intuitive UI            → Slide 5 (Oscar mentions labeled buttons, persistent nav)
-Row  6 ( 5 pts) Navigation + intelligent → Slide 5 (AI assistant screenshot + Felix speaks)
+Row  6 ( 5 pts) Navigation + intelligent → Slide 5 (assistant screenshot + Felix speaks)
 Row  7 ( 5 pts) Input validation        → Slide 5 (Zod screenshot + Felix speaks)
 Row  8 (10 pts) All 6 features          → Slide 6 (Matthew live demo)
 Row  9 (10 pts) Customizable report     → Slide 6 (Matthew demos report with filters, CSV, print)

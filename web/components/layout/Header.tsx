@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { LogOut, Shield, Users, LayoutDashboard, Store, MapPin, Tag, Zap } from 'lucide-react'
+import { LogOut, Shield } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { NavLink } from '@/components/ui/nav-link'
 import { PulseLogo } from '@/components/ui/PulseLogo'
@@ -13,18 +13,18 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/components/providers/AuthProvider'
 
 const NAV_ITEMS_PUBLIC = [
-  { href: '/discover', label: 'Discover', icon: Store },
-  { href: '/categories', label: 'Categories', icon: MapPin },
-  { href: '/deals', label: 'Deals', icon: Tag },
-  { href: '/about', label: 'About', icon: Users },
+  { href: '/discover', label: 'Discover' },
+  { href: '/categories', label: 'Categories' },
+  { href: '/deals', label: 'Deals' },
+  { href: '/about', label: 'About' },
 ]
 
 const NAV_ITEMS_LOGGED_IN = [
-  { href: '/discover', label: 'Discover', icon: Store },
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/missions', label: 'Missions', icon: Zap },
-  { href: '/deals', label: 'Deals', icon: Tag },
-  { href: '/about', label: 'About', icon: Users },
+  { href: '/discover', label: 'Discover' },
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/missions', label: 'Missions' },
+  { href: '/deals', label: 'Deals' },
+  { href: '/about', label: 'About' },
 ]
 
 export function Header() {
@@ -35,92 +35,91 @@ export function Header() {
   const navItems = isLoggedIn ? NAV_ITEMS_LOGGED_IN : NAV_ITEMS_PUBLIC
 
   return (
-    <header className="fixed left-0 right-0 top-6 z-50 px-4">
-      <div className="mx-auto max-w-5xl">
-        <nav
-          aria-label="Main navigation"
-          className="flex items-center justify-between rounded-2xl border border-border bg-background px-4 py-2.5 shadow-sm"
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-border bg-background">
+      <nav
+        aria-label="Main navigation"
+        className="mx-auto flex h-14 max-w-content items-center gap-8 bg-background px-4 sm:px-6"
+      >
+        {/* Wordmark */}
+        <NavLink
+          href="/"
+          aria-label="Pulse — Home"
+          className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
         >
-          {/* Logo */}
-          <NavLink
-            href="/"
-            aria-label="Pulse — Home"
-            className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
-          >
-            <PulseLogo className="h-9 w-9 text-foreground" />
-            <span className="text-lg font-semibold tracking-tight">Pulse</span>
-          </NavLink>
+          <PulseLogo className="h-7 w-7 text-primary" />
+          <span className="text-body font-medium">Pulse</span>
+        </NavLink>
 
-          {/* Desktop nav - centered */}
-          <div className="relative hidden items-center gap-0.5 rounded-md bg-muted/50 p-1 sm:flex">
-            {navItems.map((item) => {
-              const isActive = pathname.startsWith(item.href)
-              return (
-                <NavLink
-                  key={item.href}
-                  href={item.href}
-                  aria-label={item.label}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  <span
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <item.icon className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="hidden lg:inline">{item.label}</span>
-                  </span>
-                </NavLink>
-              )
-            })}
-          </div>
-
-          {/* Right side actions */}
-          <div className="hidden items-center gap-0.5 sm:flex">
-            <ThemeToggle />
-            {isAdmin && (
+        {/* Inline nav */}
+        <div className="hidden items-center gap-6 sm:flex">
+          {navItems.map((item) => {
+            const isActive = pathname.startsWith(item.href)
+            return (
               <NavLink
-                href="/admin"
-                aria-label="Admin panel"
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors",
-                  pathname.startsWith('/admin')
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
+                key={item.href}
+                href={item.href}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <Shield className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden lg:inline">Admin</span>
-              </NavLink>
-            )}
-            {/* Help sits directly beside the auth action */}
-            <HelpMenu />
-            {isLoggedIn ? (
-              <SignOutButton>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label="Sign out"
-                  className="gap-1.5 rounded-md text-muted-foreground hover:text-foreground"
+                <span
+                  className={cn(
+                    'text-small transition-colors',
+                    isActive
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
                 >
-                  <LogOut className="h-4 w-4" aria-hidden="true" />
-                  <span className="hidden lg:inline">Sign out</span>
-                </Button>
-              </SignOutButton>
-            ) : (
-              <NavLink href="/login" className={cn(buttonVariants({ size: "sm" }), "px-4")}>
-                Sign in
+                  {item.label}
+                </span>
               </NavLink>
-            )}
-          </div>
+            )
+          })}
+        </div>
 
-          {/* Mobile menu */}
+        {/* Controls */}
+        <div className="ml-auto hidden items-center gap-2 sm:flex">
+          <ThemeToggle />
+          {isAdmin && (
+            <NavLink
+              href="/admin"
+              aria-label="Admin panel"
+              className={cn(
+                'flex items-center gap-1.5 rounded-md px-2 py-1.5 text-small transition-colors',
+                pathname.startsWith('/admin')
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Shield className="h-4 w-4" aria-hidden="true" />
+              <span className="hidden lg:inline">Admin</span>
+            </NavLink>
+          )}
+          {/* Help sits directly beside the auth action */}
+          <HelpMenu />
+          {isLoggedIn ? (
+            <SignOutButton>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Sign out"
+                className="gap-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                <span className="hidden lg:inline">Sign out</span>
+              </Button>
+            </SignOutButton>
+          ) : (
+            <NavLink href="/login" className={cn(buttonVariants({ size: 'sm' }), 'px-4')}>
+              Sign in
+            </NavLink>
+          )}
+        </div>
+
+        {/* Mobile menu */}
+        <div className="ml-auto sm:hidden">
           <MobileMenu />
-        </nav>
-      </div>
+        </div>
+      </nav>
     </header>
   )
 }

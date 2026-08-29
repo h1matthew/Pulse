@@ -127,12 +127,22 @@ describe('LoginPage', () => {
 
   it('redirects to dashboard if already logged in', async () => {
     mockGetUser.mockResolvedValue({ data: { user: { id: 'user-123' } } })
+    // A full document load, not a router push: the session cookie has to be
+    // read server-side on the next request.
+    const href = vi.fn()
+    const original = Object.getOwnPropertyDescriptor(window, 'location')
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, set href(v: string) { href(v) } },
+    })
 
     render(<LoginPage />)
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/dashboard')
+      expect(href).toHaveBeenCalledWith('/dashboard')
     })
+
+    if (original) Object.defineProperty(window, 'location', original)
   })
 
   it('shows email and password fields on login tab', async () => {

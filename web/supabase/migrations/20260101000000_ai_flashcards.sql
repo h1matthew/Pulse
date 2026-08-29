@@ -1,11 +1,11 @@
 -- ============================================================================
 -- AI-POWERED FLASHCARD SYSTEM MIGRATION
--- Adds support for AI-generated flashcards, intelligent grading, and knowledge tracking
+-- Adds support for generated flashcards, intelligent grading, and knowledge tracking
 -- ============================================================================
 
 -- ============================================================================
 -- AI_GENERATED_FLASHCARDS TABLE
--- Shared repository of AI-generated flashcards across all users
+-- Shared repository of generated flashcards across all users
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS ai_generated_flashcards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -109,7 +109,7 @@ ADD COLUMN IF NOT EXISTS last_ai_score REAL;
 -- HELPER FUNCTIONS
 -- ============================================================================
 
--- Function to increment usage count for AI-generated flashcards
+-- Function to increment usage count for generated flashcards
 CREATE OR REPLACE FUNCTION increment_flashcard_usage(card_id TEXT)
 RETURNS VOID AS $$
 BEGIN

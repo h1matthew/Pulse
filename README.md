@@ -15,7 +15,7 @@ Pulse is a local business discovery platform that reports how a user's spending 
 - **Bot Verification**: Satisfies the prompt requirement to prevent automated abuse with Cloudflare Turnstile CAPTCHA on review submission plus server-side verification.
 
 ### Advanced Features (Beyond the Prompt)
-- **AI Assistant (RAG)**: Gemini-powered Q&A that retrieves real businesses from our database — keyword extraction, category and amenity detection — before generating recommendations
+- **Assistant Search**: Q&A that retrieves real businesses from our database with keyword, category, and amenity matching
 - **Smart Ranking**: Default "Top rated" sort weights rating by review volume (`rating × log10(reviews)`) so credible businesses outrank single-review outliers
 - **Economic Impact Dashboard**: Track dollars kept local, businesses supported, jobs impacted, and carbon saved
 - **Impact Report Export**: Customizable reports with category filtering, sortable tables, CSV download, and print layout
@@ -44,7 +44,7 @@ Pulse is a local business discovery platform that reports how a user's spending 
 | Styling | [Tailwind CSS](https://tailwindcss.com/) v4 | Utility-first CSS framework |
 | UI Components | [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/) | Accessible, unstyled component primitives |
 | Database | [Supabase](https://supabase.com/) (PostgreSQL + PostGIS) | Auth, database, real-time, and storage |
-| AI | [Google Gemini API](https://ai.google.dev/) | Business descriptions and AI assistant responses |
+| Recommendations | [Google Gemini API](https://ai.google.dev/) | Business summaries and assistant responses |
 | Business Data | [Google Places API](https://developers.google.com/maps/documentation/places/web-service) | Real local business listings and reviews |
 | State Management | [TanStack React Query](https://tanstack.com/query) v5 | Server-state caching, deduplication, and sync |
 | Charts | [Recharts](https://recharts.org/) 3 | Data visualization for impact reports and dashboards |
@@ -58,7 +58,7 @@ Pulse is a local business discovery platform that reports how a user's spending 
 | CSS Utilities | [clsx](https://github.com/lukeed/clsx), [tailwind-merge](https://github.com/dcastil/tailwind-merge), [class-variance-authority](https://cva.style/) | Conditional class merging |
 | Testing | [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) | Unit and component testing |
 | Theming | [next-themes](https://github.com/pacocoursey/next-themes) | Dark/light mode switching |
-| Markdown | [react-markdown](https://github.com/remarkjs/react-markdown) + [remark-gfm](https://github.com/remarkjs/remark-gfm) | Render markdown in AI assistant responses |
+| Markdown | [react-markdown](https://github.com/remarkjs/react-markdown) + [remark-gfm](https://github.com/remarkjs/remark-gfm) | Render markdown in assistant responses |
 | Rich Text | [Tiptap](https://tiptap.dev/) | Rich text editor for review content |
 | Drag & Drop | [dnd-kit](https://dndkit.com/) | Accessible drag-and-drop interactions |
 | Analytics | [Vercel Analytics](https://vercel.com/analytics) | Privacy-friendly usage analytics |
@@ -163,7 +163,7 @@ pulse/
 │   │   ├── missions/           # Boost missions
 │   │   ├── bookmarks/          # Saved businesses
 │   │   ├── leaderboard/        # Community rankings
-│   │   ├── assistant/          # AI assistant
+│   │   ├── assistant/          # Assistant
 │   │   └── theme.css           # Design tokens (single source of truth)
 │   ├── components/
 │   │   ├── ui/                 # shadcn/Radix primitives
@@ -202,7 +202,7 @@ The platform estimates local economic impact using established economic research
 | Service | Usage | License/Terms |
 |---------|-------|---------------|
 | [Supabase](https://supabase.com/) | Authentication, PostgreSQL database, PostGIS | Apache 2.0 (open-source) |
-| [Google Gemini API](https://ai.google.dev/) | AI-generated business descriptions and assistant Q&A | Google AI Terms of Service |
+| [Google Gemini API](https://ai.google.dev/) | Business summaries and assistant Q&A | Google AI Terms of Service |
 | [Google Places API](https://developers.google.com/maps/documentation/places/web-service) | Real business data (names, addresses, ratings, reviews, photos) | Google Maps Platform Terms |
 | [Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) | Bot prevention CAPTCHA widget | Cloudflare Terms of Service |
 | [Upstash Redis](https://upstash.com/) | Rate limiting on API routes | Upstash Terms of Service |

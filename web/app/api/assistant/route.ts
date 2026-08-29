@@ -172,7 +172,7 @@ function getFollowUpSuggestions(message: string): string[] {
     return [
       'What are some quiet places to work?',
       'Show me cafes with outdoor seating',
-      'Where can I find the best local coffee?',
+      'Find top-rated local coffee',
     ]
   }
 
@@ -183,7 +183,7 @@ function getFollowUpSuggestions(message: string): string[] {
   ) {
     return [
       'What are family-friendly restaurants?',
-      'Show me romantic dinner spots',
+      'Show me dinner spots',
       'Where can I find vegan options?',
     ]
   }
@@ -195,17 +195,17 @@ function getFollowUpSuggestions(message: string): string[] {
     lowerMessage.includes('difference')
   ) {
     return [
-      'How much impact have I made?',
+      'How much have I kept local?',
       'What is the local multiplier effect?',
-      'How can I support more local businesses?',
+      'How do check-ins affect my ledger?',
     ]
   }
 
   // Default suggestions
   return [
     'Find me a cozy coffee shop',
-    'How does supporting local help my community?',
-    'What are Boost Missions?',
+    'How does local spending get counted?',
+    'How do missions work?',
   ]
 }
 
@@ -220,29 +220,29 @@ export async function GET(request: NextRequest) {
   const suggestions: Record<string, string[]> = {
     discovery: [
       'Find me a quiet coffee shop with WiFi',
-      'What are the best family-friendly restaurants?',
+      'Show family-friendly restaurants nearby',
       'Show me unique local gift shops',
-      'Where can I find a good brunch spot?',
-      'Recommend me a local bookstore',
+      'Find a brunch spot',
+      'Find a local bookstore',
     ],
     impact: [
-      'How does supporting local businesses help?',
+      'How does local spending get counted?',
       'What is the local multiplier effect?',
-      'How much impact have I made so far?',
+      'How much have I kept local?',
       'Why should I choose local over chains?',
-      'How do my check-ins help the community?',
+      'How do check-ins affect my ledger?',
     ],
     features: [
-      'How do Boost Missions work?',
+      'How do missions work?',
       'What happens when I bookmark a business?',
       'How is my impact score calculated?',
       'How do I claim a deal?',
-      'What are the benefits of checking in?',
+      'What does a check-in record?',
     ],
     general: [
       'Find me a cozy coffee shop',
-      'How does supporting local help?',
-      'What are Boost Missions?',
+      'How does local spending get counted?',
+      'How do missions work?',
       'Tell me about Pulse',
       'What makes local businesses special?',
     ],

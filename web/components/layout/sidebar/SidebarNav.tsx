@@ -19,7 +19,7 @@ export function SidebarNav({ onItemClick, isAdmin }: SidebarNavProps) {
 
         return (
           <div key={section.title}>
-            <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+            <h3 className="mb-2 px-3 font-mono text-meta font-normal text-text-tertiary">
               {section.title}
             </h3>
             <div className="space-y-1">

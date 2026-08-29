@@ -54,11 +54,11 @@ export function LeaderboardClient({ initialEntries }: LeaderboardClientProps) {
     <div className="space-y-4">
       {/* Sort dropdown */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Sort by</span>
+        <span className="font-mono text-meta uppercase tracking-[0.02em] text-text-tertiary">Sort by</span>
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 rounded-lg border border-border/50 bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-2 rounded-md border border-border bg-surface-1 px-3 py-2 text-small text-foreground transition-colors hover:bg-surface-2"
           >
             {selectedOption?.label}
             <ChevronDown className={`h-4 w-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
@@ -70,7 +70,7 @@ export function LeaderboardClient({ initialEntries }: LeaderboardClientProps) {
                 className="fixed inset-0 z-10"
                 onClick={() => setDropdownOpen(false)}
               />
-              <div className="absolute right-0 top-full mt-1 z-20 w-48 rounded-lg border border-border/50 bg-card shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-full z-20 mt-1 w-48 overflow-hidden rounded-md border border-border-strong bg-surface-2">
                 {SORT_OPTIONS.map((option) => (
                   <button
                     key={option.value}
@@ -78,10 +78,10 @@ export function LeaderboardClient({ initialEntries }: LeaderboardClientProps) {
                       setSortBy(option.value)
                       setDropdownOpen(false)
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                    className={`w-full px-3 py-2 text-left text-small transition-colors ${
                       sortBy === option.value
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-foreground hover:bg-muted/50'
+                        ? 'bg-surface-3 text-primary'
+                        : 'text-foreground hover:bg-surface-3'
                     }`}
                   >
                     {option.label}

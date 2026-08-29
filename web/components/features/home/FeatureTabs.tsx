@@ -1,23 +1,21 @@
 'use client'
 
 /**
- * FeatureTabs — the "Local snapshot" card on the homepage.
+ * FeatureTabs — the homepage listing feed.
  *
- * The Find tab shows REAL nearby businesses (open-now first, then best rated)
- * with working per-row bookmark buttons — guests save on-device via
- * useToggleBookmark's local scope. Deals and Impact stay static: they are
- * product explainers, not live data. The header bookmark icon links to
- * /bookmarks. Live rows are gated behind a mount flag so the server render
- * and the client's first paint match (React Query can hydrate persisted
- * data, which would otherwise mismatch).
+ * Places shows real nearby businesses, grouped by open status and rating, with
+ * working per-row bookmark buttons — guests save on-device via
+ * useToggleBookmark's local scope. Deals and Impact are static sample rows and
+ * say so in their header line. Live rows are gated behind a mount flag so the
+ * server render and the client's first paint match (React Query can hydrate
+ * persisted data, which would otherwise mismatch).
  */
 
 import { useEffect, useMemo, useState } from 'react'
-import { Bookmark, MapPin, Star, Tag, TrendingUp } from 'lucide-react'
+import { Bookmark } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { NavLink } from '@/components/ui/nav-link'
-import { Button } from '@/components/ui/button'
 import { calculateDistance, formatDistance } from '@/hooks/useLocation'
 import { getCachedLocation } from '@/lib/location'
 import { useCityName } from '@/hooks/useCityName'
@@ -31,68 +29,54 @@ const DEFAULT_LOCATION: LatLng = { lat: 29.4252, lng: -98.4946 }
 const RADIUS_METERS = 10000
 
 const TABS = [
-  { id: 'find', label: 'Find' },
-  { id: 'deals', label: 'Deals' },
-  { id: 'impact', label: 'Impact' },
+  { id: 'find', label: 'Places' },
+  { id: 'deals', label: 'Offers' },
+  { id: 'impact', label: 'Ledger' },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
 
-interface SnapshotRow {
+interface StaticRow {
   name: string
   meta: string
   value: string
 }
 
-interface SnapshotContent {
-  eyebrow: string
-  title: string
-  description: string
+interface TabContent {
+  note: string
   href: string
   cta: string
-  rows: SnapshotRow[]
+  rows: StaticRow[]
 }
 
-// Deals and Impact are static product explainers; Find rows are live (below).
-const SNAPSHOTS: Record<TabId, SnapshotContent> = {
+// Deals and Impact rows are samples; the note line says so on the tab itself.
+const TAB_CONTENT: Record<TabId, TabContent> = {
   find: {
-    eyebrow: 'Nearby places',
-    title: 'Open now, well reviewed, close by.',
-    description: 'A short list you can act on.',
+    note: 'Open now · Highest rated',
     href: '/discover',
-    cta: 'Browse places',
+    cta: 'All places',
     rows: [],
   },
   deals: {
-    eyebrow: 'Useful offers',
-    title: 'Deals without the hunt.',
-    description: 'Claim what fits today.',
+    note: 'Sample rows · live offers on /deals',
     href: '/deals',
-    cta: 'See deals',
+    cta: 'All deals',
     rows: [
-      { name: 'Weekday lunch special', meta: 'La Villita Cafe LLC', value: '15%' },
-      { name: 'Buy 1 Get 1 Latte', meta: 'Bakery Lorraine', value: 'BOGO' },
-      { name: 'New releases discount', meta: 'The Twig Book Shop', value: '20%' },
+      { name: 'Weeknight bento', meta: 'Kimura Ramen · Tue–Thu after 6pm', value: '$9.99' },
+      { name: 'Second latte free', meta: 'Bakery Lorraine · Before 10am', value: 'BOGO' },
+      { name: 'New hardcovers', meta: 'The Twig Book Shop · All month', value: '20%' },
     ],
   },
   impact: {
-    eyebrow: 'Your month',
-    title: 'A simple local record.',
-    description: 'See what stayed nearby.',
+    note: 'Sample figures · sign in for yours',
     href: '/dashboard',
-    cta: 'View impact',
+    cta: 'Your dashboard',
     rows: [
-      { name: 'Kept local', meta: 'From visits and claims', value: '$184' },
+      { name: 'Kept local', meta: 'Visits and claimed deals', value: '$184' },
       { name: 'Places supported', meta: 'This month', value: '7' },
-      { name: 'Saved places', meta: 'Ready for later', value: '12' },
+      { name: 'Deals claimed', meta: 'This month', value: '3' },
     ],
   },
-}
-
-const ICONS: Record<TabId, typeof MapPin> = {
-  find: MapPin,
-  deals: Tag,
-  impact: TrendingUp,
 }
 
 function coords(b: BusinessWithCategory): LatLng | null {
@@ -101,10 +85,24 @@ function coords(b: BusinessWithCategory): LatLng | null {
   return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null
 }
 
+function priceBand(level: number | null | undefined): string | null {
+  const n = Number(level)
+  return Number.isFinite(n) && n >= 1 ? '$'.repeat(Math.min(4, Math.round(n))) : null
+}
+
+function hoursLabel(hours: unknown): string | null {
+  const open = isOpenNow(hours)
+  if (open === true) return 'Open now'
+  if (open === false) return 'Closed'
+  return null
+}
+
 interface NearbyRow {
   id: string
   name: string
   meta: string
+  note: string | null
+  distance: string | null
   rating: string | null
 }
 
@@ -122,28 +120,37 @@ function selectNearby(businesses: BusinessWithCategory[], origin: LatLng): Nearb
 
   return [...open, ...rest].slice(0, 3).map((b) => {
     const c = coords(b)
-    const category = b.category?.name ?? 'Local business'
-    const distance = c ? formatDistance(calculateDistance(origin, c)) : null
+    // Fixed order: category, neighborhood, price, hours.
+    const meta = [b.category?.name ?? 'Local business', b.city, priceBand(b.price_range), hoursLabel(b.hours)]
+      .filter(Boolean)
+      .join(' · ')
     return {
       id: b.id,
       name: b.name,
-      meta: distance ? `${category} · ${distance}` : category,
+      meta,
+      note: b.editorial_summary || b.short_description || null,
+      distance: c ? formatDistance(calculateDistance(origin, c)) : null,
       rating: b.average_rating ? Number(b.average_rating).toFixed(1) : null,
     }
   })
 }
 
+const ROW_GRID = 'grid grid-cols-[2.75rem_1fr] gap-x-4 py-4'
+const RATING = 'font-mono text-h3 tabular-nums text-foreground'
+const META = 'text-small text-text-tertiary'
+const ACTION = 'text-small text-muted-foreground transition-colors hover:text-primary'
+
 function RowSkeleton() {
   return (
     <div className="divide-y divide-border" data-testid="find-rows-skeleton">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-4 sm:px-5">
+        <div key={i} className={ROW_GRID}>
+          <div className="h-5 w-9 animate-pulse rounded bg-muted" />
           <div className="min-w-0 space-y-2">
-            <div className="h-3.5 w-40 animate-pulse rounded bg-muted" />
-            <div className="h-3 w-28 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-56 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-24 animate-pulse rounded bg-muted" />
           </div>
-          <div className="h-3.5 w-8 animate-pulse rounded bg-muted" />
-          <div className="h-7 w-7 animate-pulse rounded bg-muted" />
         </div>
       ))}
     </div>
@@ -174,35 +181,42 @@ function NearbyBusinessRow({ row }: { row: NearbyRow }) {
   }
 
   return (
-    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-4 sm:px-5">
-      <NavLink
-        href={`/business/${row.id}`}
-        className="min-w-0 rounded-sm transition-colors hover:text-primary"
-      >
-        <div className="truncate text-sm font-medium text-foreground">{row.name}</div>
-        <div className="mt-1 text-xs text-muted-foreground">{row.meta}</div>
-      </NavLink>
-      <div className="flex items-center gap-1 text-sm font-mono font-semibold text-foreground">
-        <Star className="h-3.5 w-3.5 fill-muted-foreground text-muted-foreground" aria-hidden="true" />
-        {row.rating ?? '—'}
-      </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        onClick={handleToggle}
-        disabled={toggleBookmark.isPending}
-        aria-label={bookmarked ? `Remove bookmark for ${row.name}` : `Bookmark ${row.name}`}
-      >
-        <Bookmark
-          className={cn(
-            'h-4 w-4',
-            bookmarked ? 'fill-primary text-primary' : 'text-muted-foreground'
+    <article className={ROW_GRID}>
+      <div className={RATING}>{row.rating ?? '—'}</div>
+      <div className="min-w-0">
+        <div className="flex items-baseline justify-between gap-4">
+          <NavLink
+            href={`/business/${row.id}`}
+            className="truncate text-body font-medium text-foreground transition-colors hover:text-primary"
+          >
+            {row.name}
+          </NavLink>
+          {row.distance && (
+            <span className="shrink-0 font-mono text-meta text-text-tertiary">{row.distance}</span>
           )}
-          aria-hidden="true"
-        />
-      </Button>
-    </div>
+        </div>
+        <p className={cn('mt-1', META)}>{row.meta}</p>
+        {row.note && <p className="mt-1.5 line-clamp-1 text-small text-muted-foreground">{row.note}</p>}
+        <div className="mt-2 flex items-center gap-5">
+          <NavLink href={`/business/${row.id}`} className={ACTION}>
+            Details
+          </NavLink>
+          <button
+            type="button"
+            onClick={handleToggle}
+            disabled={toggleBookmark.isPending}
+            aria-label={bookmarked ? `Remove bookmark for ${row.name}` : `Bookmark ${row.name}`}
+            className={cn('inline-flex items-center gap-1.5', ACTION)}
+          >
+            <Bookmark
+              className={cn('h-3 w-3', bookmarked ? 'fill-foreground text-foreground' : 'text-muted-foreground')}
+              aria-hidden="true"
+            />
+            {bookmarked ? 'Saved' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </article>
   )
 }
 
@@ -230,35 +244,42 @@ function NearbyRows() {
   )
 }
 
+function StaticRows({ rows }: { rows: StaticRow[] }) {
+  return (
+    <div className="divide-y divide-border">
+      {rows.map((row) => (
+        <article key={row.name} className={ROW_GRID}>
+          <div className={RATING}>{row.value}</div>
+          <div className="min-w-0">
+            <div className="truncate text-body font-medium text-foreground">{row.name}</div>
+            <p className={cn('mt-1', META)}>{row.meta}</p>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
 export function FeatureTabs() {
   const [active, setActive] = useState<TabId>('find')
-  const content = SNAPSHOTS[active]
-  const Icon = ICONS[active]
+  const content = TAB_CONTENT[active]
 
   const location = getCachedLocation()
   const cityName = useCityName(location)
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-start">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Local snapshot</p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Today nearby
-        </h2>
-        <p className="mt-4 max-w-sm text-base leading-7 text-muted-foreground">
-          {cityName ? `A short list for ${cityName} today.` : 'A short list for today.'}
-        </p>
-
-        <div className="mt-6 inline-flex rounded-md border border-border p-1">
+    <div className="mx-auto max-w-6xl">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border pb-3">
+        <div className="flex gap-1">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActive(tab.id)}
               className={cn(
-                'rounded px-3 py-1.5 text-sm font-medium transition-colors',
+                'rounded-md px-3 py-1.5 text-small font-medium transition-colors',
                 active === tab.id
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-surface-3 text-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -266,50 +287,22 @@ export function FeatureTabs() {
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-5">
+          <p className={META}>
+            {cityName ?? 'San Antonio'} · {content.note}
+          </p>
+          <NavLink href="/bookmarks" aria-label="View saved places" className={ACTION}>
+            Saved
+          </NavLink>
+        </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card shadow-sm">
-        <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
-          <div>
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Icon className="h-4 w-4 text-muted-foreground" />
-              {content.eyebrow}
-            </div>
-            <h3 className="mt-3 text-xl font-semibold tracking-tight text-foreground">{content.title}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{content.description}</p>
-          </div>
-          <NavLink
-            href="/bookmarks"
-            aria-label="View saved places"
-            className="mt-1 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <Bookmark className="h-4 w-4" aria-hidden="true" />
-          </NavLink>
-        </div>
+      {active === 'find' ? <NearbyRows /> : <StaticRows rows={content.rows} />}
 
-        {active === 'find' ? (
-          <NearbyRows />
-        ) : (
-          <div className="divide-y divide-border">
-            {content.rows.map((row) => (
-              <div key={row.name} className="grid grid-cols-[1fr_auto] gap-4 px-4 py-4 sm:px-5">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-foreground">{row.name}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{row.meta}</div>
-                </div>
-                <div className="flex items-center gap-1 text-sm font-mono font-semibold text-foreground">
-                  {row.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="border-t border-border px-4 py-4 sm:px-5">
-          <NavLink href={content.href} className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline underline-offset-4">
-            {content.cta}
-          </NavLink>
-        </div>
+      <div className="border-t border-border pt-3">
+        <NavLink href={content.href} className={ACTION}>
+          {content.cta}
+        </NavLink>
       </div>
     </div>
   )

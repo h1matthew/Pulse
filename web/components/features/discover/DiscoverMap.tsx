@@ -43,9 +43,9 @@ function makeClusterIcon() {
       html: `<div style="
           width:${size}px;height:${size}px;
           background:var(--primary);color:var(--primary-foreground);
-          border:2px solid var(--card);border-radius:9999px;
+          border:1px solid var(--border-strong);border-radius:9999px;
           display:flex;align-items:center;justify-content:center;
-          font:700 ${count > 999 ? 11 : 13}px/1 ui-sans-serif,system-ui,-apple-system,sans-serif;
+          font:500 ${count > 999 ? 11 : 13}px/1 var(--font-mono),ui-monospace,monospace;
         ">${count}</div>`,
       iconSize: [size, size],
     })
@@ -59,9 +59,11 @@ function createPinIcon(rating: number | null, hovered: boolean): L.DivIcon {
   const hasRating = rating != null && rating > 0
   const label = hasRating ? rating.toFixed(1) : 'New'
 
-  const bg = hovered ? 'var(--primary)' : 'var(--card)'
+  const bg = hovered ? 'var(--primary)' : 'var(--surface-2)'
   const color = hovered ? 'var(--primary-foreground)' : 'var(--foreground)'
-  const ring = hovered ? 'var(--primary)' : 'var(--border)'
+  // --border is a 9% hairline: invisible over map tiles, so pins take the
+  // strong token and switch to a solid accent edge when active.
+  const ring = hovered ? 'var(--primary)' : 'var(--border-strong)'
 
   const h = 26
   // Approximate the pill width from its content so the tail stays centered.
@@ -78,9 +80,9 @@ function createPinIcon(rating: number | null, hovered: boolean): L.DivIcon {
         transform:scale(${scale});transform-origin:center bottom;
         display:flex;align-items:center;justify-content:center;
         width:${w}px;height:${h}px;
-        background:${bg};color:${color};border-radius:9999px;
+        background:${bg};color:${color};border-radius:6px;
         border:1px solid ${ring};
-        font:600 12px/1 ui-sans-serif,system-ui,-apple-system,sans-serif;
+        font:500 12px/1 var(--font-mono),ui-monospace,monospace;
         white-space:nowrap;position:relative;
         transition:transform 120ms ease;
       ">${starSpan}${label}<span style="
@@ -173,12 +175,13 @@ const BusinessMarker = memo(function BusinessMarker({ business, isActive, onClic
                 style={{
                   position: 'absolute', left: 10, bottom: 10,
                   display: 'inline-flex', alignItems: 'center', gap: 4,
-                  padding: '3px 8px', borderRadius: 9999,
-                  background: 'rgba(15,23,42,0.78)', color: '#fff',
-                  fontSize: 12, fontWeight: 700,
+                  padding: '3px 8px', borderRadius: 4,
+                  background: 'var(--surface-2)', color: 'var(--foreground)',
+                  border: '1px solid var(--border-strong)',
+                  fontFamily: 'var(--font-mono), ui-monospace, monospace',
+                  fontSize: 12, fontWeight: 500,
                 }}
               >
-                <span style={{ color: '#fbbf24' }}>★</span>
                 {business.average_rating.toFixed(1)}
               </span>
             ) : null}
@@ -186,7 +189,7 @@ const BusinessMarker = memo(function BusinessMarker({ business, isActive, onClic
           <div style={{ padding: '10px 12px 12px' }}>
             <p
               style={{
-                margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--foreground)',
+                margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--foreground)',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}
             >
@@ -195,23 +198,24 @@ const BusinessMarker = memo(function BusinessMarker({ business, isActive, onClic
             {meta ? (
               <p
                 style={{
-                  margin: '2px 0 0', fontSize: 12, color: 'var(--muted-foreground)',
+                  margin: '2px 0 0', fontFamily: 'var(--font-mono), ui-monospace, monospace',
+                fontSize: 12, color: 'var(--text-tertiary)',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}
               >
                 {meta}
               </p>
             ) : null}
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--muted-foreground)' }}>
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono), ui-monospace, monospace', fontSize: 12, color: 'var(--text-tertiary)' }}>
               <span>{reviewLabel}</span>
-              {price ? <span style={{ fontFamily: 'ui-monospace, monospace' }}>{price}</span> : null}
+              {price ? <span>{price}</span> : null}
             </div>
             <span
               style={{
                 marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: '100%', height: 34, borderRadius: 9999,
+                width: '100%', height: 34, borderRadius: 6,
                 background: 'var(--primary)', color: 'var(--primary-foreground)',
-                fontSize: 13, fontWeight: 600,
+                fontSize: 13, fontWeight: 500,
               }}
             >
               View details
@@ -281,12 +285,30 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
   const handleHover = useCallback((id: string | null) => onPinHover?.(id), [onPinHover])
   const clusterIcon = useMemo(() => makeClusterIcon(), [])
 
+  // Leaflet writes path colors as SVG presentation attributes, where var() is
+  // never substituted — resolve the tokens to literals for the location dot.
+  const [dot, setDot] = useState({ fill: '#b3bf7a', ring: '#111310' })
+  useEffect(() => {
+    const cs = getComputedStyle(document.documentElement)
+    const read = (name: string, fallback: string) =>
+      cs.getPropertyValue(name).trim() || fallback
+    setDot({ fill: read('--primary', '#b3bf7a'), ring: read('--surface-1', '#111310') })
+  }, [theme])
+
   return (
     // `isolate` keeps Leaflet's high z-index panes (tiles/markers/popups at
     // z-200..700) and the map controls confined to this stacking context, so
     // they can't paint over page-level overlays like the onboarding tour
     // (z-120) when they overlap.
-    <div className="relative isolate h-full w-full">
+    <div
+      className={cn(
+        'relative isolate h-full w-full',
+        // CARTO's dark basemap is a cool grey; warm it toward the app ground.
+        theme === 'dark' &&
+          baseLayer === 'map' &&
+          '[&_.leaflet-tile-pane]:[filter:sepia(0.18)_saturate(0.85)_brightness(0.9)]'
+      )}
+    >
       <MapContainer
         center={center}
         zoom={15}
@@ -301,14 +323,14 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
         <CircleMarker
           center={center}
           radius={8}
-          pathOptions={{ fillColor: 'var(--primary)', fillOpacity: 1, color: 'var(--card)', weight: 3, opacity: 1 }}
+          pathOptions={{ fillColor: dot.fill, fillOpacity: 1, color: dot.ring, weight: 3, opacity: 1 }}
         >
-          <Popup><span style={{ fontWeight: 600, fontSize: 13 }}>Your location</span></Popup>
+          <Popup><span style={{ fontWeight: 500, fontSize: 13 }}>Your location</span></Popup>
         </CircleMarker>
         <CircleMarker
           center={center}
           radius={20}
-          pathOptions={{ fillColor: 'var(--primary)', fillOpacity: 0.15, color: 'var(--primary)', weight: 1, opacity: 0.3 }}
+          pathOptions={{ fillColor: dot.fill, fillOpacity: 0.12, color: dot.fill, weight: 1, opacity: 0.3 }}
         />
 
         {/* Pins cluster into count bubbles when zoomed out, split apart on zoom in. */}
@@ -331,7 +353,7 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
       </MapContainer>
 
       {/* Map / Satellite toggle */}
-      <div className="absolute bottom-4 left-4 z-[1000] flex overflow-hidden rounded-full border border-border bg-card text-xs font-medium shadow-md">
+      <div className="absolute bottom-4 left-4 z-[1000] flex overflow-hidden rounded-md border border-border-strong bg-surface-2 font-mono text-meta">
         {(['map', 'satellite'] as const).map((layer) => (
           <button
             key={layer}
@@ -339,8 +361,10 @@ export function DiscoverMap({ businesses, hoveredId, center, onPinClick, onPinHo
             onClick={() => setBaseLayer(layer)}
             aria-pressed={baseLayer === layer}
             className={cn(
-              'px-3 py-1.5 capitalize transition-colors',
-              baseLayer === layer ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-muted',
+              'px-3 py-1.5 uppercase tracking-[0.02em] transition-colors',
+              baseLayer === layer
+                ? 'bg-primary text-primary-foreground'
+                : 'text-text-tertiary hover:bg-surface-3 hover:text-foreground',
             )}
           >
             {layer}

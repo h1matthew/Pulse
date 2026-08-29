@@ -101,14 +101,22 @@ beforeEach(() => {
 });
 
 describe("FeatureTabs", () => {
-  it("renders a concise local snapshot with simple actions", async () => {
+  it("renders the tab strip and a mono data line instead of an eyebrow", async () => {
     render(<FeatureTabs />);
 
-    expect(screen.getByText("Today nearby")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Find" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Deals" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Impact" })).toBeInTheDocument();
-    expect(screen.getByText("Open now, well reviewed, close by.")).toBeInTheDocument();
+    // Header line carries data, not a kicker label
+    expect(screen.getByText(/San Antonio · Open now first, then best rated/)).toBeInTheDocument();
+    expect(screen.queryByText("Local snapshot")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nearby places")).not.toBeInTheDocument();
+  });
+
+  it("renders no heading above the listing feed", () => {
+    render(<FeatureTabs />);
+
+    expect(screen.queryAllByRole("heading")).toHaveLength(0);
   });
 
   it("does not use AI-style explanatory copy", () => {
@@ -137,10 +145,25 @@ describe("FeatureTabs", () => {
     // Highest rated overall, but closed — three open places outrank it
     expect(screen.queryByText("Closed Gem")).not.toBeInTheDocument();
 
-    // Meta line: category + distance against the effective location
-    expect(screen.getAllByText("Food & Drink · 1.2 mi").length).toBe(3);
+    // Meta line: category, neighborhood, price, hours — in that fixed order
+    expect(screen.getAllByText("Food & Drink · Open now").length).toBe(3);
+    // Distance sits on the name line, in mono
+    expect(screen.getAllByText("1.2 mi").length).toBe(3);
     // Rating value rendered
     expect(screen.getByText("4.8")).toBeInTheDocument();
+  });
+
+  it("leads each row with the rating numeral", async () => {
+    const { container } = render(<FeatureTabs />);
+
+    await waitFor(() => expect(screen.getByText("Open Coffee")).toBeInTheDocument());
+
+    const row = screen.getByText("Open Coffee").closest("article");
+    expect(row).not.toBeNull();
+    expect(row?.firstElementChild).toHaveTextContent("4.8");
+    expect(row?.firstElementChild).toHaveClass("font-mono");
+    // Actions come last and are the smallest text on the row
+    expect(container.querySelectorAll("article a")[1]).toHaveTextContent("Details");
   });
 
   it("fills with the highest-rated remaining places when fewer than 3 are open", async () => {
@@ -233,7 +256,7 @@ describe("FeatureTabs", () => {
     );
   });
 
-  it("renders a filled bookmark icon for bookmarked rows", async () => {
+  it("marks bookmarked rows with a filled icon and a Saved label", async () => {
     mockIsBookmarked.mockImplementation((id: string) => id === "open-a");
     render(<FeatureTabs />);
 
@@ -242,11 +265,14 @@ describe("FeatureTabs", () => {
     const bookmarkedButton = screen.getByRole("button", {
       name: "Remove bookmark for Open Coffee",
     });
-    expect(bookmarkedButton.querySelector("svg")).toHaveClass("fill-primary");
+    // Accent stays off listing rows — the filled state uses the foreground token
+    expect(bookmarkedButton.querySelector("svg")).toHaveClass("fill-foreground");
+    expect(bookmarkedButton).toHaveTextContent("Saved");
 
     const plainButton = screen.getByRole("button", { name: "Bookmark Open Bakery" });
-    expect(plainButton.querySelector("svg")).not.toHaveClass("fill-primary");
+    expect(plainButton.querySelector("svg")).not.toHaveClass("fill-foreground");
     expect(plainButton.querySelector("svg")).toHaveClass("text-muted-foreground");
+    expect(plainButton).toHaveTextContent("Save");
   });
 
   it("links the header bookmark icon to the bookmarks page", () => {
@@ -256,16 +282,16 @@ describe("FeatureTabs", () => {
     expect(headerLink).toHaveAttribute("href", "/bookmarks");
   });
 
-  it("keeps the Deals and Impact tabs as static explainers", async () => {
+  it("labels the Deals and Impact tabs as samples rather than the reader's own data", async () => {
     render(<FeatureTabs />);
 
     fireEvent.click(screen.getByRole("button", { name: "Deals" }));
-    expect(screen.getByText("Deals without the hunt.")).toBeInTheDocument();
     expect(screen.getByText("Weeknight bento")).toBeInTheDocument();
+    expect(screen.getByText(/Sample rows · live offers on \/deals/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Impact" }));
-    expect(screen.getByText("A simple local record.")).toBeInTheDocument();
     expect(screen.getByText("Kept local")).toBeInTheDocument();
+    expect(screen.getByText(/Sample figures · sign in for yours/)).toBeInTheDocument();
 
     // Back to Find: live rows return
     fireEvent.click(screen.getByRole("button", { name: "Find" }));

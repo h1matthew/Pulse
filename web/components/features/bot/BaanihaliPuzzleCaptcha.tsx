@@ -147,7 +147,7 @@ export function BaanihaliPuzzleCaptcha({ onVerify, onCancel }: BaanihaliPuzzleCa
               width={Math.round(PUZZLE_SIZE * scale)}
               height={Math.round(PUZZLE_SIZE * scale)}
               alt="Captcha puzzle piece"
-              className="absolute left-0 border border-white/70 shadow-md"
+              className="absolute left-0 border border-white/70"
               style={{
                 top: `${Math.round(PUZZLE_TOP * scale)}px`,
                 transform: `translateX(${Math.round(sliderValue * scale)}px)`,

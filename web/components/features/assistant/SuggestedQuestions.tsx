@@ -42,7 +42,7 @@ const CATEGORIES = [
     name: "Features",
     icon: Zap,
     questions: [
-      "How do Boost Missions work?",
+      "How do missions work?",
       "What happens when I bookmark a business?",
       "How do I claim a deal?",
     ],
@@ -105,7 +105,7 @@ export function SuggestedQuestions({ onSelect }: SuggestedQuestionsProps) {
           className="flex-1 text-xs text-muted-foreground"
         >
           <Heart className="h-3 w-3 mr-1" aria-hidden="true" />
-          Our Mission
+          How we pick
         </Button>
         <Button
           variant="ghost"

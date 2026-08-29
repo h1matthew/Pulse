@@ -1,5 +1,5 @@
 -- Migration: Add Community Flashcards with Admin Review System
--- Description: Allows AI-generated flashcards to be shared with all users after admin approval
+-- Description: Allows generated flashcards to be shared with all users after admin approval
 -- NOTE: This migration had issues with incomplete table creation.
 -- The fix migration (20260126183000) will drop and recreate everything properly.
 

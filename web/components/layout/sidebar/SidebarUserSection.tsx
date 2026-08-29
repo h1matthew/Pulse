@@ -19,21 +19,21 @@ export function SidebarUserSection({ email, fullName }: SidebarUserSectionProps)
 
   return (
     <>
-      <div className="border-t border-sidebar-border px-3 py-4">
+      <div className="border-t border-border px-3 py-4">
         <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          className="group flex w-full items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-sidebar-accent/50"
+          className="group flex w-full items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-surface-2"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2">
             <User className="h-4 w-4 text-sidebar-accent-foreground" />
           </div>
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">
+            <p className="text-small font-medium text-foreground truncate">
               {displayName}
             </p>
             {email && (
-              <p className="text-xs text-sidebar-foreground/60 truncate">
+              <p className="font-mono text-meta text-text-tertiary truncate">
                 {email}
               </p>
             )}
@@ -45,7 +45,7 @@ export function SidebarUserSection({ email, fullName }: SidebarUserSectionProps)
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              className="w-full justify-start gap-3 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
               Sign out

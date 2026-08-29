@@ -1,10 +1,10 @@
--- Migration: Add AI Generated Quizzes
+-- Migration: Add Generated Quizzes
 -- Date: 2026-01-26
--- Description: Creates tables for AI-generated quiz questions that need admin review
+-- Description: Creates tables for generated quiz questions that need admin review
 
 -- ============================================================================
 -- AI_GENERATED_QUIZZES TABLE
--- Stores AI-generated quiz questions pending admin review
+-- Stores generated quiz questions pending admin review
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS ai_generated_quizzes (

@@ -258,13 +258,23 @@ describe("DealsPage", () => {
   describe("design language", () => {
     const emojiPattern = /\p{Extended_Pictographic}/u;
 
-    it("renders a mono uppercase eyebrow above the heading", () => {
+    it("has no eyebrow label above the heading", () => {
       render(<DealsPage />);
 
-      const eyebrow = screen.getByText(/^save local$/i);
-      expect(eyebrow.classList.contains("font-semibold")).toBe(true);
-      expect(eyebrow.classList.contains("uppercase")).toBe(true);
-      expect(eyebrow.tagName).not.toBe("H1");
+      expect(screen.queryByText(/^save local$/i)).not.toBeInTheDocument();
+
+      const heading = screen.getByRole("heading", { name: "Deals & Offers" });
+      expect(heading.classList.contains("font-bold")).toBe(false);
+      expect(heading.classList.contains("font-semibold")).toBe(false);
+      expect(heading).toHaveClass("font-medium");
+    });
+
+    it("renders the deal feed as hairline-ruled rows, not cards", () => {
+      const { container } = render(<DealsPage />);
+
+      const feed = container.querySelector(".divide-y.divide-border");
+      expect(feed).not.toBeNull();
+      expect(container.querySelectorAll(".rounded-lg.border.border-border.bg-card")).toHaveLength(0);
     });
 
     it("renders the discount value in mono", () => {

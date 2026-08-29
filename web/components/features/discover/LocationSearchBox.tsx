@@ -181,7 +181,7 @@ export function LocationSearchBox({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border bg-popover p-1 shadow-md"
+          className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-md border border-border-strong bg-surface-2 p-1"
         >
           {suggestions.map((suggestion, index) => (
             <li
@@ -190,8 +190,8 @@ export function LocationSearchBox({
               role="option"
               aria-selected={index === activeIndex}
               className={cn(
-                'flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-sm',
-                index === activeIndex ? 'bg-accent text-accent-foreground' : 'text-foreground'
+                'flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-small',
+                index === activeIndex ? 'bg-surface-3 text-foreground' : 'text-foreground'
               )}
               onMouseEnter={() => setActiveIndex(index)}
               onMouseDown={(e) => {

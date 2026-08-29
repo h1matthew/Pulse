@@ -10,7 +10,7 @@ import { SuggestedQuestions } from "./SuggestedQuestions";
 import { ChatMessage, type AssistantChatMessage } from "./ChatMessage";
 
 const WELCOME_TEXT =
-  "Hi there! I'm your Pulse local guide — ask me for nearby food, shops, or services.";
+  "Ask for nearby food, shops, services, deals, or a plain-language read on your ledger.";
 
 const CHAT_SIZE_KEY = "pulse-chat-size";
 const DEFAULT_SIZE = { width: 380, height: 600 };
@@ -245,7 +245,7 @@ export function ChatWidget() {
               onClick={() => setIsOpen(true)}
               size="lg"
               aria-label="Open Pulse Assistant"
-              className="h-12 w-12 rounded-xl border border-border shadow-sm transition-shadow hover:shadow-md"
+              className="h-12 w-12 rounded-md border border-border bg-surface-2 transition-colors hover:bg-surface-3"
             >
               <MessageCircle className="h-5 w-5" />
             </Button>
@@ -268,7 +268,7 @@ export function ChatWidget() {
             <div
               role="dialog"
               aria-label="Pulse Assistant"
-              className="relative bg-background border border-border rounded-xl shadow-lg overflow-hidden flex h-full flex-col"
+              className="relative bg-surface-2 border border-border-strong rounded-lg overflow-hidden flex h-full flex-col"
             >
               {/* Resize grip — drag the top-left corner to grow/shrink */}
               <div
@@ -276,21 +276,19 @@ export function ChatWidget() {
                 aria-label="Resize chat window"
                 title="Drag to resize"
                 onPointerDown={handleResizeStart}
-                className="absolute left-0 top-0 z-10 h-5 w-5 cursor-nwse-resize rounded-tl-xl border-l-2 border-t-2 border-primary-foreground/50 hover:border-primary-foreground"
+                className="absolute left-0 top-0 z-10 h-5 w-5 cursor-nwse-resize rounded-tl-lg border-l-2 border-t-2 border-border-strong hover:border-foreground"
               />
               {/* Header */}
-              <div className="bg-primary p-4 flex items-center justify-between">
+              <div className="bg-surface-3 border-b border-border p-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-md bg-primary-foreground/15 flex items-center justify-center">
-                    <MessageCircle className="h-4 w-4 text-primary-foreground" />
+                  <div className="h-8 w-8 rounded-md bg-surface-2 flex items-center justify-center">
+                    <MessageCircle className="h-4 w-4 text-foreground" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-primary-foreground">
+                    <h3 className="font-medium text-foreground">
                       Pulse Assistant
                     </h3>
-                    <p className="text-xs text-primary-foreground/80">
-                      Local guide
-                    </p>
+                    <p className="text-meta text-muted-foreground">Directory assistant</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -298,7 +296,7 @@ export function ChatWidget() {
                     variant="ghost"
                     size="sm"
                     onClick={handleClearChat}
-                    className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
+                    className="text-muted-foreground hover:text-foreground hover:bg-surface-2"
                   >
                     Clear
                   </Button>
@@ -307,7 +305,7 @@ export function ChatWidget() {
                     size="icon"
                     onClick={() => setIsOpen(false)}
                     aria-label="Close Pulse Assistant"
-                    className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/15"
+                    className="text-muted-foreground hover:text-foreground hover:bg-surface-2"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -339,7 +337,7 @@ export function ChatWidget() {
                                 key={suggestion}
                                 type="button"
                                 onClick={() => void handleSend(suggestion)}
-                                className="rounded-full border border-border bg-background px-3 py-1 text-xs text-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                                className="rounded-sm border border-border bg-surface-2 px-3 py-1 text-meta text-foreground transition-colors hover:bg-surface-3"
                               >
                                 {suggestion}
                               </button>
@@ -381,7 +379,7 @@ export function ChatWidget() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask about local businesses..."
+                    placeholder="Ask about places, deals, or your ledger..."
                     className="flex-1"
                     disabled={isLoading}
                   />
@@ -399,7 +397,7 @@ export function ChatWidget() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 text-center">
-                  AI-generated responses. Verify important information.
+                  Verify important information before visiting.
                 </p>
               </div>
             </div>

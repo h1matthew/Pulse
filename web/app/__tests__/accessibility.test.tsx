@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  *
- * Tests for Phase 2 accessibility improvements across the app.
+ * Landmark and labelling checks for the homepage directory.
  */
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -11,10 +11,6 @@ import Home from '../page'
 // Mock all child components
 vi.mock('@/components/layout/Header', () => ({
   Header: () => <header data-testid="header">Header</header>,
-}))
-
-vi.mock('@/components/features/home/AnimatedSection', () => ({
-  AnimatedSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 vi.mock('@/components/ui/nav-link', () => ({
@@ -28,42 +24,35 @@ vi.mock('@/components/features/home/CommunityStatsIsland', () => ({
   CommunityPulseCard: () => <div data-testid="community-pulse-card">Pulse Card</div>,
 }))
 
-vi.mock('@/components/features/home/HeroPreview', () => ({
-  HeroPreview: () => <div data-testid="hero-preview">Today near you</div>,
-}))
-
-// FeatureTabs uses React Query (live nearby rows) — mock it like HeroPreview
+// FeatureTabs uses React Query (live nearby rows), so it is mocked here too
 vi.mock('@/components/features/home/FeatureTabs', () => ({
-  FeatureTabs: () => <div data-testid="feature-tabs">Local snapshot</div>,
+  FeatureTabs: () => <div data-testid="feature-tabs">Listing rows</div>,
 }))
 
 describe('Home Page Accessibility', () => {
-  it('has aria-label on hero section', () => {
+  it('has aria-label on the search section', () => {
     render(<Home />)
 
-    const heroSection = document.querySelector('section[aria-label="Hero"]')
-    expect(heroSection).toBeInTheDocument()
+    expect(document.querySelector('section[aria-label="Search"]')).toBeInTheDocument()
   })
 
-  it('has aria-label on features section', () => {
+  it('has aria-label on the listings section', () => {
     render(<Home />)
 
-    const featuresSection = document.querySelector('section[aria-label="Product snapshot"]')
-    expect(featuresSection).toBeInTheDocument()
+    expect(document.querySelector('section[aria-label="Nearby listings"]')).toBeInTheDocument()
   })
 
-  it('has aria-label on community pulse section', () => {
+  it('has aria-label on the community activity section', () => {
     render(<Home />)
 
-    const communitySection = document.querySelector('section[aria-label="Community stats"]')
-    expect(communitySection).toBeInTheDocument()
+    expect(document.querySelector('section[aria-label="Community activity"]')).toBeInTheDocument()
   })
 
-  it('has aria-label on CTA section', () => {
+  it('exposes the search form as a search landmark with a labelled field', () => {
     render(<Home />)
 
-    const ctaSection = document.querySelector('section[aria-label="Call to action"]')
-    expect(ctaSection).toBeInTheDocument()
+    expect(document.querySelector('form[role="search"]')).toBeInTheDocument()
+    expect(screen.getByLabelText('Search places')).toBeInTheDocument()
   })
 
   it('has role="contentinfo" on footer', () => {
@@ -83,8 +72,7 @@ describe('Home Page Accessibility', () => {
   it('renders all section landmarks for screen readers', () => {
     render(<Home />)
 
-    // Should have multiple sections with aria-labels
     const labeledSections = document.querySelectorAll('section[aria-label]')
-    expect(labeledSections.length).toBeGreaterThanOrEqual(4)
+    expect(labeledSections.length).toBeGreaterThanOrEqual(3)
   })
 })

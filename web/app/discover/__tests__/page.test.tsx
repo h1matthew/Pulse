@@ -340,13 +340,51 @@ describe("DiscoverPage", () => {
     expect(Number(splitter.getAttribute("aria-valuenow"))).toBeGreaterThan(initialWidth);
   });
 
-  it("uses an adaptive results grid so a widened list pane can show multiple columns", async () => {
+  it("renders results as a hairline-ruled feed rather than a card grid", async () => {
     await renderPage();
 
-    const resultsGrid = screen.getByTestId("discover-results-grid");
+    const resultsFeed = screen.getByTestId("discover-results-grid");
 
-    expect(resultsGrid).toHaveClass("grid");
-    expect(resultsGrid.className).toContain("grid-cols-[repeat(auto-fit,minmax(min(17rem,100%),1fr))]");
+    expect(resultsFeed).toHaveClass("divide-y");
+    expect(resultsFeed).toHaveClass("divide-border");
+    expect(resultsFeed.className).not.toContain("grid-cols-");
+  });
+
+  it("puts the rating numeral first in each row, ahead of the name", async () => {
+    await renderPage();
+
+    const row = screen.getByText("H Mart Diamond Bar").closest("article");
+    expect(row).not.toBeNull();
+
+    const rating = within(row as HTMLElement).getByText("4.6");
+    expect(rating).toHaveClass("font-mono");
+    // Rating precedes the name in document order
+    expect(
+      rating.compareDocumentPosition(screen.getByText("H Mart Diamond Bar"))
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it("sets the row metadata line in mono in a fixed slot order", async () => {
+    await renderPage();
+
+    const row = screen.getByText("H Mart Diamond Bar").closest("article");
+    const metaLine = within(row as HTMLElement).getByText("Food & Drink").parentElement;
+
+    expect(metaLine).toHaveClass("font-mono");
+    expect(metaLine?.textContent).toContain("Food & Drink");
+    expect(metaLine?.textContent).toContain("Diamond Bar, CA");
+    expect(metaLine?.textContent).toContain("$$");
+  });
+
+  it("puts the state filters in their own rail directly above the rows", async () => {
+    await renderPage();
+
+    const rail = screen.getByRole("group", { name: "More filters" }).parentElement;
+    const feed = screen.getByTestId("discover-results-grid");
+
+    expect(rail?.className).toContain("h-10");
+    // The rail precedes the feed in document order
+    expect(rail?.compareDocumentPosition(feed)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("uses a forced nearby refresh so new provider results can backfill", async () => {

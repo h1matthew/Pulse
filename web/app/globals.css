@@ -91,14 +91,14 @@
 
 /* Zillow-style photo-card popups. The card itself is rendered in React with
    inline styles; these rules reshape Leaflet's default bubble into a clean,
-   edge-to-edge card (no padding, rounded corners, soft shadow). */
+   edge-to-edge card (no padding, rounded corners, hairline border). */
 .leaflet-popup.biz-popup .leaflet-popup-content-wrapper {
   padding: 0;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--card);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22), 0 3px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-strong);
 }
 .leaflet-popup.biz-popup .leaflet-popup-content {
   margin: 0;
@@ -106,7 +106,7 @@
 }
 .leaflet-popup.biz-popup .leaflet-popup-tip {
   background: var(--card);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border);
 }
 .leaflet-popup.biz-popup .leaflet-popup-close-button {
   top: 8px;
@@ -132,7 +132,7 @@
   border: 1px solid var(--border) !important;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border);
 }
 .leaflet-bar a,
 .leaflet-bar a:hover {

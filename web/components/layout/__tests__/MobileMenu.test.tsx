@@ -9,7 +9,7 @@ describe('MobileMenu NAV_ITEMS', () => {
 
     // Verify public nav items
     expect(content).toContain("label: 'About'")
-    expect(content).toContain("label: 'Our Mission'")
+    expect(content).toContain("label: 'How we pick'")
     expect(content).toContain("label: 'Get Involved'")
     expect(content).toContain("label: 'Dashboard'")
 

@@ -135,7 +135,7 @@ async function main() {
   await page.waitForTimeout(2500)
   await shot(page, 'app-deals.png')
 
-  // ---- 8. AI assistant (intelligent feature) -------------------------------
+  // ---- 8. Assistant (intelligent feature) ----------------------------------
   await page.goto(`${BASE}/assistant`, { waitUntil: 'networkidle' }).catch(() => {})
   await page.waitForTimeout(1500)
   const input = page.getByPlaceholder(/ask about local businesses/i).last()

@@ -25,10 +25,10 @@ export function MobileSidebar({ email, fullName, isAdmin }: MobileSidebarProps) 
   return (
     <>
       {/* Mobile header bar */}
-      <header className="md:hidden flex h-14 items-center justify-between border-b border-border/30 bg-background px-4">
+      <header className="md:hidden flex h-14 items-center justify-between border-b border-border bg-background px-4">
         <NavLink href="/" className="flex items-center gap-2">
-          <PulseLogo className="h-10 w-10 text-foreground" />
-          <span className="text-lg font-semibold tracking-tight text-foreground">
+          <PulseLogo className="h-10 w-10 text-primary" />
+          <span className="text-body font-medium text-foreground">
             Pulse
           </span>
         </NavLink>
@@ -47,16 +47,16 @@ export function MobileSidebar({ email, fullName, isAdmin }: MobileSidebarProps) 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="left"
-          className="w-64 p-0 bg-background border-r border-border/30"
+          className="w-64 border-r border-border bg-background p-0"
           showCloseButton={false}
         >
           <SheetTitle className="sr-only">Navigation menu</SheetTitle>
 
           {/* Logo header */}
-          <div className="flex h-14 items-center gap-2 border-b border-border/30 px-6">
+          <div className="flex h-14 items-center gap-2 border-b border-border px-6">
             <NavLink href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-              <PulseLogo className="h-10 w-10 text-foreground" />
-              <span className="text-lg font-semibold tracking-tight text-foreground">
+              <PulseLogo className="h-10 w-10 text-primary" />
+              <span className="text-body font-medium text-foreground">
                 Pulse
               </span>
             </NavLink>

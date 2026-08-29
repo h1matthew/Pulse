@@ -143,109 +143,86 @@ export default async function CategoriesPage() {
       <Header />
 
       <main className="px-4 pb-12 pt-32 sm:px-6">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-5xl">
           {/* Page header */}
           <AnimatedSection animation="fade-up">
-            <div className="mb-10 border-b border-border pb-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Browse the directory
-              </p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Browse by Category
-              </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+            <div className="mb-5 border-b border-border pb-5">
+              <h1 className="text-h2 font-medium">Browse by category</h1>
+              <p className="mt-1.5 max-w-2xl text-small text-muted-foreground">
                 Every place in the directory, organized by what it does.
               </p>
-              <p className="mt-4 font-mono text-xs text-muted-foreground">
+              <p className="mt-3 font-mono text-meta tabular-nums text-text-tertiary">
                 {totalLabel}
               </p>
             </div>
           </AnimatedSection>
 
-          {/* Category grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {categoryStats.map((category, index) => {
+          {/* Category feed — hairline-ruled rows, no card chrome */}
+          <div className="divide-y divide-border border-t border-border">
+            {categoryStats.map((category) => {
               const Icon = CATEGORY_ICONS[category.slug] ?? Store;
               return (
-                <AnimatedSection
+                <NavLink
                   key={category.id}
-                  animation="fade-up"
-                  delay={0.05 * (index + 1)}
-                  className="h-full"
+                  href={`/discover?category=${category.slug}`}
+                  aria-label={`Explore ${category.name}`}
+                  className="group relative flex gap-4 px-2 py-4 transition-colors hover:bg-surface-2"
                 >
-                  <NavLink
-                    href={`/discover?category=${category.slug}`}
-                    aria-label={`Explore ${category.name}`}
-                    className="group relative flex h-full flex-col rounded-lg border border-border bg-card p-6 transition-colors duration-300"
+                  {/* The row rule is a flatline; on hover a pulse trace
+                      draws itself along it, left to right. */}
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 300 24"
+                    fill="none"
+                    preserveAspectRatio="none"
+                    className="pointer-events-none absolute -top-3 left-0 h-6 w-full text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors duration-300 group-hover:animate-heart-beat group-hover:bg-primary group-hover:text-primary-foreground">
-                        <Icon className="h-5 w-5" aria-hidden="true" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h2 className="text-lg font-semibold tracking-tight">
-                          {category.name}
-                        </h2>
-                        <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                          {category.description || FALLBACK_DESCRIPTION}
-                        </p>
-                      </div>
-                    </div>
+                    <path
+                      d="M0 12 H112 L120 12 L126 3 L134 21 L140 12 H300"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      pathLength="1"
+                      className="[stroke-dasharray:1] [stroke-dashoffset:1] transition-[stroke-dashoffset] duration-700 ease-out group-hover:[stroke-dashoffset:0]"
+                    />
+                  </svg>
 
-                    <div className="flex-1">
-                      <p className="mt-4 font-mono text-sm text-foreground">
-                        {pluralizeBusinesses(category.businessCount)}
-                      </p>
+                  <div className="w-24 shrink-0 pt-0.5">
+                    <p className="font-mono text-lead leading-none tabular-nums">
+                      {category.businessCount}
+                    </p>
+                    <p className="mt-1.5 font-mono text-meta text-text-tertiary">
+                      {pluralizeBusinesses(category.businessCount)}
+                    </p>
+                  </div>
 
-                      {category.featured.length > 0 && (
-                        <div className="mt-3">
-                          <p className="text-xs text-muted-foreground">
-                            Top rated:
-                          </p>
-                          <div className="mt-1.5 flex flex-wrap gap-1.5">
-                            {category.featured.map((name) => (
-                              <span
-                                key={name}
-                                className="rounded bg-muted px-2 py-0.5 text-xs"
-                              >
-                                {name}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="relative mt-6 flex items-center justify-between border-t border-border pt-4">
-                      {/* The divider is a flatline — on hover a heartbeat
-                          trace draws itself along it, left to right. */}
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 300 24"
-                        fill="none"
-                        preserveAspectRatio="none"
-                        className="pointer-events-none absolute -top-3 left-0 h-6 w-full text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                      >
-                        <path
-                          d="M0 12 H112 L120 12 L126 3 L134 21 L140 12 H300"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          pathLength="1"
-                          className="[stroke-dasharray:1] [stroke-dashoffset:1] transition-[stroke-dashoffset] duration-700 ease-out group-hover:[stroke-dashoffset:0]"
-                        />
-                      </svg>
-                      <span className="text-sm text-muted-foreground transition-colors group-hover:text-foreground">
-                        Explore {category.name}
-                      </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      <h2 className="text-body font-medium">{category.name}</h2>
                       <ArrowRight
-                        className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground"
+                        className="h-3.5 w-3.5 text-text-tertiary transition-transform group-hover:translate-x-1"
                         aria-hidden="true"
                       />
                     </div>
-                  </NavLink>
-                </AnimatedSection>
+                    <p className="mt-1 text-small text-muted-foreground">
+                      {category.description || FALLBACK_DESCRIPTION}
+                    </p>
+
+                    {category.featured.length > 0 && (
+                      <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 font-mono text-meta uppercase tracking-[0.02em] text-text-tertiary">
+                        <span>Top rated:</span>
+                        {category.featured.map((name, i) => (
+                          <span key={name} className="flex items-center gap-x-1.5">
+                            {i > 0 && <span aria-hidden="true">&middot;</span>}
+                            <span>{name}</span>
+                          </span>
+                        ))}
+                      </p>
+                    )}
+                  </div>
+                </NavLink>
               );
             })}
           </div>

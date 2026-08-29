@@ -1,133 +1,115 @@
-'use client'
+import { NavLink } from '@/components/ui/nav-link'
 
-import { Heart, Users, TrendingUp, MapPin } from 'lucide-react'
-import { AnimatedSection } from '@/components/features/home/AnimatedSection'
+export const dynamic = 'force-static'
+export const revalidate = 3600
+
+// Each rule maps to something enforced in the codebase, not an intention.
+const RULES: { title: string; body: string }[] = [
+  {
+    title: 'Listings are not for sale.',
+    body: 'Pulse has no billing, no ad slots, and no sponsored results. A business cannot buy a listing, a position, or a badge, because there is nothing to buy and no way to pay us.',
+  },
+  {
+    title: 'A business does not have to know about us to be listed.',
+    body: 'Most listings start from public map data. We add the business first; the owner claims the page later if they want to edit hours, post a deal, or answer a review. Nobody is left out for not signing up.',
+  },
+  {
+    title: 'You choose the order.',
+    body: 'Distance is the default. You can switch to rating, review count, or name. The rating sort weights each score by how many reviews stand behind it, so one five-star review does not beat forty four-star ones. No sort reads money, because there is no money to read.',
+  },
+  {
+    title: 'National chains are dropped from search.',
+    body: 'Results pulled live from the map provider are filtered against a brand list kept in the code, and the chains never reach the page. Discover has an independent-only toggle, and category pages rank independents above chains.',
+  },
+  {
+    title: 'A check-in needs a receipt.',
+    body: 'You photograph the receipt. It is read and matched against that business before the visit counts, it has to be less than seven days old, and it is stored privately. When verification is unavailable the check-in fails. We would rather lose a real visit than record one that did not happen.',
+  },
+  {
+    title: 'Reviews carry their source.',
+    body: 'Every review is tagged as written on Pulse or imported from Google or Yelp. Imported reviews cannot be edited or deleted through Pulse; the database refuses the write. A star rating is the average of both kinds.',
+  },
+  {
+    title: 'Closed businesses come off the list.',
+    body: 'Anything the map provider marks permanently closed is dropped when we import it and again every time the nearby list refreshes.',
+  },
+  {
+    title: 'Browsing takes no account.',
+    body: 'Discover, categories, deals, business pages, reviews, and the leaderboard are open to anyone. An account is required only to check in, review, bookmark, or claim a deal.',
+  },
+]
 
 export default function MissionPage() {
   return (
-    <div className="relative bg-background">
-      {/* Hero */}
-      <section className="relative border-b border-border/50 px-6 pt-16 pb-24 lg:pb-32">
-        <div className="relative mx-auto max-w-4xl text-center">
-          <AnimatedSection animation="fade-in" delay={0}>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-muted-foreground">
-              <Heart className="h-4 w-4 text-muted-foreground" />
-              Our Mission
-            </div>
-          </AnimatedSection>
+    <div className="bg-background">
+      <main className="mx-auto max-w-content px-6 pt-16 pb-24">
+        <header className="max-w-prose">
+          <h1 className="text-h1 font-medium text-foreground">How we pick</h1>
+          <p className="mt-5 text-lead text-muted-foreground">
+            Pulse is a directory of the businesses near you. These are the rules it runs
+            on. Most of them you can check from the outside.
+          </p>
+        </header>
 
-          <AnimatedSection animation="fade-up" delay={0.1}>
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-              The businesses near you, in one place
-            </h1>
-          </AnimatedSection>
-
-          <AnimatedSection animation="fade-up" delay={0.2}>
-            <p className="mt-8 text-lg leading-relaxed text-muted-foreground max-w-[68ch] mx-auto">
-              Pulse lists the shops, restaurants, and services around you, and keeps a
-              running record of what your spending leaves in town.
-            </p>
-          </AnimatedSection>
-
-        </div>
-      </section>
-
-      {/* What We Do */}
-      <section className="relative px-6 py-24 lg:py-32">
-        <div className="mx-auto max-w-6xl">
-          <AnimatedSection animation="fade-up">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Our Approach</span>
+        <ol className="mt-12 max-w-prose border-t border-border">
+          {RULES.map((rule, i) => (
+            <li
+              key={rule.title}
+              className="grid grid-cols-[2.25rem_1fr] gap-x-4 border-b border-border py-6"
+            >
+              <span className="meta pt-1">{String(i + 1).padStart(2, '0')}</span>
+              <div>
+                <h2 className="text-h3 font-medium text-foreground">{rule.title}</h2>
+                <p className="mt-2 text-body text-muted-foreground">{rule.body}</p>
               </div>
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                What We Do
-              </h2>
-            </div>
-          </AnimatedSection>
+            </li>
+          ))}
+        </ol>
 
-          <div className="grid gap-8 sm:grid-cols-3">
-            <MissionCard3D
-              icon={<MapPin className="h-8 w-8" />}
-              title="Discover"
-              description="Search by neighborhood, category, or what is open right now. Coffee shops, boutiques, repair counters, and the places a chain search never returns."
-              delay={0.1}
-            />
-            <MissionCard3D
-              icon={<TrendingUp className="h-8 w-8" />}
-              title="Impact"
-              description="See what your spending keeps nearby. Check-ins and claimed deals add up to a plain total of money that stayed in your area."
-              delay={0.2}
-            />
-            <MissionCard3D
-              icon={<Users className="h-8 w-8" />}
-              title="Connect"
-              description="Reviews, check-ins, and missions let you tell the next person what is worth a visit, and let owners answer back."
-              delay={0.3}
-            />
+        <section className="mt-16 max-w-prose">
+          <h2 className="text-h2 font-medium text-foreground">How the math works</h2>
+          <p className="mt-5 text-body text-muted-foreground">
+            Pulse puts a dollar figure on your check-ins. Here is the whole calculation,
+            including the part of it we cannot defend.
+          </p>
+
+          <div className="mt-6 rounded-md border border-border bg-surface-1 p-4 font-mono text-meta text-foreground">
+            <p>total spend = sum of the totals on your verified receipts</p>
+            <p className="mt-2">
+              a receipt with no readable total counts as $35
+            </p>
+            <p className="mt-2">dollars kept local = total spend &times; 0.68</p>
           </div>
-        </div>
-      </section>
 
-      {/* Where the money goes */}
-      <section className="relative border-t border-border/50 px-6 py-24 lg:py-32">
-        <div className="relative mx-auto max-w-3xl text-center">
-          <AnimatedSection animation="fade-up">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6">
-              <Heart className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </AnimatedSection>
+          <p className="mt-6 text-body text-muted-foreground">
+            The 0.68 is the share of a dollar we assume stays in your area when you spend
+            it at an independent business instead of a chain. We cannot show you where
+            that number came from. It sits in our code with no source attached, and we are
+            not going to attach a study we have not read. Your receipts are real. The
+            multiplier is an assumption.
+          </p>
+          <p className="mt-4 text-body text-muted-foreground">
+            Two smaller figures work the same way: one job supported per $100,000 kept
+            local, and half a pound of CO2 per check-in. Both are round numbers with the
+            same missing citation.
+          </p>
+          <p className="mt-4 text-body text-muted-foreground">
+            What is exact: how many times you checked in, which businesses you visited,
+            and the totals printed on the receipts you scanned. Those come from your own
+            activity and nothing else.
+          </p>
 
-          <AnimatedSection animation="fade-up" delay={0.1}>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-8">
-              Where Your Money Goes
-            </h2>
-          </AnimatedSection>
-
-          <AnimatedSection animation="fade-up" delay={0.2}>
-            <p className="mx-auto max-w-[68ch] text-lg leading-relaxed text-muted-foreground">
-              Small businesses hold up the local economy. Money spent at a shop down the
-              street pays wages and rent in your area, and the owner is someone you can
-              find behind the counter.
-            </p>
-          </AnimatedSection>
-
-          <AnimatedSection animation="fade-up" delay={0.3}>
-            <p className="mx-auto mt-6 max-w-[68ch] text-lg leading-relaxed text-muted-foreground">
-              Every check-in, review, and bookmark on Pulse makes one of those businesses
-              easier for the next person to find.
-            </p>
-          </AnimatedSection>
-
-        </div>
-      </section>
+          <p className="mt-6 text-body text-muted-foreground">
+            <NavLink
+              href="/dashboard"
+              className="text-foreground underline underline-offset-4 hover:text-primary"
+            >
+              Your own figures are on the dashboard
+            </NavLink>
+            .
+          </p>
+        </section>
+      </main>
     </div>
-  )
-}
-
-function MissionCard3D({
-  icon,
-  title,
-  description,
-  delay,
-}: {
-  icon: React.ReactNode
-  title: string
-  description: string
-  delay: number
-}) {
-  return (
-    <AnimatedSection animation="fade-up" delay={delay}>
-      <div className="group relative h-full rounded-lg border border-border/50 bg-card p-8">
-        {/* Content */}
-        <div className="relative">
-          <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            {icon}
-          </div>
-          <h3 className="mb-3 text-xl font-bold text-card-foreground">{title}</h3>
-          <p className="max-w-[68ch] text-sm leading-relaxed text-muted-foreground">{description}</p>
-        </div>
-      </div>
-    </AnimatedSection>
   )
 }

@@ -16,7 +16,7 @@ import type { BusinessWithDetails, Category, Deal, ReviewWithUser } from '@/type
 export const TOUR_DEMO_BUSINESS_ID = 'onboarding-demo'
 
 /** Route the onboarding tour opens for its business-page steps. */
-export const TOUR_DEMO_BUSINESS_PATH = '/business/demo-la-villita-cafe'
+export const TOUR_DEMO_BUSINESS_PATH = `/business/${TOUR_DEMO_BUSINESS_ID}`
 
 /** ISO timestamp `days` in the past (negative) or future (positive). */
 function isoDaysFromNow(days: number): string {
@@ -84,7 +84,7 @@ const DEMO_DEALS: Deal[] = [
     id: 'demo-onboarding-deal-3',
     business_id: TOUR_DEMO_BUSINESS_ID,
     title: 'Boost Mission: Coffee Explorer',
-    description: 'Check in at 3 local coffee spots this month and unlock 20% off here.',
+    description: 'Check in at 3 local coffee spots this month for 20% off here.',
     deal_type: 'boost_mission',
     discount_type: 'percentage',
     discount_value: 20,
@@ -185,7 +185,7 @@ export function getTourDemoBusiness(): BusinessWithDetails {
     created_at: isoDaysFromNow(-365),
     updated_at: isoDaysFromNow(-1),
     ai_description:
-      'A beloved San Antonio staple where neighbors gather over locally roasted coffee and made-from-scratch tacos. The family behind it sources from nearby farms and pours every bit of their heart into the community.',
+      'A San Antonio cafe serving locally roasted coffee and made-from-scratch tacos, with sourcing from nearby farms.',
     ai_description_generated_at: isoDaysFromNow(-30),
     ai_description_source: 'demo',
     editorial_summary: 'Family-owned, locally sourced, and a true community hub.',

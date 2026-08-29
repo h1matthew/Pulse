@@ -172,13 +172,31 @@ describe('MissionsPage', () => {
     mockMissionsData = mockActiveMissions
     renderPage()
 
-    // Active missions count should be 2 (shown in the stats card)
-    const statCards = screen.getAllByText('2')
-    expect(statCards.length).toBeGreaterThanOrEqual(1)
+    // Stats read as one mono line under the heading, not as three stat cards
+    expect(screen.getByTestId('stat-active')).toHaveTextContent('2 active')
+    expect(screen.getByTestId('stat-completed')).toHaveTextContent('0 completed')
+    expect(screen.getByTestId('stat-in-progress')).toHaveTextContent('0 in progress')
+    expect(screen.getByTestId('stat-active').parentElement).toHaveClass('font-mono')
 
-    // "Active Missions" appears both as a stat label and tab trigger
-    const activeLabels = screen.getAllByText('Active Missions')
-    expect(activeLabels.length).toBeGreaterThanOrEqual(1)
+    // "Active Missions" survives only as the tab trigger
+    expect(screen.getAllByText('Active Missions')).toHaveLength(1)
+  })
+
+  it('has no eyebrow label above the heading', () => {
+    mockMissionsData = []
+    renderPage()
+
+    expect(screen.queryByText(/challenges & rewards/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Boost Missions' })).toHaveClass('font-medium')
+  })
+
+  it('drops the unsourced hotspot and group check-in sections', () => {
+    mockMissionsData = mockActiveMissions
+    renderPage()
+
+    expect(screen.queryByText('Hotspots')).not.toBeInTheDocument()
+    expect(screen.queryByText('Group Check-ins')).not.toBeInTheDocument()
+    expect(screen.queryByText(/2× POINTS/i)).not.toBeInTheDocument()
   })
 
   it('shows empty state when no active missions', () => {
@@ -385,9 +403,8 @@ describe('MissionsPage', () => {
     ]
     renderPage()
 
-    // The freshly started 0/3 mission counts toward "In Progress"
-    const inProgressLabel = screen.getByText('In Progress')
-    expect(inProgressLabel.parentElement?.textContent).toContain('1')
+    // The freshly started 0/3 mission counts toward "in progress"
+    expect(screen.getByTestId('stat-in-progress')).toHaveTextContent('1 in progress')
   })
 
   it('renders tab triggers', () => {

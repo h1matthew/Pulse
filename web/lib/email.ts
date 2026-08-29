@@ -137,8 +137,8 @@ This email was sent from the Pulse contact form.
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #225dec; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-    .content { background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; }
+    .header { background: #0c0b0a; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .content { background: #faf9f7; padding: 20px; border: 1px solid #e9e6e0; border-top: none; border-radius: 0 0 8px 8px; }
     .field { margin-bottom: 15px; }
     .label { font-weight: 600; color: #64748b; font-size: 12px; text-transform: uppercase; }
     .value { margin-top: 4px; }
@@ -197,19 +197,18 @@ export async function sendWelcomeEmail(data: {
   const text = `
 ${greeting},
 
-Welcome to Pulse! We're excited to have you join our local business discovery community.
+Welcome to Pulse. Your account is ready.
 
 Here's what you can do:
-- Discover amazing local businesses in your community
-- Track your economic impact as you support local
-- Bookmark your favorite spots and get notified of deals
-- Complete Boost Missions to unlock perks
-- Leave reviews to help others discover great local spots
+- Browse nearby independent businesses
+- Save places and claim current deals
+- Use receipt check-ins to build your local-spend ledger
+- Complete missions for rewards
+- Leave reviews with a clear source
 
 Get started: https://pulse.local/discover
 
-Power the heart of your community!
-The Pulse Team
+The Pulse team
   `.trim()
 
   const html = `
@@ -219,44 +218,43 @@ The Pulse Team
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #225dec; color: white; padding: 30px 20px; border-radius: 8px 8px 0 0; text-align: center; }
+    .header { background: #0c0b0a; color: white; padding: 30px 20px; border-radius: 8px 8px 0 0; text-align: center; }
     .header h1 { margin: 0; font-size: 28px; }
-    .content { background: #f8fafc; padding: 30px 20px; border: 1px solid #e2e8f0; border-top: none; }
+    .content { background: #faf9f7; padding: 30px 20px; border: 1px solid #e9e6e0; border-top: none; }
     .features { margin: 20px 0; }
     .feature { display: flex; align-items: flex-start; margin-bottom: 12px; }
-    .feature-icon { width: 24px; height: 24px; margin-right: 12px; color: #225dec; }
+    .feature-icon { width: 24px; height: 24px; margin-right: 12px; color: #66724d; }
     .cta { text-align: center; margin: 30px 0; }
-    .cta-button { display: inline-block; background: #225dec; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; }
-    .footer { background: #1e293b; color: #94a3b8; padding: 20px; border-radius: 0 0 8px 8px; text-align: center; font-size: 12px; }
+    .cta-button { display: inline-block; background: #66724d; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+    .footer { background: #0c0b0a; color: #a8a49d; padding: 20px; border-radius: 0 0 8px 8px; text-align: center; font-size: 12px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>Welcome to Pulse!</h1>
+      <h1>Welcome to Pulse</h1>
     </div>
     <div class="content">
       <p>${escapeHtml(greeting)},</p>
-      <p>We're excited to have you join our local business discovery community!</p>
+      <p>Your account is ready.</p>
 
       <div class="features">
         <p><strong>Here's what you can do:</strong></p>
         <ul>
-          <li>Discover amazing local businesses in your community</li>
-          <li>Track your economic impact as you support local</li>
-          <li>Bookmark your favorite spots and get notified of deals</li>
-          <li>Complete Boost Missions to unlock perks</li>
-          <li>Leave reviews to help others discover great local spots</li>
+          <li>Browse nearby independent businesses</li>
+          <li>Save places and claim current deals</li>
+          <li>Use receipt check-ins to build your local-spend ledger</li>
+          <li>Complete missions for rewards</li>
+          <li>Leave reviews with a clear source</li>
         </ul>
       </div>
 
       <div class="cta">
-        <a href="https://pulse.local/discover" class="cta-button">Start Exploring</a>
+        <a href="https://pulse.local/discover" class="cta-button">Open directory</a>
       </div>
     </div>
     <div class="footer">
-      <p>Power the heart of your community!</p>
-      <p>The Pulse Team</p>
+      <p>The Pulse team</p>
     </div>
   </div>
 </body>
@@ -289,7 +287,7 @@ ${message}
 ${ctaText && ctaUrl ? `${ctaText}: ${ctaUrl}` : ''}
 
 ---
-Pulse - Powering the Heart of Local Business
+Pulse
   `.trim()
 
   const html = `
@@ -299,10 +297,10 @@ Pulse - Powering the Heart of Local Business
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: #225dec; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
-    .content { background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; }
+    .header { background: #0c0b0a; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .content { background: #faf9f7; padding: 20px; border: 1px solid #e9e6e0; border-top: none; border-radius: 0 0 8px 8px; }
     .cta { text-align: center; margin: 25px 0; }
-    .cta-button { display: inline-block; background: #225dec; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; }
+    .cta-button { display: inline-block; background: #66724d; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; }
     .footer { margin-top: 20px; font-size: 12px; color: #94a3b8; text-align: center; }
   </style>
 </head>
@@ -320,7 +318,7 @@ Pulse - Powering the Heart of Local Business
       ` : ''}
     </div>
     <div class="footer">
-      Pulse - Powering the Heart of Local Business
+      Pulse
     </div>
   </div>
 </body>

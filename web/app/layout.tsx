@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AppBackground } from "@/components/layout/AppBackground";
 import { QueryProvider } from "@/components/providers/QueryProvider";
@@ -17,11 +16,23 @@ import "./globals.css";
 // Server-rendered (not inside a client component), so it does not trigger
 // React 19's "script tag in client component" warning. Keep the storage key
 // in sync with THEME_STORAGE_KEY in components/providers/theme-provider.tsx.
-const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('pulse-theme');if(t==='dark'){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}}catch(e){}})();`
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
+
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('pulse-theme');if(t==='light'){document.documentElement.classList.remove('dark')}else{document.documentElement.classList.add('dark')}}catch(e){document.documentElement.classList.add('dark')}})();`
 
 export const metadata: Metadata = {
-  title: "Pulse - Discover Local Businesses",
-  description: "Find and support local businesses in your community. Every interaction strengthens your local economy.",
+  title: "Pulse - Local Business Directory",
+  description: "Find independent businesses nearby. Compare hours, ratings, deals, and verified local spend.",
   icons: {
     icon: '/pulse-logo.png',
   },
@@ -33,22 +44,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`dark ${inter.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <body
         className="antialiased"
         suppressHydrationWarning
       >
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        {/* Ambient drifting-orb background, shared by every page (fixed, -z-10) */}
+        {/* Flat page ground, shared by every page (fixed, -z-10) */}
         <AppBackground />
         {/* Skip to main content link for keyboard/screen reader accessibility */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg focus:outline-none"
+          className="sr-only focus:not-sr-only focus:fixed focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:outline-none"
         >
           Skip to main content
         </a>
-        <ThemeProvider defaultTheme="light">
+        <ThemeProvider defaultTheme="dark">
           <QueryProvider>
             <AuthProvider>
               <AccessibilityProvider>

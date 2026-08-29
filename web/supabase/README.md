@@ -19,7 +19,7 @@ Pulse uses Supabase PostgreSQL with PostGIS for local business data and location
 | `mission_completions` | User progress and completion records for missions |
 | `business_check_ins` | Visit tracking and spend amounts for impact calculations |
 | `user_impact` | Dollars kept local, businesses supported, jobs impacted, and carbon savings |
-| `user_preferences` | Preferences used by recommendations and the AI assistant |
+| `user_preferences` | Preferences used by recommendations and assistant replies |
 
 ## Schema Files
 

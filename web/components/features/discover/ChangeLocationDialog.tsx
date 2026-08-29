@@ -32,7 +32,7 @@ export function ChangeLocationDialog({
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-primary" />
+            <MapPin className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
             Change Location
           </DialogTitle>
           <DialogDescription>
@@ -48,10 +48,10 @@ export function ChangeLocationDialog({
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t border-border" />
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or</span>
+          <div className="relative flex justify-center font-mono text-meta uppercase tracking-[0.02em]">
+            <span className="bg-surface-2 px-2 text-text-tertiary">Or</span>
           </div>
         </div>
 
@@ -75,7 +75,7 @@ export function ChangeLocationDialog({
         </Button>
 
         {gpsDisabled && (
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-center font-mono text-meta text-text-tertiary">
             Location access was denied in your browser settings.
           </p>
         )}

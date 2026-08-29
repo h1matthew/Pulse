@@ -3,6 +3,14 @@ import { render, screen } from '@testing-library/react'
 import { AboutContent } from '@/components/features/about/AboutContent'
 import type { Founder } from '@/components/features/about/FounderCard'
 
+import type { ReactNode } from 'react'
+
+vi.mock('@/components/ui/nav-link', () => ({
+  NavLink: ({ children, href }: { children: ReactNode; href: string }) => (
+    <a href={href}>{children}</a>
+  ),
+}))
+
 // Mock window.matchMedia
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -99,40 +107,57 @@ describe('AboutPage', () => {
     expect(roles).toHaveLength(4)
   })
 
-  it('renders the Why We Started section', () => {
-    render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    expect(screen.getByText(/Why We Started/)).toBeInTheDocument()
-    expect(screen.getByText(/Our Story/)).toBeInTheDocument()
-  })
-
-  it('renders the Meet the Team h1 heading', () => {
+  it('renders the Why we started section', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Meet the Team' })
+      screen.getByRole('heading', { level: 2, name: 'Why we started' })
     ).toBeInTheDocument()
   })
 
-  it('renders description text', () => {
+  it('leads with what Pulse is', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
     expect(
-      screen.getByText(
-        /The people building Pulse, and the reason we started it\./
-      )
+      screen.getByRole('heading', { level: 1, name: 'What Pulse is' })
     ).toBeInTheDocument()
+    expect(screen.getByText(/A directory of the shops, restaurants, and services/)).toBeInTheDocument()
   })
 
-  it('renders the eyebrow labels for each section', () => {
+  it('links to the method page', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
-    expect(screen.getByText('About Pulse')).toHaveClass('font-semibold')
-    expect(screen.getByText('The Founders')).toHaveClass('font-semibold')
-    expect(screen.getByText('Our Story')).toHaveClass('font-semibold')
+    expect(screen.getByRole('link', { name: 'How we pick' })).toHaveAttribute(
+      'href',
+      '/mission'
+    )
+  })
+
+  it('renders live counters only when the counts are present', () => {
+    const { rerender } = render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
+    expect(screen.queryByText('businesses listed')).not.toBeInTheDocument()
+
+    rerender(
+      <AboutContent
+        founders={TEST_FOUNDERS}
+        isAdmin={false}
+        businessCount={1284}
+        reviewCount={0}
+      />
+    )
+    expect(screen.getByText('1,284')).toBeInTheDocument()
+    expect(screen.getByText('businesses listed')).toBeInTheDocument()
+    expect(screen.queryByText('reviews on file')).not.toBeInTheDocument()
   })
 
   it('renders the founder count as a mono stat', () => {
     render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
     const count = screen.getByLabelText('4 founders')
     expect(count).toHaveTextContent('04')
-    expect(count).toHaveClass('font-mono')
+    expect(count).toHaveClass('meta')
+  })
+
+  it('has no uppercase eyebrow labels', () => {
+    const { container } = render(<AboutContent founders={TEST_FOUNDERS} isAdmin={false} />)
+    expect(container.innerHTML).not.toContain('uppercase')
+    expect(container.innerHTML).not.toContain('tracking-[0.18em]')
   })
 
   it('contains no emoji characters', () => {

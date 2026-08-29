@@ -137,13 +137,13 @@ function generateDescription(place: GooglePlaceResult): string {
 
   // Build description templates that incorporate the business name
   const typeTemplates: Record<string, (n: string) => string> = {
-    'restaurant': (n) => `${n} is a local restaurant known for its great food and welcoming atmosphere`,
+    'restaurant': (n) => `${n} is a local restaurant with published ratings, hours, and location data`,
     'cafe': (n) => `${n} is a neighborhood café serving coffee, pastries, and light bites`,
     'bakery': (n) => `${n} offers freshly baked goods, pastries, and artisan breads`,
-    'bar': (n) => `${n} is a popular local spot for drinks, good vibes, and nightlife`,
-    'meal_delivery': (n) => `${n} delivers fresh, made-to-order meals right to your door`,
-    'meal_takeaway': (n) => `${n} serves up delicious takeout meals ready when you are`,
-    'store': (n) => `${n} is a local shop offering a curated selection of goods`,
+    'bar': (n) => `${n} is a local bar with drinks, hours, and location data`,
+    'meal_delivery': (n) => `${n} offers meal delivery in the area`,
+    'meal_takeaway': (n) => `${n} offers takeout meals`,
+    'store': (n) => `${n} is a local shop with goods listed in the directory`,
     'shopping_mall': (n) => `${n} features a variety of shops, dining, and entertainment`,
     'clothing_store': (n) => `${n} carries a curated selection of apparel and accessories`,
     'book_store': (n) => `${n} is an independent bookstore with a thoughtful collection of reads`,
@@ -157,7 +157,7 @@ function generateDescription(place: GooglePlaceResult): string {
     'hair_salon': (n) => `${n} provides professional hair styling, cuts, and treatments`,
     'nail_salon': (n) => `${n} offers nail care, manicures, pedicures, and beauty treatments`,
     'beauty_salon': (n) => `${n} offers beauty services, treatments, and personal care`,
-    'spa': (n) => `${n} provides relaxing spa treatments and wellness services`,
+    'spa': (n) => `${n} provides spa treatments and wellness services`,
     'gym': (n) => `${n} is a fitness center with equipment, classes, and training`,
     'fitness_center': (n) => `${n} is a fitness center with equipment, classes, and training`,
     'health': (n) => `${n} provides health and wellness services for the community`,
@@ -169,40 +169,40 @@ function generateDescription(place: GooglePlaceResult): string {
     'car_repair': (n) => `${n} provides auto repair, maintenance, and vehicle services`,
     'car_wash': (n) => `${n} keeps your vehicle looking its best with professional washes`,
     'gas_station': (n) => `${n} offers fuel, convenience items, and roadside essentials`,
-    'movie_theater': (n) => `${n} screens the latest films in a great viewing experience`,
+    'movie_theater': (n) => `${n} screens current films`,
     'night_club': (n) => `${n} is a nightlife destination with music, dancing, and drinks`,
     'art_gallery': (n) => `${n} showcases artwork, exhibitions, and creative collections`,
-    'tourist_attraction': (n) => `${n} is a must-visit destination and local landmark`,
+    'tourist_attraction': (n) => `${n} is listed as a local attraction`,
     'bank': (n) => `${n} provides banking, financial services, and account management`,
     'pharmacy': (n) => `${n} is a local pharmacy offering prescriptions and health products`,
-    'pet_store': (n) => `${n} carries pet supplies, food, and accessories for your furry friends`,
+    'pet_store': (n) => `${n} carries pet supplies, food, and accessories`,
     'veterinary_care': (n) => `${n} provides veterinary care and animal health services`,
-    'florist': (n) => `${n} creates beautiful floral arrangements for every occasion`,
+    'florist': (n) => `${n} sells flowers, arrangements, and related goods`,
     'jewelry_store': (n) => `${n} offers fine jewelry, watches, and accessories`,
     'laundry': (n) => `${n} provides professional laundry and cleaning services`,
     'dry_cleaner': (n) => `${n} offers dry cleaning and garment care services`,
     'tattoo_parlor': (n) => `${n} is a tattoo studio offering custom artwork and piercings`,
     'yoga_studio': (n) => `${n} offers yoga classes and mindful movement sessions`,
     'brewery': (n) => `${n} crafts local beers and offers tastings in a relaxed setting`,
-    'wine_bar': (n) => `${n} serves curated wines in a cozy, inviting atmosphere`,
+    'wine_bar': (n) => `${n} serves wine and small-bar service`,
     'coffee_shop': (n) => `${n} is a local coffee spot serving specialty drinks and treats`,
-    'ice_cream_shop': (n) => `${n} serves delicious ice cream, gelato, and frozen treats`,
-    'pizza_restaurant': (n) => `${n} serves fresh, handcrafted pizzas and Italian favorites`,
-    'sushi_restaurant': (n) => `${n} offers fresh sushi, sashimi, and Japanese cuisine`,
-    'mexican_restaurant': (n) => `${n} serves authentic Mexican cuisine and flavors`,
-    'chinese_restaurant': (n) => `${n} offers traditional Chinese dishes and flavors`,
-    'italian_restaurant': (n) => `${n} serves classic Italian cuisine in a warm setting`,
-    'thai_restaurant': (n) => `${n} brings authentic Thai flavors and spices to the table`,
+    'ice_cream_shop': (n) => `${n} serves ice cream, gelato, and frozen treats`,
+    'pizza_restaurant': (n) => `${n} serves pizza and Italian dishes`,
+    'sushi_restaurant': (n) => `${n} offers sushi, sashimi, and Japanese dishes`,
+    'mexican_restaurant': (n) => `${n} serves Mexican dishes`,
+    'chinese_restaurant': (n) => `${n} offers Chinese dishes`,
+    'italian_restaurant': (n) => `${n} serves Italian dishes`,
+    'thai_restaurant': (n) => `${n} serves Thai dishes`,
     'japanese_restaurant': (n) => `${n} offers Japanese cuisine, from ramen to teriyaki`,
     'korean_restaurant': (n) => `${n} serves Korean cuisine, from BBQ to bibimbap`,
-    'indian_restaurant': (n) => `${n} offers flavorful Indian dishes and aromatic spices`,
-    'seafood_restaurant': (n) => `${n} serves fresh seafood and ocean-inspired dishes`,
-    'steak_house': (n) => `${n} offers premium steaks and hearty American fare`,
+    'indian_restaurant': (n) => `${n} offers Indian dishes`,
+    'seafood_restaurant': (n) => `${n} serves seafood dishes`,
+    'steak_house': (n) => `${n} offers steaks and American fare`,
     'barbecue_restaurant': (n) => `${n} serves slow-smoked BBQ and classic sides`,
-    'bowling_alley': (n) => `${n} is a fun spot for bowling, games, and socializing`,
+    'bowling_alley': (n) => `${n} offers bowling, games, and event space`,
     'arcade': (n) => `${n} is packed with arcade games and entertainment for all ages`,
-    'karaoke': (n) => `${n} offers private karaoke rooms and a fun night out`,
-    'escape_room': (n) => `${n} challenges you with immersive escape room puzzles`,
+    'karaoke': (n) => `${n} offers karaoke rooms and music service`,
+    'escape_room': (n) => `${n} offers escape-room puzzles`,
     'martial_arts_school': (n) => `${n} teaches martial arts, self-defense, and discipline`,
     'chiropractor': (n) => `${n} provides chiropractic care and spinal adjustments`,
     'optometrist': (n) => `${n} offers eye exams, vision care, and eyewear`,
@@ -218,9 +218,9 @@ function generateDescription(place: GooglePlaceResult): string {
   }
 
   if (primaryType) {
-    return `${name} is a local ${primaryType} proudly serving the community`
+    return `${name} is listed as a local ${primaryType}`
   }
-  return `${name} is a local business proudly serving the community`
+  return `${name} is listed as a local business`
 }
 
 /** Parse address components from a formatted address string. */
@@ -683,7 +683,7 @@ export async function GET(request: Request) {
     // Scale threshold by radius — larger area should have more businesses.
     const expectedForRadius = Math.max(20, Math.round(radius / 500))
     const shouldFetch = forceRefresh || filteredExistingBusinesses.length < expectedForRadius
-    let places: GooglePlaceResult[] = []
+    const places: GooglePlaceResult[] = []
     if (shouldFetch) {
       // Overpass (OSM) seeds aggressively with an 80km radius — free, no cap.
       // Google Places adds quality data (photos, ratings) for the immediate area.
@@ -792,7 +792,6 @@ export async function GET(request: Request) {
     // Inject demo business when demo mode is active, deduplicating by name
     if (isDemoContentEnabled()) {
       const demoBiz = getDemoBusiness()
-      const demoName = demoBiz.name.toLowerCase()
       const dupeIdx = withinRadius.findIndex(
         b => b.id !== demoBiz.id && b.name?.toLowerCase().includes('la villita')
       )

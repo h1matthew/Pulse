@@ -1,5 +1,5 @@
 /**
- * Types for AI-generated quiz management
+ * Types for generated quiz management
  */
 
 export interface AIQuizQuestion {

@@ -90,11 +90,11 @@ Why: Proves light mode support alongside dark mode (Row 4, 10 pts)
 
 --------------------------------------------------------------------------------
 
-SCREENSHOT 7: ai-assistant.png
-What to capture: The AI Assistant chat widget (bottom-right bubble)
+SCREENSHOT 7: assistant.png
+What to capture: The assistant chat widget (bottom-right bubble)
 How: Click the chat bubble, type "What are the best restaurants near Diamond Bar?"
      Wait for the response to stream in
-Show: The chat window with your question and the AI response visible
+Show: The chat window with your question and the response visible
 Crop: Just the chat widget panel (not the whole page)
 Why: Proves intelligent feature / interactive Q&A (Row 6, 5 pts)
 

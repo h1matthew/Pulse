@@ -36,8 +36,8 @@ export function PhotoGallery({ photos, businessName, categoryIcon = "🏪" }: Ph
 
   if (!hasPhotos) {
     return (
-      <div className="h-64 md:h-80 bg-gradient-to-br from-primary/10 via-chart-2/10 to-chart-3/10 rounded-2xl flex items-center justify-center relative overflow-hidden">
-        <div className="text-8xl">{categoryIcon}</div>
+      <div className="relative flex h-64 items-center justify-center overflow-hidden rounded-lg border border-border bg-surface-1 md:h-80">
+        <div className="font-mono text-display text-text-tertiary">{categoryIcon}</div>
       </div>
     );
   }
@@ -45,22 +45,19 @@ export function PhotoGallery({ photos, businessName, categoryIcon = "🏪" }: Ph
   return (
     <>
       {/* Main Photo Display */}
-      <div className="relative h-64 md:h-80 rounded-2xl overflow-hidden group">
+      <div className="group relative h-64 overflow-hidden rounded-lg border border-border md:h-80">
         <Image
           src={displayPhotos[0]}
           alt={businessName}
           fill
-          className="object-cover cursor-pointer transition-transform duration-300 group-hover:scale-105"
+          className="cursor-pointer object-cover"
           onClick={() => setIsLightboxOpen(true)}
           priority
         />
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-
         {/* Photo Count Badge */}
         {displayPhotos.length > 1 && (
-          <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+          <div className="absolute bottom-4 right-4 rounded-md border border-white/15 bg-black/70 px-2 py-1 font-mono text-meta text-white">
             {displayPhotos.length} photos
           </div>
         )}
@@ -69,10 +66,10 @@ export function PhotoGallery({ photos, businessName, categoryIcon = "🏪" }: Ph
         <Button
           variant="secondary"
           size="sm"
-          className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute bottom-4 left-4 opacity-0 transition-opacity group-hover:opacity-100"
           onClick={() => setIsLightboxOpen(true)}
         >
-          View Photos
+          View photos
         </Button>
       </div>
 
@@ -84,7 +81,7 @@ export function PhotoGallery({ photos, businessName, categoryIcon = "🏪" }: Ph
               key={index}
               onClick={() => handleThumbnailClick(index)}
               className={cn(
-                "relative h-20 w-20 flex-shrink-0 rounded-lg overflow-hidden transition-all",
+                "relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-border transition-opacity",
                 index === 0 ? "ring-2 ring-primary" : "opacity-70 hover:opacity-100"
               )}
             >
@@ -184,7 +181,7 @@ export function PhotoGallery({ photos, businessName, categoryIcon = "🏪" }: Ph
             )}
 
             {/* Photo Counter */}
-            <div className="absolute top-4 left-4 text-white bg-black/50 px-3 py-1 rounded-full text-sm">
+            <div className="absolute top-4 left-4 rounded-md border border-white/15 bg-black/70 px-2 py-1 font-mono text-meta text-white">
               {selectedIndex + 1} / {displayPhotos.length}
             </div>
           </div>

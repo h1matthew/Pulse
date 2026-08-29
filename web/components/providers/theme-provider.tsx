@@ -46,7 +46,7 @@ function applyThemeClass(theme: Theme) {
   root.classList.toggle('dark', theme === 'dark')
 }
 
-export function ThemeProvider({ children, defaultTheme = 'light' }: ThemeProviderProps) {
+export function ThemeProvider({ children, defaultTheme = 'dark' }: ThemeProviderProps) {
   // Start from the default on both server and first client render so hydration
   // markup matches; the real value is read from the DOM/storage after mount.
   const [theme, setThemeState] = useState<Theme>(defaultTheme)

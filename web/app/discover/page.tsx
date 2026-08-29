@@ -15,15 +15,13 @@ import {
   type ReactNode,
 } from "react";
 import dynamic from 'next/dynamic'
-import { AlertCircle, ArrowUpDown, ChevronDown, Clock, Heart, MapPin, Navigation, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Star, Store } from "lucide-react";
+import { AlertCircle, ArrowUpDown, ChevronDown, Clock, Heart, MapPin, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Star, Store } from "lucide-react";
 
 const DiscoverMap = dynamic(
   () => import('@/components/features/discover/DiscoverMap').then(m => m.DiscoverMap),
   { ssr: false, loading: () => <div className="flex h-full items-center justify-center bg-muted text-sm text-muted-foreground">Loading map…</div> }
 )
-import Image from "next/image";
 import { Header } from "@/components/layout/Header";
-import { AnimatedSection } from "@/components/features/home/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,11 +54,7 @@ import {
   useBookmarkedIds,
 } from "@/hooks/useBookmarks";
 import { toast } from "sonner";
-import {
-  buildBusinessFallbackImageUrl,
-  buildBusinessPhotoUrl,
-  getBusinessReviewLabel,
-} from "@/lib/business/display";
+import { getBusinessReviewLabel } from "@/lib/business/display";
 import { NavLink } from "@/components/ui/nav-link";
 import { getCachedLocation, cacheLocation, cacheLocationSource, getCachedLocationSource } from "@/lib/location";
 import { isOpenNow } from "@/lib/business/hours";
@@ -126,10 +120,10 @@ function FilterMenuTrigger({ active, ariaLabel, children, className, ...props }:
       aria-pressed={active}
       aria-label={ariaLabel}
       className={cn(
-        "h-8 rounded-full border px-3 text-xs font-medium transition-colors",
+        "h-7 rounded-md border px-2.5 text-xs font-medium transition-colors",
         active
-          ? "border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background"
-          : "border-border bg-card text-foreground hover:border-foreground/35 hover:bg-card",
+          ? "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+          : "border-border bg-transparent text-foreground hover:border-border-strong",
         className
       )}
     >
@@ -141,9 +135,19 @@ function FilterMenuTrigger({ active, ariaLabel, children, className, ...props }:
 
 function FilterMenuLabel({ children }: { children: ReactNode }) {
   return (
-    <DropdownMenuLabel className="px-2 pb-1 pt-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+    <DropdownMenuLabel className="px-2 pb-1 pt-1.5 text-meta font-medium text-muted-foreground">
       {children}
     </DropdownMenuLabel>
+  );
+}
+
+/** `·`-joined metadata cell. Fixed order, so the eye can scan a column. */
+function MetaCell({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <>
+      <span aria-hidden="true" className="text-border-strong">·</span>
+      <span className={className}>{children}</span>
+    </>
   );
 }
 
@@ -154,31 +158,41 @@ function FilterMenuLabel({ children }: { children: ReactNode }) {
  *
  * USER JOURNEY:
  *   1. User lands on Discover -> sees location context + compact filters
- *   2. Location resolves (GPS or zip) → businesses load in a responsive card grid
+ *   2. Location resolves (GPS or zip) → businesses load as a hairline-ruled feed
  *   3. User filters by category buttons or searches by keyword
  *   4. User sorts results by distance, rating, review count, or name
- *   5. User clicks a card → navigates to /business/[id] detail page
- *   6. User bookmarks directly from the card via heart icon — signed-in users
- *      sync to their account; guests save on this device (localStorage) with
- *      a toast nudging them to sign in to sync across devices
+ *   5. User clicks a row name → navigates to /business/[id] detail page
+ *   6. User saves directly from the row — signed-in users sync to their
+ *      account; guests save on this device (localStorage) with a toast
+ *      nudging them to sign in to sync across devices
  *
  * DESIGN RATIONALE:
- *   - Category filter pills use toggle (aria-pressed) for clear active state.
- *   - Sort dropdown defaults to "Highest Rated" to showcase the best businesses first.
- *   - Directory-style cards prioritize factual scan data over generated copy.
- *   - Skeleton loading grid (6 cards) matches final layout to prevent CLS.
+ *   - Rating numeral is largest and leftmost so ranked scanning runs down one column.
+ *   - Metadata sits in one mono line in a fixed order: category, neighborhood,
+ *     price, hours — the same slots on every row.
+ *   - Rows are separated by hairlines, not card chrome, so the feed stays dense.
+ *   - Skeleton rows match the final row pitch to prevent CLS.
  *
  * ACCESSIBILITY FEATURES:
  *   - role="search" on the search bar with aria-label
  *   - role="group" on category filters with aria-label + aria-pressed per button
- *   - aria-live="polite" on the results grid so screen readers announce updates
+ *   - aria-live="polite" on the results feed so screen readers announce updates
  *   - aria-busy="true" on loading skeleton for assistive tech
  *   - role="alert" on error states
  *   - All icon-only buttons have aria-label; decorative icons use aria-hidden
  * ============================================================================
  */
 
-const BusinessCard = memo(function BusinessCard({
+/** Google Maps directions target for a row's postal address. */
+function buildDirectionsUrl(business: BusinessWithCategory): string | null {
+  const query = [business.address, business.city, business.state, business.zip_code]
+    .filter(Boolean)
+    .join(", ");
+  if (!query) return null;
+  return `https://maps.google.com/?q=${encodeURIComponent(query)}`;
+}
+
+const BusinessRow = memo(function BusinessRow({
   business,
   userLocation,
   isHovered,
@@ -191,7 +205,6 @@ const BusinessCard = memo(function BusinessCard({
 }) {
   const { data: isBookmarked } = useIsBookmarked(business.id);
   const toggleBookmark = useToggleBookmark();
-  const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
 
   const getPriceRange = (level: number | null) => {
     if (!level) return "";
@@ -208,15 +221,6 @@ const BusinessCard = memo(function BusinessCard({
   };
 
   const distance = getDistance();
-  const photoUrl = buildBusinessPhotoUrl(business.photos?.[0], {
-    maxWidth: 400,
-    maxHeight: 300,
-  });
-  const fallbackImageUrl = buildBusinessFallbackImageUrl({
-    name: business.name,
-    categoryName: business.category?.name,
-  });
-  const showPhoto = !!photoUrl && !photoLoadFailed;
   const reviewLabel = getBusinessReviewLabel({
     data_source: business.data_source,
     review_count: business.review_count,
@@ -224,6 +228,9 @@ const BusinessCard = memo(function BusinessCard({
   const locationLine = [business.city, business.state].filter(Boolean).join(", ");
   const independent = isIndependentBusiness(business);
   const openNow = isOpenNow(business.hours) === true;
+  const priceLabel = getPriceRange(business.price_range);
+  const summary = business.short_description || business.description;
+  const directionsUrl = buildDirectionsUrl(business);
 
   const handleBookmark = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -261,124 +268,87 @@ const BusinessCard = memo(function BusinessCard({
       data-tour="business-card"
       onMouseEnter={() => onHoverChange?.(business.id)}
       onMouseLeave={() => onHoverChange?.(null)}
-      className={cn(
-        "group relative h-56 overflow-hidden rounded-2xl border bg-muted transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl",
-        isHovered ? "border-primary/60 shadow-lg -translate-y-0.5" : "border-border"
-      )}
+      className={cn("card-lift flex gap-4 px-4 py-4", isHovered && "bg-surface-2")}
     >
-      {/* Full-bleed image */}
-      {showPhoto ? (
-        <Image
-          src={photoUrl}
-          alt={business.name}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          unoptimized
-          onError={() => setPhotoLoadFailed(true)}
-        />
-      ) : (
-        <Image
-          src={fallbackImageUrl}
-          alt={`${business.name} default cover`}
-          fill
-          className="object-cover transition-transform duration-700 group-hover:scale-[1.06]"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          unoptimized
-        />
-      )}
-
-      {/* Scrim: keeps overlaid text readable over any photo */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/0"
-        aria-hidden="true"
-      />
-
-      {/* Top-left badges (visual only — clicks fall through to the card link) */}
-      <div className="pointer-events-none absolute left-3 top-3 z-20 flex flex-wrap gap-1.5">
-        {independent ? (
-          <span className="rounded-full border border-white/25 bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-md">
-            Independent
-          </span>
-        ) : (
-          <span className="rounded-full border border-white/10 bg-black/40 px-2 py-0.5 text-[11px] font-medium text-white/75 backdrop-blur-md">
-            Chain
-          </span>
-        )}
-        {business.sba_certified && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/15 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-md">
-            <ShieldCheck className="h-3 w-3" aria-hidden="true" />
-            SBA
-          </span>
-        )}
+      {/* Rating column — largest numeral, leftmost, so the eye scans one column */}
+      <div className="w-11 shrink-0 pt-0.5" aria-label={reviewLabel}>
+        <p className="font-mono text-h3 leading-none tabular-nums">
+          {business.average_rating ? business.average_rating.toFixed(1) : "—"}
+        </p>
+        <p className="mt-1.5 font-mono text-meta tabular-nums text-text-tertiary">
+          {business.review_count ?? 0}
+        </p>
       </div>
 
-      {/* Bookmark (interactive — sits above the card link) */}
-      <Button
-        variant="secondary"
-        size="icon-sm"
-        className="absolute right-3 top-3 z-30 bg-black/35 text-white shadow-sm backdrop-blur-sm hover:bg-black/55"
-        onClick={handleBookmark}
-        disabled={toggleBookmark.isPending}
-        aria-label={isBookmarked ? "Remove bookmark" : "Bookmark business"}
-      >
-        <Heart
-          className={cn("h-4 w-4", isBookmarked ? "fill-white text-white" : "text-white")}
-          aria-hidden="true"
-        />
-      </Button>
-
-      {/* Clickable overlay with the business details anchored to the bottom */}
-      <NavLink
-        href={`/business/${business.id}`}
-        className="absolute inset-0 z-10 flex flex-col justify-end p-4"
-        aria-label={`View ${business.name}`}
-      >
-        <h3 className="truncate text-lg font-semibold tracking-tight text-white">
-          {business.name}
-        </h3>
-        <p className="mt-0.5 truncate text-[13px] text-white/65">
-          {business.category?.name ?? "Local business"}
-          {locationLine ? ` · ${locationLine}` : ""}
-        </p>
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/15 pt-2.5 text-sm text-white/90">
-          <span className="inline-flex items-center gap-1 font-medium">
-            <Star className="h-3.5 w-3.5 fill-white text-white" aria-hidden="true" />
-            {business.average_rating || "New"}
-          </span>
-          <span className="text-white/60">{reviewLabel}</span>
-          {business.price_range && (
-            <span className="font-mono text-xs font-medium text-white/80">{getPriceRange(business.price_range)}</span>
-          )}
-          {openNow && (
-            <span className="inline-flex items-center gap-1.5 font-medium text-white">
-              <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/60" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
-              </span>
-              Open now
-            </span>
-          )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-3">
+          <h3 className="min-w-0 flex-1 truncate text-body font-medium">
+            <NavLink href={`/business/${business.id}`} className="hover:text-primary">
+              {business.name}
+            </NavLink>
+          </h3>
           {distance && (
-            <span className="inline-flex items-center gap-1 font-mono text-xs font-medium text-white">
-              <Navigation className="h-3 w-3" aria-hidden="true" />
+            <span className="shrink-0 font-mono text-meta tabular-nums text-text-tertiary">
               {distance}
             </span>
           )}
         </div>
-      </NavLink>
+
+        {/* Fixed slot order: category · neighborhood · price · hours */}
+        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-meta uppercase tracking-[0.02em] text-text-tertiary">
+          <span>{business.category?.name ?? "Local business"}</span>
+          {locationLine && <MetaCell>{locationLine}</MetaCell>}
+          {priceLabel && <MetaCell>{priceLabel}</MetaCell>}
+          {openNow && <MetaCell className="text-ok">Open now</MetaCell>}
+          <MetaCell>{independent ? "Independent" : "Chain"}</MetaCell>
+          {business.sba_certified && (
+            <MetaCell>
+              <ShieldCheck className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden="true" />
+              SBA
+            </MetaCell>
+          )}
+        </p>
+
+        {summary && (
+          <p className="mt-1.5 line-clamp-2 text-small text-muted-foreground">{summary}</p>
+        )}
+
+        <div className="mt-2.5 flex items-center gap-4 text-meta">
+          {directionsUrl && (
+            <a
+              href={directionsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-text-tertiary hover:text-primary"
+            >
+              Directions
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={handleBookmark}
+            disabled={toggleBookmark.isPending}
+            aria-label={isBookmarked ? "Remove bookmark" : "Bookmark business"}
+            className="inline-flex items-center gap-1 text-text-tertiary hover:text-primary disabled:opacity-50"
+          >
+            <Heart className={cn("h-3 w-3", isBookmarked && "fill-current")} aria-hidden="true" />
+            {isBookmarked ? "Saved" : "Save"}
+          </button>
+        </div>
+      </div>
     </article>
   );
 });
 
-function BusinessCardSkeleton() {
+function BusinessRowSkeleton() {
   return (
-    <div className="relative h-64 overflow-hidden rounded-2xl border border-border bg-card">
-      <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
-      <div className="absolute inset-x-0 bottom-0 space-y-2 p-4">
-        <Skeleton className="h-5 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
+    <div className="flex gap-4 px-4 py-4">
+      <Skeleton className="h-6 w-11 shrink-0" />
+      <div className="flex-1 space-y-2">
         <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-24" />
       </div>
     </div>
   );
@@ -403,7 +373,9 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
     resolveCategoryParam(resolvedSearchParams?.category)
   )
   const [sortBy, setSortBy] = useState<'distance' | 'rating' | 'review_count' | 'name'>('distance')
-  const [searchQuery, setSearchQuery] = useState('')
+  const initialQuery =
+    typeof resolvedSearchParams?.q === 'string' ? resolvedSearchParams.q.slice(0, 100) : ''
+  const [searchQuery, setSearchQuery] = useState(initialQuery)
   const [independentOnly, setIndependentOnly] = useState(false)
   const [openNowOnly, setOpenNowOnly] = useState(false)
   const [selectedPrices, setSelectedPrices] = useState<number[]>([])
@@ -870,41 +842,30 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   const splitPaneStyle = {
     '--discover-results-width': `${resultsPaneWidth}px`,
   } as CSSProperties
-  const resultsGridClass =
-    "grid grid-cols-[repeat(auto-fit,minmax(min(17rem,100%),1fr))] gap-3"
 
-  // Compact full-width top bar: title + live stats, then search/sort, then the
-  // category and refine filters, with location + radius pushed to the right.
+  // Top bar carries identity, search/sort, and the taxonomy. State filters
+  // (price, stars, open now) sit directly above the rows in the results pane.
   const filterPanel = (
     <div className="space-y-3 px-4 pb-3 pt-1.5" data-testid="discover-toolbar">
-      <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2" role="group" aria-label="Discover summary">
-        <h1 id="discover-heading" className="shrink-0 text-lg font-semibold tracking-tight">
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1" role="group" aria-label="Discover summary">
+        <h1 id="discover-heading" className="shrink-0 text-h3 font-medium">
           Discover places nearby
         </h1>
-        <div className="flex shrink-0 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card text-xs shadow-sm">
-          <div className="px-2.5 py-1">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Found</p>
-            <p className="font-semibold tabular-nums">{resultCountLabel}</p>
-          </div>
-          <div className="px-2.5 py-1">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Avg ★</p>
-            <p className="font-semibold tabular-nums text-muted-foreground">{averageVisibleRating}</p>
-          </div>
-          <div className="px-2.5 py-1">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">Radius</p>
-            <p className="font-semibold tabular-nums text-muted-foreground">{radiusMiles} mi</p>
-          </div>
-        </div>
+        <p className="flex shrink-0 items-baseline gap-x-1.5 font-mono text-meta tabular-nums text-text-tertiary">
+          <span>{resultCountLabel}</span>
+          <MetaCell>{averageVisibleRating} avg</MetaCell>
+          <MetaCell>{radiusMiles} mi</MetaCell>
+        </p>
       </div>
 
       {hasLocation && (
         <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Search and sort controls">
           <div role="search" aria-label="Search businesses" className="relative min-w-0 flex-[1_1_18rem]" data-tour="discover-search">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
               type="search"
               placeholder="Name, food, or service"
-              className="h-9 rounded-full border-border bg-card pl-10 shadow-sm"
+              className="h-9 rounded-md border-border bg-surface-1 pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Search businesses"
@@ -912,7 +873,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
           </div>
           <div className="shrink-0" data-tour="discover-sort">
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="h-9 w-32 rounded-full border-border bg-card shadow-sm" aria-label="Sort by">
+              <SelectTrigger className="h-9 w-32 rounded-md border-border bg-surface-1" aria-label="Sort by">
                 <ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
@@ -930,13 +891,28 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
           <Button
             variant="outline"
             size="icon"
-            className="h-9 w-9 shrink-0 rounded-full border-border bg-card shadow-sm"
+            className="h-9 w-9 shrink-0 rounded-md"
             onClick={handleRefresh}
             disabled={businessesFetching}
             aria-label="Refresh results"
           >
             <RefreshCw className={cn("h-4 w-4", businessesFetching && "animate-spin")} aria-hidden="true" />
           </Button>
+          <div className="flex min-w-0 items-center gap-1.5 text-small">
+            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="truncate">{locationControlLabel}</span>
+            <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" onClick={() => setChangeLocationOpen(true)}>Change</Button>
+            <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
+              <SelectTrigger className="h-8 w-[5.5rem] rounded-md font-mono text-meta" aria-label="Search radius">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RADIUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       )}
 
@@ -952,189 +928,174 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
       )}
 
       {hasLocation && (
-        <div className="space-y-3 border-t border-border pt-3">
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by category" data-tour="discover-categories">
-            {CATEGORY_FILTERS.map((category) => (
-              <Button key={category.id} variant="ghost" size="sm"
-                onClick={() => selectCategory(category.id)}
-                aria-pressed={selectedCategory === category.id}
-                className={cn(
-                  "h-7 rounded-full border border-transparent px-3 text-xs text-muted-foreground transition-colors",
-                  selectedCategory === category.id
-                    ? "border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background"
-                    : "hover:border-border hover:text-foreground"
-                )}
-              >{category.name}</Button>
-            ))}
-            <Button variant="ghost" size="sm" onClick={() => selectCategory('bookmarks')}
-              aria-pressed={selectedCategory === 'bookmarks'}
+        <div className="flex flex-wrap gap-1.5 border-t border-border pt-3" role="group" aria-label="Filter by category" data-tour="discover-categories">
+          {CATEGORY_FILTERS.map((category) => (
+            <Button key={category.id} variant="ghost" size="sm"
+              onClick={() => selectCategory(category.id)}
+              aria-pressed={selectedCategory === category.id}
               className={cn(
-                "h-7 rounded-full border border-transparent px-3 text-xs text-muted-foreground transition-colors",
-                selectedCategory === 'bookmarks'
-                  ? "border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background"
+                "h-7 rounded-md border border-transparent px-2.5 text-xs text-muted-foreground",
+                selectedCategory === category.id
+                  ? "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
                   : "hover:border-border hover:text-foreground"
               )}
-            >
-              <Heart className="h-3 w-3" aria-hidden="true" /> Bookmarks
-            </Button>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="More filters">
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <FilterMenuTrigger active={selectedPrices.length > 0} ariaLabel={priceFilterAriaLabel}>
-                    <span>{priceFilterLabel}</span>
-                  </FilterMenuTrigger>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 rounded-xl p-2">
-                  <FilterMenuLabel>Price</FilterMenuLabel>
-                  {PRICE_LEVELS.map((level) => {
-                    const label = '$'.repeat(level)
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={level}
-                        checked={selectedPrices.includes(level)}
-                        onSelect={(event) => {
-                          event.preventDefault()
-                          togglePrice(level)
-                        }}
-                        className="rounded-md"
-                      >
-                        <span className="font-mono text-sm">{label}</span>
-                      </DropdownMenuCheckboxItem>
-                    )
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <FilterMenuTrigger active={ratingBand > 0} ariaLabel={starsFilterAriaLabel}>
-                    <Star className={cn("h-3.5 w-3.5", ratingBand > 0 && "fill-current")} aria-hidden="true" />
-                    <span>{starsFilterLabel}</span>
-                  </FilterMenuTrigger>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-52 rounded-xl p-2">
-                  <FilterMenuLabel>Stars</FilterMenuLabel>
-                  {RATING_LEVELS.map((level) => (
-                    <DropdownMenuCheckboxItem
-                      key={level}
-                      checked={ratingBand === level}
-                      onSelect={(event) => {
-                        event.preventDefault()
-                        setRatingBand((value) => (value === level ? 0 : level))
-                      }}
-                      className="rounded-md"
-                    >
-                      <Star className={cn("h-3.5 w-3.5", ratingBand === level && "fill-primary text-primary")} aria-hidden="true" />
-                      <span>{level >= 5 ? '5 stars' : `${level} to ${level + 1} stars`}</span>
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <FilterMenuTrigger active={activeExtraFilterCount > 0} ariaLabel={extraFilterAriaLabel}>
-                    <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>{extraFilterButtonLabel}</span>
-                  </FilterMenuTrigger>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-60 rounded-xl p-2">
-                  <FilterMenuLabel>Filters</FilterMenuLabel>
-                  <DropdownMenuCheckboxItem
-                    checked={independentOnly}
-                    onSelect={(event) => {
-                      event.preventDefault()
-                      setIndependentOnly((value) => !value)
-                    }}
-                    className="rounded-md"
-                  >
-                    <Store className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Independent</span>
-                    {independentOnly && (
-                      <span className="ml-auto font-mono text-xs text-muted-foreground">{independentCount}</span>
-                    )}
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={openNowOnly}
-                    onSelect={(event) => {
-                      event.preventDefault()
-                      setOpenNowOnly((value) => !value)
-                    }}
-                    className="rounded-md"
-                  >
-                    <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Open now</span>
-                  </DropdownMenuCheckboxItem>
-                  {hasSbaBusinesses && (
-                    <DropdownMenuCheckboxItem
-                      checked={sbaOnly}
-                      onSelect={(event) => {
-                        event.preventDefault()
-                        setSbaOnly((value) => !value)
-                      }}
-                      className="rounded-md"
-                    >
-                      <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span>SBA certified</span>
-                    </DropdownMenuCheckboxItem>
-                  )}
-                  {activeExtraFilterCount > 0 && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <p className="px-2 py-1 text-xs text-muted-foreground">
-                        {activeExtraFilterCount} {activeExtraFilterCount === 1 ? 'filter' : 'filters'} active
-                      </p>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {hasExtraFilters && (
-                <Button variant="ghost" size="xs" onClick={resetExtraFilters} className="text-muted-foreground hover:text-foreground">Reset</Button>
-              )}
-            </div>
-
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2 text-sm">
-              <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Location</span>
-              <span className="truncate font-medium">{locationControlLabel}</span>
-              <Button variant="ghost" size="xs" className="text-muted-foreground hover:text-foreground" onClick={() => setChangeLocationOpen(true)}>Change</Button>
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Within</span>
-              <Select value={radiusMiles.toString()} onValueChange={(v) => setRadiusMiles(Number(v))}>
-                <SelectTrigger className="h-8 w-[5.5rem] rounded-full" aria-label="Search radius">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RADIUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            >{category.name}</Button>
+          ))}
+          <Button variant="ghost" size="sm" onClick={() => selectCategory('bookmarks')}
+            aria-pressed={selectedCategory === 'bookmarks'}
+            className={cn(
+              "h-7 rounded-md border border-transparent px-2.5 text-xs text-muted-foreground",
+              selectedCategory === 'bookmarks'
+                ? "border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                : "hover:border-border hover:text-foreground"
+            )}
+          >
+            <Heart className="h-3 w-3" aria-hidden="true" /> Bookmarks
+          </Button>
         </div>
       )}
     </div>
   )
 
+  // State filters — a single ~40px rail pinned directly above the rows.
+  const stateFilterRail = hasLocation ? (
+    <div className="sticky top-0 z-10 flex h-10 items-center gap-1.5 border-b border-border bg-background px-4">
+      <div className="flex flex-1 flex-wrap items-center gap-1.5" role="group" aria-label="More filters">
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <FilterMenuTrigger active={selectedPrices.length > 0} ariaLabel={priceFilterAriaLabel}>
+              <span>{priceFilterLabel}</span>
+            </FilterMenuTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-48 rounded-lg p-2">
+            <FilterMenuLabel>Price</FilterMenuLabel>
+            {PRICE_LEVELS.map((level) => {
+              const label = '$'.repeat(level)
+              return (
+                <DropdownMenuCheckboxItem
+                  key={level}
+                  checked={selectedPrices.includes(level)}
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    togglePrice(level)
+                  }}
+                  className="rounded-md"
+                >
+                  <span className="font-mono text-sm">{label}</span>
+                </DropdownMenuCheckboxItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <FilterMenuTrigger active={ratingBand > 0} ariaLabel={starsFilterAriaLabel}>
+              <Star className={cn("h-3.5 w-3.5", ratingBand > 0 && "fill-current")} aria-hidden="true" />
+              <span>{starsFilterLabel}</span>
+            </FilterMenuTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52 rounded-lg p-2">
+            <FilterMenuLabel>Stars</FilterMenuLabel>
+            {RATING_LEVELS.map((level) => (
+              <DropdownMenuCheckboxItem
+                key={level}
+                checked={ratingBand === level}
+                onSelect={(event) => {
+                  event.preventDefault()
+                  setRatingBand((value) => (value === level ? 0 : level))
+                }}
+                className="rounded-md"
+              >
+                <Star className={cn("h-3.5 w-3.5", ratingBand === level && "fill-current")} aria-hidden="true" />
+                <span>{level >= 5 ? '5 stars' : `${level} to ${level + 1} stars`}</span>
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <FilterMenuTrigger active={activeExtraFilterCount > 0} ariaLabel={extraFilterAriaLabel}>
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>{extraFilterButtonLabel}</span>
+            </FilterMenuTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-60 rounded-lg p-2">
+            <FilterMenuLabel>Filters</FilterMenuLabel>
+            <DropdownMenuCheckboxItem
+              checked={independentOnly}
+              onSelect={(event) => {
+                event.preventDefault()
+                setIndependentOnly((value) => !value)
+              }}
+              className="rounded-md"
+            >
+              <Store className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Independent</span>
+              {independentOnly && (
+                <span className="ml-auto font-mono text-xs text-muted-foreground">{independentCount}</span>
+              )}
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={openNowOnly}
+              onSelect={(event) => {
+                event.preventDefault()
+                setOpenNowOnly((value) => !value)
+              }}
+              className="rounded-md"
+            >
+              <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Open now</span>
+            </DropdownMenuCheckboxItem>
+            {hasSbaBusinesses && (
+              <DropdownMenuCheckboxItem
+                checked={sbaOnly}
+                onSelect={(event) => {
+                  event.preventDefault()
+                  setSbaOnly((value) => !value)
+                }}
+                className="rounded-md"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>SBA certified</span>
+              </DropdownMenuCheckboxItem>
+            )}
+            {activeExtraFilterCount > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <p className="px-2 py-1 text-xs text-muted-foreground">
+                  {activeExtraFilterCount} {activeExtraFilterCount === 1 ? 'filter' : 'filters'} active
+                </p>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {hasExtraFilters && (
+          <Button variant="ghost" size="xs" onClick={resetExtraFilters} className="text-muted-foreground hover:text-foreground">Reset</Button>
+        )}
+      </div>
+      <span className="shrink-0 font-mono text-meta text-text-tertiary">
+        {sanitizedSearch ? `"${sanitizedSearch}"` : categoryLabel}
+      </span>
+    </div>
+  ) : null
+
   // Active-mission context banner, shown above the results list.
   const missionsBanner = missionsInView.length > 0 ? (
-    <section aria-label="Active missions" className="space-y-2 px-4 pt-4">
+    <section aria-label="Active missions" className="divide-y divide-border border-b border-border">
       {missionsInView.map((detail) => (
-        <div key={detail.progress.id} className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-4 sm:flex-row sm:items-center sm:gap-4">
+        <div key={detail.progress.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Mission: {detail.progress.mission.title}</p>
-            <p className="text-xs text-muted-foreground">Check in with your receipt to log a verified visit.</p>
+            <p className="text-small font-medium">Mission: {detail.progress.mission.title}</p>
+            <p className="text-meta text-muted-foreground">Check in with your receipt to log a verified visit.</p>
           </div>
           <div className="w-full sm:w-40">
-            <div className="mb-1 flex justify-between text-xs">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Progress</span>
-              <span className="font-mono font-medium tabular-nums">{detail.progress.current_count}/{detail.progress.mission.target_count}</span>
+            <div className="mb-1 flex justify-end">
+              <span className="font-mono text-meta tabular-nums">{detail.progress.current_count}/{detail.progress.mission.target_count}</span>
             </div>
-            <Progress value={detail.percentageComplete} className="h-1.5" />
+            <Progress value={detail.percentageComplete} className="h-1" />
           </div>
         </div>
       ))}
@@ -1142,40 +1103,34 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
   ) : null
 
   const resultsList = hasLocation ? (
-    <section aria-label="Business results" aria-live="polite" aria-atomic="false" className="px-4 pb-6 pt-4">
-      <div className="mb-3 flex items-baseline gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.18em]">Results</h2>
-        <span className="h-px flex-1 self-center bg-border" aria-hidden="true" />
-        <p className="text-xs text-muted-foreground">{sanitizedSearch ? `"${sanitizedSearch}"` : categoryLabel}</p>
-      </div>
+    <section aria-label="Business results" aria-live="polite" aria-atomic="false">
       {isLoading ? (
-        <div className={resultsGridClass} aria-busy="true" data-testid="discover-results-grid">
-          {Array.from({ length: 5 }).map((_, i) => <BusinessCardSkeleton key={i} />)}
+        <div className="divide-y divide-border" aria-busy="true" data-testid="discover-results-grid">
+          {Array.from({ length: 6 }).map((_, i) => <BusinessRowSkeleton key={i} />)}
         </div>
       ) : businessesError ? (
-        <div className="rounded-2xl border border-border bg-card p-8 text-center" role="alert">
-          <AlertCircle className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-base font-semibold">Could not load places</h3>
-          <p className="mt-2 text-sm text-muted-foreground">{businessesError.message}</p>
-          <Button className="mt-4" onClick={() => refetch()}>Try again</Button>
+        <div className="px-4 py-10" role="alert">
+          <AlertCircle className="mb-3 h-5 w-5 text-muted-foreground" aria-hidden="true" />
+          <h3 className="text-body font-medium">Could not load places</h3>
+          <p className="mt-1 text-small text-muted-foreground">{businessesError.message}</p>
+          <Button className="mt-4" size="sm" onClick={() => refetch()}>Try again</Button>
         </div>
       ) : sortedBusinesses.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center">
-          <Search className="mx-auto mb-3 h-6 w-6 text-muted-foreground" aria-hidden="true" />
-          <h3 className="text-base font-semibold">No places found</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {hasExtraFilters ? 'No places match the current filters.' : searchQuery ? 'Try another keyword.' : 'Try a larger radius or different category.'}
+        <div className="px-4 py-10">
+          <h3 className="text-body font-medium">No places found</h3>
+          <p className="mt-1 text-small text-muted-foreground">
+            {hasExtraFilters ? 'No places match the current filters.' : searchQuery ? 'Try another keyword.' : 'Try a larger radius or a different category.'}
           </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            {(hasExtraFilters || !!sanitizedSearch || selectedCategory !== 'all') && <Button variant="outline" onClick={clearAllFilters}>Clear filters</Button>}
-            {!searchQuery && radiusMiles < MAX_RADIUS_MILES && <Button onClick={() => setRadiusMiles(MAX_RADIUS_MILES)}>{`Widen to ${MAX_RADIUS_MILES} mi`}</Button>}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(hasExtraFilters || !!sanitizedSearch || selectedCategory !== 'all') && <Button variant="outline" size="sm" onClick={clearAllFilters}>Clear filters</Button>}
+            {!searchQuery && radiusMiles < MAX_RADIUS_MILES && <Button size="sm" onClick={() => setRadiusMiles(MAX_RADIUS_MILES)}>{`Widen to ${MAX_RADIUS_MILES} mi`}</Button>}
           </div>
         </div>
       ) : (
-        <div className={resultsGridClass} data-testid="discover-results-grid">
+        <div className="divide-y divide-border" data-testid="discover-results-grid">
           {sortedBusinesses.map((business) => (
             <div key={business.id} data-business-id={business.id}>
-              <BusinessCard
+              <BusinessRow
                 business={business}
                 userLocation={location}
                 isHovered={hoveredBusinessId === business.id}
@@ -1211,6 +1166,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
         >
           {/* LEFT — results list (scrolls) */}
           <div className="flex h-[45vh] shrink-0 flex-col overflow-y-auto border-b border-border bg-background md:h-auto md:w-[var(--discover-results-width)] md:min-w-[360px] md:border-b-0">
+            {stateFilterRail}
             {missionsBanner}
             {resultsList}
           </div>
@@ -1236,7 +1192,7 @@ export default function DiscoverPage({ searchParams }: DiscoverPageProps) {
           >
             <span
               className={cn(
-                "my-4 w-px rounded-full bg-border transition-colors group-hover:bg-primary/70",
+                "my-4 w-px bg-border transition-colors group-hover:bg-primary",
                 isResizingResults && "bg-primary"
               )}
             />

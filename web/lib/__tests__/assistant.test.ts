@@ -66,7 +66,7 @@ describe('assistant', () => {
     it('should return a help response for "help"', () => {
       const result = getQuickResponse('help')
       expect(result).toBeTruthy()
-      expect(result).toContain('Pulse AI Assistant')
+      expect(result).toContain('Pulse assistant')
     })
 
     it('should return null for non-matching messages', () => {

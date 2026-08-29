@@ -76,11 +76,11 @@ describe('HelpMenu', () => {
     expect(screen.getByText('Esc')).toBeInTheDocument()
   })
 
-  it('renders AI assistant tip', () => {
+  it('renders assistant tip', () => {
     render(<HelpMenu />)
 
     expect(screen.getByText('Need more help?')).toBeInTheDocument()
-    expect(screen.getByText(/AI Assistant/)).toBeInTheDocument()
+    expect(screen.getByText(/Use the assistant/)).toBeInTheDocument()
   })
 
   it('renders dialog title', () => {

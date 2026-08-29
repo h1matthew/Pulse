@@ -1,119 +1,79 @@
-import { AnimatedSection } from '@/components/features/home/AnimatedSection'
-import { Heart, Users, Store, Star, ArrowRight, Megaphone, Gift } from 'lucide-react'
 import { NavLink } from '@/components/ui/nav-link'
 
 export const dynamic = 'force-static'
 export const revalidate = 3600
 
-const WAYS_TO_HELP = [
+// Only actions that exist in the product today.
+const ACTIONS: { title: string; body: string; href: string; label: string }[] = [
   {
-    icon: Star,
-    title: 'Leave Reviews',
-    description:
-      'Your honest reviews help other community members discover the best local spots. Every review strengthens a small business\'s visibility.',
+    title: 'Review a place you already go to.',
+    body: 'A review written here sits on the business page beside the imported ones and is tagged as ours. If you have checked in at that business before, it is marked as a verified purchase, and the server decides that, not you. One review per business, ten characters minimum.',
     href: '/discover',
-    cta: 'Start Reviewing',
+    label: 'Find a business',
   },
   {
-    icon: Store,
-    title: 'Shop Local',
-    description:
-      'Choose local businesses over chains when you have the option. More of what you spend stays with people who work and hire in your area.',
+    title: 'Check in with your receipt.',
+    body: 'Photograph the receipt from a visit you already made, within seven days of the purchase. Verified check-ins are the only thing that moves your totals or a mission.',
     href: '/discover',
-    cta: 'Find Businesses',
+    label: 'Find a business',
   },
   {
-    icon: Megaphone,
-    title: 'Spread the Word',
-    description:
-      'Tell your friends, family, and coworkers about the local businesses you love. Word-of-mouth is the most powerful marketing a small business can get.',
-    href: '/about',
-    cta: 'Learn More',
-  },
-  {
-    icon: Gift,
-    title: 'Claim & Share Deals',
-    description:
-      'Claiming deals directly supports local businesses running promotions. Share deals with friends to multiply the impact.',
+    title: 'Claim a deal before it expires.',
+    body: 'Deals are posted by owners and run out. Claiming one gives you a code to show at the counter.',
     href: '/deals',
-    cta: 'Browse Deals',
+    label: 'Browse deals',
+  },
+  {
+    title: 'Bookmark the places you keep going back to.',
+    body: 'Bookmarks work without an account on the device you are using, and follow you once you sign in.',
+    href: '/bookmarks',
+    label: 'Open bookmarks',
+  },
+  {
+    title: 'Run a boost mission.',
+    body: 'A mission asks for a specific run of visits, such as three different shops in one category. A second visit to the same business does not count twice. Signing in is required.',
+    href: '/missions',
+    label: 'See missions',
   },
 ]
 
 export default function GetInvolvedPage() {
   return (
-    <div className="relative">
-      <main className="pt-16 pb-24 px-6">
-        <div className="mx-auto max-w-6xl">
-          {/* Header */}
-          <div className="mb-16 text-center">
-            <AnimatedSection animation="fade-up">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-1.5 text-sm text-muted-foreground">
-                <Heart className="h-4 w-4" />
-                Get Involved
-              </div>
-            </AnimatedSection>
-            <AnimatedSection animation="fade-up" delay={0.1}>
-              <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-                Four Ways to Help a Business Near You
-              </h1>
-            </AnimatedSection>
-            <AnimatedSection animation="fade-up" delay={0.2}>
-              <p className="mt-4 text-lg text-muted-foreground max-w-[68ch] mx-auto">
-                A review, a bookmark, a claimed deal. Each one makes a nearby business
-                easier for the next person to find.
-              </p>
-            </AnimatedSection>
-          </div>
+    <div className="bg-background">
+      <main className="mx-auto max-w-content px-6 pt-16 pb-24">
+        <header className="max-w-prose">
+          <h1 className="text-h1 font-medium text-foreground">Things you can do</h1>
+          <p className="mt-5 text-lead text-muted-foreground">
+            Five actions, all of them inside the app, each one leaving something behind
+            for the next person who looks.
+          </p>
+        </header>
 
-          {/* Ways to Help Grid */}
-          <div className="grid gap-6 sm:grid-cols-2 mb-20">
-            {WAYS_TO_HELP.map((item, i) => (
-              <AnimatedSection key={item.title} animation="fade-up" delay={0.2 + i * 0.1}>
-                <NavLink href={item.href} className="block h-full">
-                  <div className="group h-full rounded-lg border border-border/50 bg-card p-8">
-                    <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                      <item.icon className="h-7 w-7" />
-                    </div>
-                    <h2 className="mb-3 text-xl font-bold text-foreground">
-                      {item.title}
-                    </h2>
-                    <p className="mb-6 max-w-[68ch] text-muted-foreground leading-relaxed">
-                      {item.description}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                      {item.cta}
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </div>
-                  </div>
+        <ul className="mt-12 max-w-prose border-t border-border">
+          {ACTIONS.map((action, i) => (
+            <li
+              key={action.title}
+              className="grid grid-cols-[2.25rem_1fr] gap-x-4 border-b border-border py-6"
+            >
+              <span className="meta pt-1">{String(i + 1).padStart(2, '0')}</span>
+              <div>
+                <h2 className="text-h3 font-medium text-foreground">{action.title}</h2>
+                <p className="mt-2 text-body text-muted-foreground">{action.body}</p>
+                <NavLink
+                  href={action.href}
+                  className="mt-3 inline-block text-small text-foreground underline underline-offset-4 hover:text-primary"
+                >
+                  {action.label}
                 </NavLink>
-              </AnimatedSection>
-            ))}
-          </div>
-
-          {/* Volunteer CTA */}
-          <AnimatedSection animation="fade-up" delay={0.6}>
-            <div className="mx-auto max-w-2xl text-center rounded-lg border border-border bg-muted p-10">
-              <div className="mb-4 flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-card text-muted-foreground">
-                  <Users className="h-8 w-8" />
-                </div>
               </div>
-              <h2 className="mb-3 text-2xl font-bold">List Your Shop on Pulse</h2>
-              <p className="mb-6 mx-auto max-w-[68ch] text-muted-foreground leading-relaxed">
-                Add your hours, post deals, and reply to reviews. Listing is free and takes
-                a few minutes.
-              </p>
-              <NavLink
-                href="/about"
-                className="inline-flex items-center gap-2 btn-primary rounded-xl px-6 py-3 text-sm font-medium text-primary-foreground transition-all"
-              >
-                Learn More
-                <ArrowRight className="h-4 w-4" />
-              </NavLink>
-            </div>
-          </AnimatedSection>
-        </div>
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-10 max-w-prose text-small text-text-tertiary">
+          If you run a business and want it listed, there is no self-serve form yet. Most
+          listings come in from public map data before anyone asks us.
+        </p>
       </main>
     </div>
   )
